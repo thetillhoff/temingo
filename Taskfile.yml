@@ -7,17 +7,17 @@ silent: true
 tasks:
   build:
     cmds:
-      - go build template.go
+      - go build temingo.go
 
   test:
     cmds:
-      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
+      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
     vars:
       EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
 
   run:
     cmds:
-      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
-      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
+      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
+      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
     vars:
       EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
