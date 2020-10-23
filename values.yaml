@@ -1,0 +1,40 @@
+title: example-website
+
+css:
+  colors:
+    primaryColor:
+      hue: 0
+      saturation: 100%
+      lightness: 43%
+      alpha: 1
+    
+    primaryBgColor:
+      hue: 60
+      saturation: 100%
+      lightness: 27%
+      alpha: 1
+
+    secondaryColor:
+      hue: 240
+      saturation: 100%
+      lightness: 43%
+      alpha: 1
+    
+    secondaryBgColor:
+      hue: 120
+      saturation: 100%
+      lightness: 43%
+      alpha: 1
+    
+    siteBgColor:
+      hue: 0
+      saturation: 0%
+      lightness: 80%
+      alpha: 1
+
+  borders:
+    radius: 5px
+    width: 2px
+  
+  animations:
+    transitionDuration: 0.2s

@@ -1,0 +1,23 @@
+# https://taskfile.dev
+
+version: '3'
+
+silent: true
+
+tasks:
+  build:
+    cmds:
+      - go build template.go
+
+  test:
+    cmds:
+      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
+    vars:
+      EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
+
+  run:
+    cmds:
+      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
+      - "./template{{ .EXTENSION }} -values values.yaml -inputDir ./ -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
+    vars:
+      EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
