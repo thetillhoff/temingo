@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -51,6 +52,20 @@ func getTemplates(path, extension string, exclusions []string) [][]string {
 }
 
 func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]string) *template.Template {
+	funcMap := template.FuncMap{
+		"incPercentage": func(a string, b string) string {
+			aInt, err := strconv.Atoi(a[:len(a)-1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			bInt, err := strconv.Atoi(b[:len(b)-1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			cInt := aInt + bInt
+			return strconv.Itoa(cInt) + "%"
+		},
+	}
 	tpl := template.New(name)
 	_, err := tpl.Parse(baseTemplate)
 	if err != nil {
@@ -58,7 +73,7 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 	}
 	for index := range partialTemplates {
 		partialTemplateContent := partialTemplates[index][1]
-		_, err := tpl.Parse(partialTemplateContent)
+		_, err := tpl.Funcs(funcMap).Parse(partialTemplateContent)
 		if err != nil {
 			log.Fatal(err)
 		}
