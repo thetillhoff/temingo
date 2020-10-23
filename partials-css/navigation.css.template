@@ -1,0 +1,25 @@
+{{ define "navigation" -}}
+.navigation {
+  width: 100%;
+
+  color: hsla(var(--secondary-hue),var(--secondary-saturation),var(--secondary-lightness),var(--secondary-alpha));
+  background-color: hsla(var(--secondary-bg-colorhue),var(--secondary-bg-colorsaturation),var(--secondary-bg-colorlightness),var(--secondary-bg-coloralpha));
+
+  display: flex;
+  justify-content: center;
+  align-content: center;
+}
+
+.navigation > .container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+}
+
+.navigation .element {
+  border-color: var(--secondary-color);
+
+  border-style: solid;
+  border-width: var(--border-width);
+}
+{{- end }}

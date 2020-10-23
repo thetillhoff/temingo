@@ -1,0 +1,24 @@
+@import "normalize.min.css";
+
+body {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-direction: column;
+  margin: 0;
+  background-color: hsla({{ .css.colors.siteBgColor.hue }}, {{ .css.colors.siteBgColor.saturation }}, {{ .css.colors.siteBgColor.lightness }}, {{ .css.colors.siteBgColor.alpha }})
+}
+
+.hidden {
+  display: none;
+}
+
+.container {
+  width: 60vw;
+}
+
+{{ template "navigation" . }}
+
+{{ template "grouped-borders" . }}
+
+{{ template "buttons" . }}

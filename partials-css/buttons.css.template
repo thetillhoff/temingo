@@ -1,0 +1,69 @@
+{{ define "buttons" -}}
+/* general button styling */
+button,
+.button {
+  padding: 10px;
+
+  transition-duration: {{ .css.animations.transitionDuration }};
+
+  /* unify button styling */
+  display: inline;
+  float: left;
+  outline: none;
+  cursor: default;
+
+  /* border */
+  border-style: solid;
+  border-width: {{ .css.borders.width }};
+
+  /* default button colors */
+  {{ $buttonColorHue := 0 -}}
+  {{ $buttonColorSaturation := "0%" -}}
+  {{ $buttonColorLightness := "0%" -}}
+  {{ $buttonColorAlpha := 1 -}}
+  color: hsla({{ $buttonColorHue }}, {{ $buttonColorSaturation }}, {{ $buttonColorLightness }}, {{ $buttonColorAlpha }});
+  {{ $buttonBgColorHue := 0 -}}
+  {{ $buttonBgColorSaturation := "0%" -}}
+  {{ $buttonBgColorLightness := "50%" -}}
+  {{ $buttonBgColorAlpha := 1 -}}
+  background-color: hsla({{ $buttonBgColorHue }}, {{ $buttonBgColorSaturation }}, {{ $buttonBgColorLightness }}, {{ $buttonBgColorAlpha }});
+  {{ $buttonBorderColorHue := 0 -}}
+  {{ $buttonBorderColorSaturation := "0%" -}}
+  {{ $buttonBorderColorLightness := "20%" -}}
+  {{ $buttonBorderColorAlpha := 1 -}}
+  border-color: hsla({{ $buttonBorderColorHue }}, {{ $buttonBorderColorSaturation }}, {{ $buttonBorderColorLightness }}, {{ $buttonBorderColorAlpha }});
+}
+
+/* inline button */
+button.inline,
+.button.inline {
+  float: none;
+}
+
+/* primary button styling */
+button.primary,
+.primary.button {
+  color: hsla({{ .css.colors.primaryColor.hue }},{{ .css.colors.primaryColor.saturation }},{{ .css.colors.primaryColor.lightness }},{{ .css.colors.primaryColor.alpha }});
+  background-color: hsla({{ .css.colors.primaryBgColor.hue }},{{ .css.colors.primaryBgColor.saturation }},{{ .css.colors.primaryBgColor.lightness }},{{ .css.colors.primaryBgColor.alpha }});
+}
+/* secondary button styling */
+button.secondary,
+.secondary.button {
+  color: hsla({{ .css.colors.secondaryColor.hue }},{{ .css.colors.secondaryColor.saturation }},{{ .css.colors.secondaryColor.lightness }},{{ .css.colors.secondaryColor.alpha }});
+  background-color: hsla({{ .css.colors.secondaryBgColor.hue }},{{ .css.colors.secondaryBgColor.saturation }},{{ .css.colors.secondaryBgColor.lightness }},{{ .css.colors.secondaryBgColor.alpha }});
+}
+
+/* hover button styling */
+button:hover,
+.button:hover {
+  background-color: hsla({{ $buttonBgColorHue }}, {{ $buttonBgColorSaturation }}, {{ incPercentage "20%" $buttonBgColorLightness }}, {{ $buttonBgColorAlpha }});
+}
+button.primary:hover,
+.button.primary:hover {
+  background-color: hsla({{ .css.colors.primaryBgColor.hue }}, {{ .css.colors.primaryBgColor.saturation }}, {{ incPercentage "20%" .css.colors.primaryBgColor.lightness }}, {{ .css.colors.primaryBgColor.alpha }});
+}
+button.secondary:hover,
+.button.secondary:hover {
+  background-color: hsla({{ .css.colors.secondaryBgColor.hue }}, {{ .css.colors.secondaryBgColor.saturation }}, {{ incPercentage "20%" .css.colors.secondaryBgColor.lightness }}, {{ .css.colors.secondaryBgColor.alpha }});
+}
+{{- end }}

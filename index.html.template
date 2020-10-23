@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>example-website</title>
+
+    
+    <link rel="stylesheet" href="./main.css">
+
+    
+    <script type="text/javascript" src="./main.js"></script>
+
+  </head>
+  <body>
+
+    <div class="navigation">
+  <div class="container">
+    <a href="/" class="grouped navigation button element" >enforge.de</a>
+    <a href="/tillhoff" class="grouped navigation button element" >Till Hoffmann</a>
+  </div>
+</div>
+
+    <div class="main container">
+      <span>Hi</span>
+      <p>Here is an <button class="inline button">inline button</button>.</p>
+      <button class="button">default button</button> <button class="primary button">primary button</button> <button class="secondary button">secondary button</button>
+      <br/><br/><br/>
+      <div>
+        <button class="grouped button">first</button>
+        <button class="grouped button">second</button>
+        <button class="grouped button">third</button>
+      </div>
+      <br/><br/><br/>
+      <div>
+        <div class="grouped button">first</div>
+        <div class="grouped button">second</div>
+        <div class="grouped button">third</div>
+      </div>
+      <br/><br/><br/>
+      <div>
+        <a class="grouped button">first</a>
+        <a class="grouped button">second</a>
+        <a class="grouped button">third</a>
+      </div>
+    </div>
+
+  </body>
+</html>

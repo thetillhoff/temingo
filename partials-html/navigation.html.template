@@ -1,0 +1,8 @@
+{{ define "navigation" -}}
+<div class="navigation">
+  <div class="container">
+    <a href="/" class="grouped navigation button element" >enforge.de</a>
+    <a href="/tillhoff" class="grouped navigation button element" >Till Hoffmann</a>
+  </div>
+</div>
+{{- end }}
