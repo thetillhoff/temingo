@@ -53,7 +53,7 @@ func getTemplates(path, extension string, exclusions []string) [][]string {
 
 func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]string) *template.Template {
 	funcMap := template.FuncMap{
-		"incPercentage": func(a string, b string) string {
+		"addPercentage": func(a string, b string) string {
 			aInt, err := strconv.Atoi(a[:len(a)-1])
 			if err != nil {
 				log.Fatal(err)
