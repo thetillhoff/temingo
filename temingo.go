@@ -72,7 +72,7 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		},
 	}
 	tpl := template.New(name)
-	_, err := tpl.Parse(baseTemplate)
+	_, err := tpl.Funcs(funcMap).Parse(baseTemplate)
 	if err != nil {
 		log.Fatal(err)
 	}
