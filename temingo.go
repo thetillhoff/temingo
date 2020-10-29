@@ -95,16 +95,16 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		funcMap[k] = v
 	}
 
-	_, err := tpl.Funcs(funcMap).Parse(baseTemplate)
-	if err != nil {
-		log.Fatal(err)
-	}
 	for index := range partialTemplates {
 		partialTemplateContent := partialTemplates[index][1]
 		_, err := tpl.Funcs(funcMap).Parse(partialTemplateContent)
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+	_, err := tpl.Funcs(funcMap).Parse(baseTemplate)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return tpl
 }
