@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Masterminds/sprig"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,7 +58,11 @@ func getTemplates(fromPath, extension string, exclusions []string) [][]string {
 }
 
 func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]string) *template.Template {
-	funcMap := template.FuncMap{
+	tpl := template.New(name)
+
+	funcMap := sprig.HtmlFuncMap()
+
+	extrafuncMap := template.FuncMap{
 		"addPercentage": func(a string, b string) string {
 			aInt, err := strconv.Atoi(a[:len(a)-1])
 			if err != nil {
@@ -70,8 +75,26 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 			cInt := aInt + bInt
 			return strconv.Itoa(cInt) + "%"
 		},
+		"include": func(name string, data map[string]interface{}) string {
+			var buf strings.Builder
+			err := tpl.ExecuteTemplate(&buf, name, data)
+			if err != nil {
+				log.Fatal(err)
+			}
+			result := buf.String()
+			return result
+		},
+		"safehtml": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safecss": func(s string) template.CSS {
+			return template.CSS(s)
+		},
 	}
-	tpl := template.New(name)
+	for k, v := range extrafuncMap {
+		funcMap[k] = v
+	}
+
 	_, err := tpl.Funcs(funcMap).Parse(baseTemplate)
 	if err != nil {
 		log.Fatal(err)
