@@ -6,6 +6,7 @@ silent: true
 
 tasks:
   build:
+    desc: Build temingo
     cmds:
       - go build temingo.go
 
