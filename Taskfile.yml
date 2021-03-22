@@ -5,20 +5,26 @@ version: '3'
 silent: true
 
 tasks:
+  load-dependencies:
+    desc: Install all dependencies
+    cmds:
+      #- go mod init github.com/tillhoff/temingo # only required once per repository
+      - go get -v -u ./... # also updates existing packages
+
   build:
-    desc: Build temingo
+    desc: Build executable for current OS
     cmds:
       - go build temingo.go
 
-  test:
-    cmds:
-      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
-    vars:
-      EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
+  # test:
+  #   cmds:
+  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
+  #   vars:
+  #     EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
 
-  run:
-    cmds:
-      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
-      - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
-    vars:
-      EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
+  # run:
+  #   cmds:
+  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
+  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
+  #   vars:
+  #     EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'

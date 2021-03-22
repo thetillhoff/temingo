@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig"
+	"github.com/imdario/mergo"
+	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
 
@@ -116,36 +117,76 @@ func writeTemplateToFile(filePath string, content []byte) error {
 	return err
 }
 
-func cliFlags() (string, string, string, string, string, string, string) {
-	valuesFilePath := flag.String("values", "", "the path to the values.yaml file")
-	inputDirPath := flag.String("inputDir", "", "the path to the partials")
-	partialsDir := flag.String("partialsDir", "", "the path to the partials")
-	outputDir := flag.String("outputDir", "", "the path for the compiled templates")
-	templateFileExtension := flag.String("templateFileExtension", "", "the extension of the template files")
-	partialFileExtension := flag.String("partialFileExtension", "", "the extension of the partial files")
-	generatedFileExtension := flag.String("generatedFileExtension", "", "the extension of the generated files")
-	debugflag := flag.Bool("debug", false, "enable debug mode")
+func cliFlags() ([]string, string, string, string, string, string, string) {
+	var (
+		valuesFilePaths    []string
+		inputDirPath       string
+		partialsDir        string
+		outputDir          string
+		templateExtension  string
+		partialExtension   string
+		generatedExtension string
+	)
+
+	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "The path(s) to the values.yaml file(s)")
+	flag.StringVarP(&inputDirPath, "inputDir", "i", ".", "The path to the template-file-directory")
+	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "The path to the partials-directory")
+	flag.StringVarP(&outputDir, "outputDir", "o", "output", "The destination-path for the compiled templates")
+	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "The extension of the template files")
+	flag.StringVar(&partialExtension, "partialExtension", ".partial", "The extension of the partial files") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory (or maybe force the extension to be *.partial.templateExtension)
+	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "The extension of the generated files")
+	flag.BoolVarP(&debug, "debug", "d", false, "Setting this flag enables the debug mode")
 
 	flag.Parse()
 
-	debug = *debugflag
-	return path.Clean(*valuesFilePath), path.Clean(*inputDirPath), path.Clean(*partialsDir), path.Clean(*outputDir), *templateFileExtension, *partialFileExtension, *generatedFileExtension
+	// TODO: detect empty required flags & display help (with special flag or no flags at all)
+	// if *valuesFilePath == "" || *inputDirPath == "" || {
+	// 	fmt.Println("Usage:")
+	// 	flag.PrintDefaults()
+	// 	os.Exit(1)
+	// }
+
+	// TODO: add help flag
+	// if flag.NFlag() == 0 { // if no flags are given display help
+	// 	flag.PrintDefaults()
+	// 	os.Exit(1)
+	// }
+
+	for i, valuesfilePath := range valuesFilePaths { // for each path stated
+		valuesFilePaths[i] = path.Clean(valuesfilePath) // clean path
+	}
+	return valuesFilePaths, path.Clean(inputDirPath), path.Clean(partialsDir), path.Clean(outputDir), templateExtension, partialExtension, generatedExtension
 }
 
-func render(valuesFilePath string, inputDir string, partialsDir string, outputDir string, templateFileExtension string, partialFileExtension string, generatedFileExtension string) {
+func render(valuesFilePaths []string, inputDir string, partialsDir string, outputDir string, templateExtension string, partialExtension string, generatedExtension string) {
 	// #####
 	// START reading data file
 	// #####
 	if debug {
-		log.Println("*** reading data file starts now ***")
+		log.Println("*** reading values file starts now ***")
 	}
 
-	values, err := ioutil.ReadFile(valuesFilePath)
-	if err != nil {
-		log.Fatal(err)
-	}
 	var mappedValues map[string]interface{}
-	yaml.Unmarshal([]byte(values), &mappedValues) // store yaml into map
+	for _, v := range valuesFilePaths {
+		values, err := ioutil.ReadFile(v)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var tempMappedValues map[string]interface{}
+		yaml.Unmarshal([]byte(values), &tempMappedValues) // store yaml into map
+
+		err = mergo.Merge(&mappedValues, tempMappedValues, mergo.WithOverride)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	if debug {
+		valuesYaml, err := yaml.Marshal(mappedValues)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println(string(valuesYaml))
+	}
 
 	// #####
 	// END reading data file
@@ -155,8 +196,8 @@ func render(valuesFilePath string, inputDir string, partialsDir string, outputDi
 		log.Println("*** collecting templates starts now ***")
 	}
 
-	templates := getTemplates(inputDir, templateFileExtension, []string{path.Join(inputDir, partialsDir), path.Join(inputDir, outputDir)}) // get full html templates - with names
-	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialFileExtension, []string{path.Join(inputDir, outputDir)})     // get partial html templates - without names
+	templates := getTemplates(inputDir, templateExtension, []string{path.Join(inputDir, partialsDir), path.Join(inputDir, outputDir)}) // get full html templates - with names
+	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{path.Join(inputDir, outputDir)})     // get partial html templates - without names
 
 	// #####
 	// END collecting templates
@@ -170,14 +211,14 @@ func render(valuesFilePath string, inputDir string, partialsDir string, outputDi
 	for _, t := range templates {
 		outputBuffer.Reset()
 		tpl := parseTemplateFiles(t[0], t[1], partialTemplates)
-		err = tpl.Execute(outputBuffer, mappedValues)
+		err := tpl.Execute(outputBuffer, mappedValues)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 			os.MkdirAll(outputDir, 0700)
 		}
-		err := writeTemplateToFile(path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateFileExtension)+generatedFileExtension), outputBuffer.Bytes())
+		err = writeTemplateToFile(path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateExtension)+generatedExtension), outputBuffer.Bytes())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -194,17 +235,17 @@ func main() {
 	// #####
 	// no log.Println for debug here, because the flags have to be read first ;)
 
-	valuesFilePath, inputDirPath, partialsDir, outputDir, templateFileExtension, partialFileExtension, generatedFileExtension := cliFlags()
-	// # example $> ./template -values values.yaml -inputDir ./ -partialsDir partials-html/ -templateFileExtension .html.template -generatedFileExtension .html
+	valuesFilePaths, inputDirPath, partialsDir, outputDir, templateExtension, partialExtension, generatedExtension := cliFlags()
+	// # example $> ./template -valuesfile values.yaml -inputDir ./ -partialsDir partials-html/ -templateExtension .html.template -generatedExtension .html
 
 	if debug {
-		log.Println("valuesFilePath:", valuesFilePath)
+		log.Println("valuesFilePaths:", valuesFilePaths)
 		log.Println("inputDirPath:", inputDirPath)
 		log.Println("partialsDir:", partialsDir)
 		log.Println("outputDir:", outputDir)
-		log.Println("templateFileExtension:", templateFileExtension)
-		log.Println("partialFileExtension:", partialFileExtension)
-		log.Println("generatedFileExtension:", generatedFileExtension)
+		log.Println("templateExtension:", templateExtension)
+		log.Println("partialExtension:", partialExtension)
+		log.Println("generatedExtension:", generatedExtension)
 	}
 
 	// #####
@@ -212,7 +253,7 @@ func main() {
 	// START rendering
 	// #####
 
-	render(valuesFilePath, inputDirPath, partialsDir, outputDir, templateFileExtension, partialFileExtension, generatedFileExtension)
+	render(valuesFilePaths, inputDirPath, partialsDir, outputDir, templateExtension, partialExtension, generatedExtension)
 
 	// #####
 	// END rendering
