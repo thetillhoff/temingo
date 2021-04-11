@@ -13,6 +13,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/imdario/mergo"
+	"github.com/otiai10/copy"
 	"github.com/rjeczalik/notify"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -25,6 +26,7 @@ var valuesFilePaths []string
 var inputDir string
 var partialsDir string
 var outputDir string
+var staticDir string
 var templateExtension string
 var partialExtension string
 var generatedExtension string
@@ -138,6 +140,7 @@ func readCliFlags() {
 	flag.StringVarP(&inputDir, "inputDir", "i", ".", "Sets the path to the template-file-directory")
 	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "Sets the path to the partials-directory")
 	flag.StringVarP(&outputDir, "outputDir", "o", "output", "Sets the destination-path for the compiled templates")
+	flag.StringVarP(&staticDir, "staticDir", "s", "static", "Sets the source-path for the static files")
 	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "Sets the extension of the template files")
 	flag.StringVar(&partialExtension, "partialExtension", ".partial", "Sets the extension of the partial files") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory -> Might be useful when "modularization" will be implemented
 	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "Sets the extension of the generated files")
@@ -159,25 +162,33 @@ func readCliFlags() {
 	inputDir = path.Clean(inputDir)
 	info, err = os.Stat(inputDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given template-file-directory does not exist: " + inputDir)
+		log.Fatal("Given input-directory does not exist: " + inputDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given template-file-directory is not a directory: " + inputDir)
+		log.Fatal("Given input-directory is not a directory: " + inputDir)
 	}
 
 	partialsDir = path.Clean(partialsDir)
 	info, err = os.Stat(partialsDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given template-file-directory does not exist: " + partialsDir)
+		log.Fatal("Given partial-files-directory does not exist: " + partialsDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given template-file-directory is not a directory: " + partialsDir)
+		log.Fatal("Given partial-files-directory is not a directory: " + partialsDir)
 	}
 
 	outputDir = path.Clean(outputDir)
 	info, err = os.Stat(outputDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given template-file-directory does not exist: " + outputDir)
+		log.Fatal("Given output-directory does not exist: " + outputDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given template-file-directory is not a directory: " + outputDir)
+		log.Fatal("Given output-directory is not a directory: " + outputDir)
+	}
+
+	staticDir = path.Clean(staticDir)
+	info, err = os.Stat(staticDir)
+	if os.IsNotExist(err) { // if path doesn't exist
+		log.Fatal("Given static-files-directory does not exist: " + staticDir)
+	} else if !info.IsDir() { // if is not a directory
+		log.Fatal("Given static-files-directory is not a directory: " + staticDir)
 	}
 }
 
@@ -288,8 +299,50 @@ func watchAll() {
 			log.Println("filesystem-change notification received:", ei)
 		}
 
-		render()
+		rebuildOutput()
 	}
+}
+
+func rebuildOutput() {
+	// #####
+	// START Delete output-dir contents
+	// #####
+
+	dirContents, err := ioutil.ReadDir(outputDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, entry := range dirContents {
+		entryPath := path.Join(inputDir, entry.Name())
+		if inputDir == "." { // path.Join adds this to the filename directly (which might result in '...' for '..') which has to be prevented here
+			entryPath = entry.Name()
+		}
+		err = os.RemoveAll(entryPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// #####
+	// END Delete output-dir contents
+	// START Copy static-dir contents to output-dir
+	// #####
+
+	err = copy.Copy(staticDir, outputDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// #####
+	// END Copy static-dir-contents to output-dir
+	// START Render templates
+	// #####
+
+	render()
+
+	// #####
+	// END Render templates
+	// #####
 }
 
 func main() {
@@ -309,6 +362,7 @@ func main() {
 		log.Println("templateExtension:", templateExtension)
 		log.Println("partialExtension:", partialExtension)
 		log.Println("generatedExtension:", generatedExtension)
+		log.Println("staticDir:", staticDir)
 		log.Println("watch:", watch)
 	}
 
@@ -318,7 +372,7 @@ func main() {
 	// #####
 
 	if !watch { // if not watching
-		render() // render once
+		rebuildOutput() // delete old contents of output-folder & copy static contents & render templates once
 	} else { // else (== if watching)
 		watchAll() // start to watch
 	}
