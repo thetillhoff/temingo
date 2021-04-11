@@ -308,6 +308,10 @@ func rebuildOutput() {
 	// START Delete output-dir contents
 	// #####
 
+	if debug {
+		log.Println("*** Deleting contents in output-dir ... ***")
+	}
+
 	dirContents, err := ioutil.ReadDir(outputDir)
 	if err != nil {
 		log.Fatal(err)
@@ -327,6 +331,10 @@ func rebuildOutput() {
 	// END Delete output-dir contents
 	// START Copy static-dir contents to output-dir
 	// #####
+
+	if debug {
+		log.Println("*** Copying contents of static-dir to output-dir ... ***")
+	}
 
 	err = copy.Copy(staticDir, outputDir)
 	if err != nil {
