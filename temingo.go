@@ -219,7 +219,7 @@ func render() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println(string(valuesYaml))
+		log.Println("*** values-object: ***\n" + string(valuesYaml))
 	}
 
 	// #####
