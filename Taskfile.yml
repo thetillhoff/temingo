@@ -11,20 +11,13 @@ tasks:
       #- go mod init github.com/tillhoff/temingo # only required once per repository
       - go get -v -u ./... # also updates existing packages
 
+  clean-dependencies:
+    desc: Tidy & update all dependencies in go.mod and go.sum
+    cmds:
+      - go mod tidy
+
   build:
     desc: Build executable for current OS
     cmds:
       - go build temingo.go
-
-  # test:
-  #   cmds:
-  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html -debug"
-  #   vars:
-  #     EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
-
-  # run:
-  #   cmds:
-  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-html -outputDir output -templateFileExtension .html.template -generatedFileExtension .html"
-  #     - "./temingo{{ .EXTENSION }} -values values.yaml -inputDir . -partialsDir partials-css -outputDir output -templateFileExtension .css.template -generatedFileExtension .css"
-  #   vars:
-  #     EXTENSION: '{{ if eq OS "windows" }}.exe{{ end }}'
+      - task: clean-dependencies

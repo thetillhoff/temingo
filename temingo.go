@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,11 +13,21 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/imdario/mergo"
+	"github.com/rjeczalik/notify"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
 
 var debug bool
+var watch bool
+
+var valuesFilePaths []string
+var inputDir string
+var partialsDir string
+var outputDir string
+var templateExtension string
+var partialExtension string
+var generatedExtension string
 
 func contains(list []string, search string) int {
 	for index, x := range list {
@@ -27,7 +38,7 @@ func contains(list []string, search string) int {
 	return -1
 }
 
-func getTemplates(fromPath, extension string, exclusions []string) [][]string {
+func getTemplates(fromPath string, extension string, exclusions []string) [][]string {
 	var templates [][]string
 
 	dirContents, err := ioutil.ReadDir(fromPath)
@@ -117,53 +128,65 @@ func writeTemplateToFile(filePath string, content []byte) error {
 	return err
 }
 
-func cliFlags() ([]string, string, string, string, string, string, string) {
+func readCliFlags() {
 	var (
-		valuesFilePaths    []string
-		inputDirPath       string
-		partialsDir        string
-		outputDir          string
-		templateExtension  string
-		partialExtension   string
-		generatedExtension string
+		info fs.FileInfo
+		err  error
 	)
 
-	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "The path(s) to the values.yaml file(s)")
-	flag.StringVarP(&inputDirPath, "inputDir", "i", ".", "The path to the template-file-directory")
-	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "The path to the partials-directory")
-	flag.StringVarP(&outputDir, "outputDir", "o", "output", "The destination-path for the compiled templates")
-	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "The extension of the template files")
-	flag.StringVar(&partialExtension, "partialExtension", ".partial", "The extension of the partial files") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory (or maybe force the extension to be *.partial.templateExtension)
-	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "The extension of the generated files")
-	flag.BoolVarP(&debug, "debug", "d", false, "Setting this flag enables the debug mode")
+	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "Sets the path(s) to the values-file(s)")
+	flag.StringVarP(&inputDir, "inputDir", "i", ".", "Sets the path to the template-file-directory")
+	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "Sets the path to the partials-directory")
+	flag.StringVarP(&outputDir, "outputDir", "o", "output", "Sets the destination-path for the compiled templates")
+	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "Sets the extension of the template files")
+	flag.StringVar(&partialExtension, "partialExtension", ".partial", "Sets the extension of the partial files") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory -> Might be useful when "modularization" will be implemented
+	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "Sets the extension of the generated files")
+	flag.BoolVarP(&watch, "watch", "w", false, "Watches the template-file-directory, partials-directory and values-files")
+	flag.BoolVarP(&debug, "debug", "d", false, "Enables the debug mode")
 
-	flag.Parse()
-
-	// TODO: detect empty required flags & display help (with special flag or no flags at all)
-	// if *valuesFilePath == "" || *inputDirPath == "" || {
-	// 	fmt.Println("Usage:")
-	// 	flag.PrintDefaults()
-	// 	os.Exit(1)
-	// }
-
-	// TODO: add help flag
-	// if flag.NFlag() == 0 { // if no flags are given display help
-	// 	flag.PrintDefaults()
-	// 	os.Exit(1)
-	// }
+	flag.Parse() // Actually read the configured cli-flags
 
 	for i, valuesfilePath := range valuesFilePaths { // for each path stated
 		valuesFilePaths[i] = path.Clean(valuesfilePath) // clean path
+		info, err = os.Stat(valuesFilePaths[i])
+		if os.IsNotExist(err) { // if path doesn't exist
+			log.Fatal("Values file does not exist: " + valuesFilePaths[i])
+		} else if info.IsDir() { // if is not a directoy
+			log.Fatal("Values file is not a file (but a directory): " + valuesFilePaths[i])
+		}
 	}
-	return valuesFilePaths, path.Clean(inputDirPath), path.Clean(partialsDir), path.Clean(outputDir), templateExtension, partialExtension, generatedExtension
+
+	inputDir = path.Clean(inputDir)
+	info, err = os.Stat(inputDir)
+	if os.IsNotExist(err) { // if path doesn't exist
+		log.Fatal("Given template-file-directory does not exist: " + inputDir)
+	} else if !info.IsDir() { // if is not a directory
+		log.Fatal("Given template-file-directory is not a directory: " + inputDir)
+	}
+
+	partialsDir = path.Clean(partialsDir)
+	info, err = os.Stat(partialsDir)
+	if os.IsNotExist(err) { // if path doesn't exist
+		log.Fatal("Given template-file-directory does not exist: " + partialsDir)
+	} else if !info.IsDir() { // if is not a directory
+		log.Fatal("Given template-file-directory is not a directory: " + partialsDir)
+	}
+
+	outputDir = path.Clean(outputDir)
+	info, err = os.Stat(outputDir)
+	if os.IsNotExist(err) { // if path doesn't exist
+		log.Fatal("Given template-file-directory does not exist: " + outputDir)
+	} else if !info.IsDir() { // if is not a directory
+		log.Fatal("Given template-file-directory is not a directory: " + outputDir)
+	}
 }
 
-func render(valuesFilePaths []string, inputDir string, partialsDir string, outputDir string, templateExtension string, partialExtension string, generatedExtension string) {
+func render() {
 	// #####
 	// START reading data file
 	// #####
 	if debug {
-		log.Println("*** reading values file starts now ***")
+		log.Println("*** Reading values file(s) ... ***")
 	}
 
 	var mappedValues map[string]interface{}
@@ -193,7 +216,7 @@ func render(valuesFilePaths []string, inputDir string, partialsDir string, outpu
 	// START collecting templates
 	// #####
 	if debug {
-		log.Println("*** collecting templates starts now ***")
+		log.Println("*** Collecting templates ... ***")
 	}
 
 	templates := getTemplates(inputDir, templateExtension, []string{path.Join(inputDir, partialsDir), path.Join(inputDir, outputDir)}) // get full html templates - with names
@@ -204,7 +227,7 @@ func render(valuesFilePaths []string, inputDir string, partialsDir string, outpu
 	// START templating & output
 	// #####
 	if debug {
-		log.Println("*** templating & output starts now ***")
+		log.Println("*** Templating & writing output files ... ***")
 	}
 
 	outputBuffer := new(bytes.Buffer)
@@ -229,23 +252,64 @@ func render(valuesFilePaths []string, inputDir string, partialsDir string, outpu
 	// #####
 }
 
+func watchAll() {
+	if debug {
+		log.Println("*** Starting to watch for filesystem changes ... ***")
+	}
+
+	// Make the channel buffered to ensure no event is dropped. Notify will drop
+	// an event if the receiver is not able to keep up the sending pace.
+	c := make(chan notify.EventInfo, 1)
+	// Multiple calls for the channel only expands the event sent, not overwrites it (see https://pkg.go.dev/github.com/rjeczalik/notify?utm_source=godoc#Watch)
+	// Set up a watchpoint listening for events within a directory tree rooted at current working directory.
+	// Events taken from https://pkg.go.dev/github.com/rjeczalik/notify?utm_source=godoc#pkg-constants
+	if err := notify.Watch(inputDir+"/...", c, notify.Create, notify.Remove, notify.Write, notify.Rename); err != nil { // watch the input-files-directory recursively (for all events)
+		log.Fatal(err)
+	}
+	if err := notify.Watch(inputDir+"/...", c, notify.Create, notify.Remove, notify.Write, notify.Rename); err != nil { // watch the partials-files-directory recursively (for all events)
+		log.Fatal(err)
+	}
+	for _, valuesFile := range valuesFilePaths { // for each valuesfilepath
+		if err := notify.Watch(valuesFile, c, notify.Write); err != nil { // watch the path (only for writes/changes)
+			log.Fatal(err)
+		}
+	}
+
+	// Clean up watchpoint associated with c. If Stop was not called upon
+	// return the channel would be leaked as notify holds the only reference
+	// to it and does not release it on its own.
+	defer notify.Stop(c)
+
+	for { // while true
+		// Block until an event is received.
+		ei := <-c
+
+		if debug {
+			log.Println("filesystem-change notification received:", ei)
+		}
+
+		render()
+	}
+}
+
 func main() {
 	// #####
 	// START declaring variables
 	// #####
 	// no log.Println for debug here, because the flags have to be read first ;)
 
-	valuesFilePaths, inputDirPath, partialsDir, outputDir, templateExtension, partialExtension, generatedExtension := cliFlags()
+	readCliFlags()
 	// # example $> ./template -valuesfile values.yaml -inputDir ./ -partialsDir partials-html/ -templateExtension .html.template -generatedExtension .html
 
 	if debug {
 		log.Println("valuesFilePaths:", valuesFilePaths)
-		log.Println("inputDirPath:", inputDirPath)
+		log.Println("inputDir:", inputDir)
 		log.Println("partialsDir:", partialsDir)
 		log.Println("outputDir:", outputDir)
 		log.Println("templateExtension:", templateExtension)
 		log.Println("partialExtension:", partialExtension)
 		log.Println("generatedExtension:", generatedExtension)
+		log.Println("watch:", watch)
 	}
 
 	// #####
@@ -253,7 +317,11 @@ func main() {
 	// START rendering
 	// #####
 
-	render(valuesFilePaths, inputDirPath, partialsDir, outputDir, templateExtension, partialExtension, generatedExtension)
+	if !watch { // if not watching
+		render() // render once
+	} else { // else (== if watching)
+		watchAll() // start to watch
+	}
 
 	// #####
 	// END rendering

@@ -10,7 +10,9 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11
 	github.com/mitchellh/copystructure v1.1.1 // indirect
+	github.com/rjeczalik/notify v0.9.2
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
