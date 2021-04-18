@@ -316,12 +316,12 @@ func rebuildOutput() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, entry := range dirContents {
-		entryPath := path.Join(inputDir, entry.Name())
-		if inputDir == "." { // path.Join adds this to the filename directly (which might result in '...' for '..') which has to be prevented here
-			entryPath = entry.Name()
+	for _, element := range dirContents {
+		elementPath := path.Join(outputDir, element.Name())
+		if debug {
+			log.Println("output-dir: " + elementPath)
 		}
-		err = os.RemoveAll(entryPath)
+		err = os.RemoveAll(elementPath)
 		if err != nil {
 			log.Fatal(err)
 		}
