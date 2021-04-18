@@ -104,6 +104,9 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		"safecss": func(s string) template.CSS {
 			return template.CSS(s)
 		},
+		"list": func(listPath string) map[string]interface{} {
+			return loadListObjects(listPath)
+		},
 	}
 	for k, v := range extrafuncMap {
 		funcMap[k] = v
@@ -202,14 +205,9 @@ func render() {
 
 	var mappedValues map[string]interface{}
 	for _, v := range valuesFilePaths {
-		values, err := ioutil.ReadFile(v)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var tempMappedValues map[string]interface{}
-		yaml.Unmarshal([]byte(values), &tempMappedValues) // store yaml into map
+		tempMappedValues := loadYaml(v)
 
-		err = mergo.Merge(&mappedValues, tempMappedValues, mergo.WithOverride)
+		err := mergo.Merge(&mappedValues, tempMappedValues, mergo.WithOverride)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -351,6 +349,40 @@ func rebuildOutput() {
 	// #####
 	// END Render templates
 	// #####
+}
+
+func loadYaml(filePath string) map[string]interface{} {
+	var mappedObject map[string]interface{}
+	values, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	yaml.Unmarshal([]byte(values), &mappedObject) // store yaml into map
+
+	// valuesYaml, err := yaml.Marshal(mappedValues) // convert map to yaml/string
+	return mappedObject
+}
+
+func loadListObjects(listPath string) map[string]interface{} {
+	if debug {
+		log.Print("*** Loading list objects from '" + listPath + "' ... ***")
+	}
+	contents, err := ioutil.ReadDir(path.Join(path.Clean("."), path.Clean(listPath)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	var pathsList []string
+	for _, entry := range contents {
+		if entry.IsDir() {
+			pathsList = append(pathsList, path.Join(listPath, entry.Name()))
+		}
+	}
+
+	mappedObjects := make(map[string]interface{})
+	for _, listfolder := range pathsList {
+		mappedObjects[listfolder] = loadYaml(path.Join(listfolder, "index.yaml"))
+	}
+	return mappedObjects
 }
 
 func main() {
