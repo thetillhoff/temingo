@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -19,17 +20,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var debug bool
-var watch bool
+var (
+	debug bool
+	watch bool
 
-var valuesFilePaths []string
-var inputDir string
-var partialsDir string
-var outputDir string
-var staticDir string
-var templateExtension string
-var partialExtension string
-var generatedExtension string
+	valuesFilePaths    []string
+	inputDir           string
+	partialsDir        string
+	outputDir          string
+	staticDir          string
+	templateExtension  string
+	partialExtension   string
+	generatedExtension string
+
+	listListObjects = make(map[string]map[string]interface{})
+)
 
 func contains(list []string, search string) int {
 	for index, x := range list {
@@ -105,7 +110,9 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 			return template.CSS(s)
 		},
 		"list": func(listPath string) map[string]interface{} {
-			return loadListObjects(listPath)
+			listObjects := loadListObjects(listPath)
+			listListObjects[listPath] = listObjects
+			return listObjects
 		},
 	}
 	for k, v := range extrafuncMap {
@@ -250,7 +257,11 @@ func render() {
 		if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 			os.MkdirAll(outputDir, 0700)
 		}
-		err = writeTemplateToFile(path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateExtension)+generatedExtension), outputBuffer.Bytes())
+		outputFilePath := path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateExtension)+generatedExtension)
+		if debug {
+			log.Println("Writing output file '" + outputFilePath + "' ...")
+		}
+		err = writeTemplateToFile(outputFilePath, outputBuffer.Bytes())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -258,6 +269,34 @@ func render() {
 
 	// #####
 	// END templating & output
+	// START list & single view
+	// #####
+
+	for listPath, listObject := range listListObjects { // for each list
+		sourcePath := path.Join(outputDir, listPath, "index.html.single")
+		if _, err := os.Stat(sourcePath); err == nil { // check if single-view template file exists
+			for key := range listObject { // for each object
+				if strings.HasSuffix(key, ".yaml") { // for list-files
+					destinationPath := path.Join(outputDir, strings.TrimSuffix(key, filepath.Ext(key)), "index.html")
+					os.Mkdir(filepath.Base(destinationPath), os.ModePerm)
+					if debug {
+						log.Println("copying list-file: " + sourcePath + " to " + destinationPath)
+					}
+					copy.Copy(sourcePath, destinationPath)
+				} else { // for list-folders
+					destinationPath := path.Join(outputDir, key, "index.html")
+					if debug {
+						log.Println("copying list-folder: " + sourcePath + " to " + destinationPath)
+					}
+					copy.Copy(sourcePath, destinationPath)
+				}
+			}
+			os.Remove(sourcePath) // delete single-view template file
+		}
+	}
+
+	// #####
+	// END list & single view
 	// #####
 }
 
@@ -280,7 +319,7 @@ func watchAll() {
 	}
 	for _, valuesFile := range valuesFilePaths { // for each valuesfilepath
 		if err := notify.Watch(valuesFile, c, notify.Write); err != nil { // watch the path (only for writes/changes)
-			log.Fatal(err)
+			log.Print(err) // Don't fail/crash, but continue on next save
 		}
 	}
 
@@ -346,6 +385,10 @@ func rebuildOutput() {
 
 	render()
 
+	if debug { //TODO delete this output, and only display count
+		log.Println(listListObjects)
+	}
+
 	// #####
 	// END Render templates
 	// #####
@@ -371,17 +414,30 @@ func loadListObjects(listPath string) map[string]interface{} {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var pathsList []string
-	for _, entry := range contents {
-		if entry.IsDir() {
-			pathsList = append(pathsList, path.Join(listPath, entry.Name()))
+	mappedObjects := make(map[string]interface{})
+	for _, element := range contents {
+		elementPath := path.Join(listPath, element.Name()) // f.e. list/element1 for folders, and list/element1.yaml for files
+		if path.Ext(elementPath) == templateExtension {
+			if debug {
+				log.Print("Skipping object from '" + elementPath + "' since it is a template ...")
+			}
+		} else {
+			if debug {
+				log.Print("Loading object from '" + elementPath + "' ...")
+			}
+			if element.IsDir() {
+				tempMappedObject := loadYaml(path.Join(elementPath, "index.yaml")) // f.e. list/element1/index.yaml
+				tempMappedObject["Path"] = "/" + elementPath                       // f.e. /list/element1
+				mappedObjects[elementPath] = tempMappedObject
+			} else {
+				tempMappedObject := loadYaml(elementPath) // f.e. list/element1.yaml
+				tempMappedObject["Path"] = "/" + strings.TrimSuffix(elementPath, filepath.Ext(elementPath))
+				// If the object is defined via a single file, no (further) path exists
+				mappedObjects[elementPath] = tempMappedObject
+			}
 		}
 	}
 
-	mappedObjects := make(map[string]interface{})
-	for _, listfolder := range pathsList {
-		mappedObjects[listfolder] = loadYaml(path.Join(listfolder, "index.yaml"))
-	}
 	return mappedObjects
 }
 
@@ -389,8 +445,8 @@ func main() {
 	// #####
 	// START declaring variables
 	// #####
-	// no log.Println for debug here, because the flags have to be read first ;)
 
+	// no log.Println for debug before this, because the flags have to be read first ;)
 	readCliFlags()
 	// # example $> ./template -valuesfile values.yaml -inputDir ./ -partialsDir partials-html/ -templateExtension .html.template -generatedExtension .html
 
