@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/sprig"
+	"github.com/PuerkitoBio/purell"
 	"github.com/imdario/mergo"
 	"github.com/otiai10/copy"
 	"github.com/rjeczalik/notify"
@@ -24,25 +25,34 @@ var (
 	debug bool
 	watch bool
 
-	valuesFilePaths    []string
-	inputDir           string
-	partialsDir        string
-	outputDir          string
-	staticDir          string
-	templateExtension  string
-	partialExtension   string
-	generatedExtension string
+	valuesFilePaths         []string
+	inputDir                string
+	partialsDir             string
+	outputDir               string
+	staticDir               string
+	templateExtension       string
+	singleTemplateExtension string
+	partialExtension        string
+	generatedExtension      string
 
 	listListObjects = make(map[string]map[string]interface{})
 )
 
-func contains(list []string, search string) int {
-	for index, x := range list {
-		if x == search {
-			return index
-		}
+func createFolderIfNotExists(path string) {
+	os.MkdirAll(path, os.ModePerm)
+}
+
+func createBreadcrumbs(path string) map[string]string {
+	breadcrumbs := make(map[string]string)
+	currentPath := ""
+	dirNames := strings.Split(filepath.Dir(path), "/")
+	for ok := true; ok; ok = (len(dirNames) != 0) {
+		currentPath = currentPath + "/" + dirNames[0]
+		breadcrumbs[dirNames[0]] = currentPath
+		dirNames = dirNames[1:] // remove first one, as it is now added to 'currentPath'
 	}
-	return -1
+
+	return breadcrumbs
 }
 
 func getTemplates(fromPath string, extension string, exclusions []string) [][]string {
@@ -58,7 +68,17 @@ func getTemplates(fromPath string, extension string, exclusions []string) [][]st
 			if fromPath == "." { // path.Join adds this to the filename directly ... which has to be prevented here
 				entryPath = entry.Name()
 			}
-			if entry.IsDir() && (contains(exclusions, entryPath) == -1) {
+			isExcluded := false
+			for _, excludedPath := range exclusions {
+				matched, err := filepath.Match(excludedPath, entryPath)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if matched {
+					isExcluded = true
+				}
+			}
+			if entry.IsDir() && !isExcluded {
 				templates = append(templates, getTemplates(entryPath, extension, exclusions)...)
 			} else if strings.HasSuffix(entry.Name(), extension) {
 				if err != nil {
@@ -109,10 +129,34 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		"safecss": func(s string) template.CSS {
 			return template.CSS(s)
 		},
-		"list": func(listPath string) map[string]interface{} {
-			listObjects := loadListObjects(listPath)
-			listListObjects[listPath] = listObjects
+		"list": func(listPaths ...string) map[string]interface{} {
+			listObjects := make(map[string]interface{})
+			if len(listPaths) == 0 { // If no path is provided
+				listPaths = append(listPaths, filepath.Dir(name)) // Add the default path (folder containing the template)
+			}
+			for _, listPath := range listPaths {
+				mergo.Merge(&listObjects, loadListObjects(listPath))
+				listListObjects[listPath] = listObjects
+			}
 			return listObjects
+		},
+		"urlize": func(oldContent string) string {
+			newContent, err := purell.NormalizeURLString(strings.ReplaceAll(oldContent, " ", "_"), purell.FlagsSafe)
+			if err != nil {
+				log.Fatal(err)
+			}
+			newContent = strings.ToLower(newContent) // Also convert everything to lowercase. Arguable.
+			if debug {
+				log.Println("Urlized '" + oldContent + "' to '" + newContent + "'.")
+			}
+			return newContent
+		},
+		"capitalize": func(oldContent string) string {
+			newContent := strings.Title(oldContent)
+			if debug {
+				log.Println("Capitalized '" + oldContent + "' to '" + newContent + "'.")
+			}
+			return newContent
 		},
 	}
 	for k, v := range extrafuncMap {
@@ -135,7 +179,7 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 
 func writeTemplateToFile(filePath string, content []byte) error {
 	dirPath := strings.TrimSuffix(filePath, path.Base(filePath))
-	os.MkdirAll(dirPath, os.ModePerm)
+	createFolderIfNotExists(dirPath)
 	err := ioutil.WriteFile(filePath, content, os.ModePerm)
 	return err
 }
@@ -146,16 +190,17 @@ func readCliFlags() {
 		err  error
 	)
 
-	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "Sets the path(s) to the values-file(s)")
-	flag.StringVarP(&inputDir, "inputDir", "i", ".", "Sets the path to the template-file-directory")
-	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "Sets the path to the partials-directory")
-	flag.StringVarP(&outputDir, "outputDir", "o", "output", "Sets the destination-path for the compiled templates")
-	flag.StringVarP(&staticDir, "staticDir", "s", "static", "Sets the source-path for the static files")
-	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "Sets the extension of the template files")
-	flag.StringVar(&partialExtension, "partialExtension", ".partial", "Sets the extension of the partial files") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory -> Might be useful when "modularization" will be implemented
-	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "Sets the extension of the generated files")
-	flag.BoolVarP(&watch, "watch", "w", false, "Watches the template-file-directory, partials-directory and values-files")
-	flag.BoolVarP(&debug, "debug", "d", false, "Enables the debug mode")
+	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "Sets the path(s) to the values-file(s).")
+	flag.StringVarP(&inputDir, "inputDir", "i", ".", "Sets the path to the template-file-directory.")
+	flag.StringVarP(&partialsDir, "partialsDir", "p", "partials", "Sets the path to the partials-directory.")
+	flag.StringVarP(&outputDir, "outputDir", "o", "output", "Sets the destination-path for the compiled templates.")
+	flag.StringVarP(&staticDir, "staticDir", "s", "static", "Sets the source-path for the static files.")
+	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "Sets the extension of the template files.")
+	flag.StringVar(&singleTemplateExtension, "singleTemplateExtension", ".single.template", "Sets the extension of the single-view template files. Automatically excluded from normally loaded templates.")
+	flag.StringVar(&partialExtension, "partialExtension", ".partial", "Sets the extension of the partial files.") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory -> Might be useful when "modularization" will be implemented
+	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "Sets the extension of the generated files.")
+	flag.BoolVarP(&watch, "watch", "w", false, "Watches the template-file-directory, partials-directory and values-files.")
+	flag.BoolVarP(&debug, "debug", "d", false, "Enables the debug mode.")
 
 	flag.Parse() // Actually read the configured cli-flags
 
@@ -235,8 +280,15 @@ func render() {
 		log.Println("*** Collecting templates ... ***")
 	}
 
-	templates := getTemplates(inputDir, templateExtension, []string{path.Join(inputDir, partialsDir), path.Join(inputDir, outputDir)}) // get full html templates - with names
-	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{path.Join(inputDir, outputDir)})     // get partial html templates - without names
+	templates := getTemplates(inputDir, templateExtension, []string{
+		path.Join(inputDir, partialsDir, "*"),
+		path.Join(inputDir, outputDir, "*"),
+		"*" + singleTemplateExtension,
+	}) // get full html templates - with names
+	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{
+		path.Join(inputDir, outputDir),
+		"*" + singleTemplateExtension,
+	}) // get partial html templates - without names
 
 	// #####
 	// END collecting templates
@@ -250,12 +302,13 @@ func render() {
 	for _, t := range templates {
 		outputBuffer.Reset()
 		tpl := parseTemplateFiles(t[0], t[1], partialTemplates)
+		mappedValues["breadcrumbs"] = createBreadcrumbs(filepath.Dir(tpl.Name()))
 		err := tpl.Execute(outputBuffer, mappedValues)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-			os.MkdirAll(outputDir, 0700)
+		if _, err := os.Stat(outputDir); os.IsNotExist(err) { // If output directory doesn't exist
+			createFolderIfNotExists(outputDir)
 		}
 		outputFilePath := path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateExtension)+generatedExtension)
 		if debug {
@@ -269,7 +322,7 @@ func render() {
 
 	// #####
 	// END templating & output
-	// START list & single view
+	// START list & single view handling
 	// #####
 
 	for listPath, listObject := range listListObjects { // for each list
@@ -278,7 +331,7 @@ func render() {
 			for key := range listObject { // for each object
 				if strings.HasSuffix(key, ".yaml") { // for list-files
 					destinationPath := path.Join(outputDir, strings.TrimSuffix(key, filepath.Ext(key)), "index.html")
-					os.Mkdir(filepath.Base(destinationPath), os.ModePerm)
+					createFolderIfNotExists(destinationPath)
 					if debug {
 						log.Println("copying list-file: " + sourcePath + " to " + destinationPath)
 					}
@@ -296,7 +349,7 @@ func render() {
 	}
 
 	// #####
-	// END list & single view
+	// END list & single view handling
 	// #####
 }
 
@@ -385,10 +438,6 @@ func rebuildOutput() {
 
 	render()
 
-	if debug { //TODO delete this output, and only display count
-		log.Println(listListObjects)
-	}
-
 	// #####
 	// END Render templates
 	// #####
@@ -456,6 +505,7 @@ func main() {
 		log.Println("partialsDir:", partialsDir)
 		log.Println("outputDir:", outputDir)
 		log.Println("templateExtension:", templateExtension)
+		log.Println("singleTemplateExtension:", singleTemplateExtension)
 		log.Println("partialExtension:", partialExtension)
 		log.Println("generatedExtension:", generatedExtension)
 		log.Println("staticDir:", staticDir)
