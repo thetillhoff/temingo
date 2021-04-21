@@ -55,6 +55,33 @@ func createBreadcrumbs(path string) map[string]string {
 	return breadcrumbs
 }
 
+func isExcluded(path string, exclusions []string) bool {
+	for _, exclusion := range exclusions {
+		if strings.Contains(exclusion, "**") { // f.e. "**/file.a.b.c"
+			splittedExclusion := strings.SplitAfter(exclusion, "**/")
+			pattern := splittedExclusion[len(splittedExclusion)-1]
+			basePath := filepath.Base(path)
+			isMatch, err := filepath.Match(pattern, basePath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if isMatch {
+				return true
+			}
+		} else { // f.e. "/*/*.file.a.b.c"
+			isMatch, err := filepath.Match(exclusion, path)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if isMatch {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func getTemplates(fromPath string, extension string, exclusions []string) [][]string {
 	var templates [][]string
 
@@ -68,27 +95,19 @@ func getTemplates(fromPath string, extension string, exclusions []string) [][]st
 			if fromPath == "." { // path.Join adds this to the filename directly ... which has to be prevented here
 				entryPath = entry.Name()
 			}
-			isExcluded := false
-			for _, excludedPath := range exclusions {
-				matched, err := filepath.Match(excludedPath, entryPath)
-				if err != nil {
-					log.Fatal(err)
+			if !isExcluded(entryPath, exclusions) {
+				if entry.IsDir() {
+					templates = append(templates, getTemplates(entryPath, extension, exclusions)...)
+				} else if strings.HasSuffix(entry.Name(), extension) {
+					if err != nil {
+						log.Fatal(err)
+					}
+					fileContent, err := ioutil.ReadFile(entryPath)
+					if err != nil {
+						log.Fatal(err)
+					}
+					templates = append(templates, []string{entryPath, string(fileContent)})
 				}
-				if matched {
-					isExcluded = true
-				}
-			}
-			if entry.IsDir() && !isExcluded {
-				templates = append(templates, getTemplates(entryPath, extension, exclusions)...)
-			} else if strings.HasSuffix(entry.Name(), extension) {
-				if err != nil {
-					log.Fatal(err)
-				}
-				fileContent, err := ioutil.ReadFile(entryPath)
-				if err != nil {
-					log.Fatal(err)
-				}
-				templates = append(templates, []string{entryPath, string(fileContent)})
 			}
 		}
 	}
@@ -247,14 +266,7 @@ func readCliFlags() {
 	}
 }
 
-func render() {
-	// #####
-	// START reading data file
-	// #####
-	if debug {
-		log.Println("*** Reading values file(s) ... ***")
-	}
-
+func getMappedValues() map[string]interface{} {
 	var mappedValues map[string]interface{}
 	for _, v := range valuesFilePaths {
 		tempMappedValues := loadYaml(v)
@@ -264,92 +276,115 @@ func render() {
 			log.Fatal(err)
 		}
 	}
+	return mappedValues
+}
+
+func runTemplate(mappedValues map[string]interface{}, templateName string, template string, partialTemplates [][]string, outputFilePath string) {
+	outputBuffer := new(bytes.Buffer)
+	outputBuffer.Reset()
+	tpl := parseTemplateFiles(templateName, template, partialTemplates)
+	mappedValues["breadcrumbs"] = createBreadcrumbs(filepath.Dir(templateName))
+	err := tpl.Execute(outputBuffer, mappedValues)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) { // If output directory doesn't exist
+		createFolderIfNotExists(outputDir)
+	}
+	err = writeTemplateToFile(outputFilePath, outputBuffer.Bytes())
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func render() {
+	// #####
+	// START reading value files
+	// #####
+	if debug {
+		log.Println("*** Reading values file(s) ... ***")
+	}
+	mappedValues := getMappedValues()
 	if debug {
 		valuesYaml, err := yaml.Marshal(mappedValues)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("*** values-object: ***\n" + string(valuesYaml))
+		log.Println("*** General values-object: ***\n" + string(valuesYaml))
 	}
 
 	// #####
-	// END reading data file
-	// START collecting templates
+	// END reading value files
+	// START normal templating
 	// #####
-	if debug {
-		log.Println("*** Collecting templates ... ***")
-	}
 
 	templates := getTemplates(inputDir, templateExtension, []string{
 		path.Join(inputDir, partialsDir, "*"),
 		path.Join(inputDir, outputDir, "*"),
-		"*" + singleTemplateExtension,
+		"**/*" + singleTemplateExtension,
 	}) // get full html templates - with names
-	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{
-		path.Join(inputDir, outputDir),
-		"*" + singleTemplateExtension,
-	}) // get partial html templates - without names
+	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{path.Join(inputDir, outputDir)}) // get partial html templates - without names
 
-	// #####
-	// END collecting templates
-	// START templating & output
-	// #####
-	if debug {
-		log.Println("*** Templating & writing output files ... ***")
-	}
-
-	outputBuffer := new(bytes.Buffer)
-	for _, t := range templates {
-		outputBuffer.Reset()
-		tpl := parseTemplateFiles(t[0], t[1], partialTemplates)
-		mappedValues["breadcrumbs"] = createBreadcrumbs(filepath.Dir(tpl.Name()))
-		err := tpl.Execute(outputBuffer, mappedValues)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if _, err := os.Stat(outputDir); os.IsNotExist(err) { // If output directory doesn't exist
-			createFolderIfNotExists(outputDir)
-		}
-		outputFilePath := path.Join(outputDir, strings.TrimSuffix(tpl.Name(), templateExtension)+generatedExtension)
+	for _, template := range templates {
+		outputFilePath := path.Join(outputDir, strings.TrimSuffix(template[0], templateExtension)+generatedExtension)
 		if debug {
 			log.Println("Writing output file '" + outputFilePath + "' ...")
 		}
-		err = writeTemplateToFile(outputFilePath, outputBuffer.Bytes())
+		runTemplate(mappedValues, template[0], template[1], partialTemplates, outputFilePath)
+	}
+
+	// #####
+	// END normal templating
+	// START single-view templating
+	// #####
+
+	// identify & collect single-view templates via their extension
+	singleTemplates := getTemplates(inputDir, singleTemplateExtension, []string{
+		path.Join(inputDir, partialsDir, "*"),
+		path.Join(inputDir, outputDir, "*"),
+	}) // get full html templates - with names
+
+	// for each of the single-view templates
+	for _, template := range singleTemplates {
+		templateName := template[0]
+		template := template[1]
+		// search all configurations
+
+		dirContents, err := ioutil.ReadDir(filepath.Dir(templateName))
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
 
-	// #####
-	// END templating & output
-	// START list & single view handling
-	// #####
+		itemValues := make(map[string]interface{})
 
-	for listPath, listObject := range listListObjects { // for each list
-		sourcePath := path.Join(outputDir, listPath, "index.html.single")
-		if _, err := os.Stat(sourcePath); err == nil { // check if single-view template file exists
-			for key := range listObject { // for each object
-				if strings.HasSuffix(key, ".yaml") { // for list-files
-					destinationPath := path.Join(outputDir, strings.TrimSuffix(key, filepath.Ext(key)), "index.html")
-					createFolderIfNotExists(destinationPath)
-					if debug {
-						log.Println("copying list-file: " + sourcePath + " to " + destinationPath)
-					}
-					copy.Copy(sourcePath, destinationPath)
-				} else { // for list-folders
-					destinationPath := path.Join(outputDir, key, "index.html")
-					if debug {
-						log.Println("copying list-folder: " + sourcePath + " to " + destinationPath)
-					}
-					copy.Copy(sourcePath, destinationPath)
+		// Read item-specific values, so they are available independent of the items way of the configuration
+		for _, dirEntry := range dirContents {
+			if !dirEntry.IsDir() && filepath.Ext(dirEntry.Name()) == ".yaml" {
+				itemValues[path.Join(filepath.Dir(templateName), dirEntry.Name())] = loadYaml(path.Join(filepath.Dir(templateName), dirEntry.Name()))
+			} else if dirEntry.IsDir() {
+				if _, err := os.Stat(path.Join(filepath.Dir(templateName), dirEntry.Name(), "index.yaml")); err == nil { // if the dirEntry-folder contains an "index.yaml"
+					itemValues[path.Join(filepath.Dir(templateName), dirEntry.Name())] = loadYaml(path.Join(filepath.Dir(templateName), dirEntry.Name(), "index.yaml"))
 				}
 			}
-			os.Remove(sourcePath) // delete single-view template file
+		}
+
+		for itemPath, itemValue := range itemValues {
+			// load corresponding additional values into mappedValues["Item"]
+			extendedMappedValues := mappedValues
+			itemPath = strings.TrimSuffix(itemPath, filepath.Ext(itemPath))
+			fileName := strings.TrimSuffix(filepath.Base(templateName), singleTemplateExtension)
+			extendedMappedValues["ItemPath"] = itemPath
+			extendedMappedValues["Item"] = itemValue
+			outputFilePath := path.Join(outputDir, itemPath, fileName)
+			if debug {
+				log.Println("Writing single-view output file '" + outputFilePath + "' ...")
+			}
+			runTemplate(extendedMappedValues, templateName, template, partialTemplates, outputFilePath)
 		}
 	}
 
 	// #####
-	// END list & single view handling
+	// END single-view templating
 	// #####
 }
 
@@ -409,7 +444,7 @@ func rebuildOutput() {
 	for _, element := range dirContents {
 		elementPath := path.Join(outputDir, element.Name())
 		if debug {
-			log.Println("output-dir: " + elementPath)
+			log.Println("Deleting output-dir content at: " + elementPath)
 		}
 		err = os.RemoveAll(elementPath)
 		if err != nil {
