@@ -142,10 +142,10 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 			result := buf.String()
 			return result
 		},
-		"safehtml": func(s string) template.HTML {
+		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
-		"safecss": func(s string) template.CSS {
+		"safeCSS": func(s string) template.CSS {
 			return template.CSS(s)
 		},
 		"list": func(listPaths ...string) map[string]interface{} {
