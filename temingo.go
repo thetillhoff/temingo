@@ -38,17 +38,26 @@ var (
 	listListObjects = make(map[string]map[string]interface{})
 )
 
+type Breadcrumb struct {
+	Name, Path interface{}
+}
+
 func createFolderIfNotExists(path string) {
 	os.MkdirAll(path, os.ModePerm)
 }
 
-func createBreadcrumbs(path string) map[string]string {
-	breadcrumbs := make(map[string]string)
+func createBreadcrumbs(path string) []Breadcrumb {
+	if debug {
+		log.Println("Creating breadcrumbs for '" + path + "'.")
+	}
+	breadcrumbs := []Breadcrumb{}
 	currentPath := ""
-	dirNames := strings.Split(filepath.Dir(path), "/")
+	dirNames := strings.Split(path, "/")
 	for ok := true; ok; ok = (len(dirNames) != 0) {
 		currentPath = currentPath + "/" + dirNames[0]
-		breadcrumbs[dirNames[0]] = currentPath
+		log.Println("currentPath: " + currentPath)
+		breadcrumb := Breadcrumb{dirNames[0], currentPath}
+		breadcrumbs = append(breadcrumbs, breadcrumb)
 		dirNames = dirNames[1:] // remove first one, as it is now added to 'currentPath'
 	}
 
@@ -377,7 +386,7 @@ func render() {
 			extendedMappedValues["Item"] = itemValue
 			outputFilePath := path.Join(outputDir, itemPath, fileName)
 			if debug {
-				log.Println("Writing single-view output file '" + outputFilePath + "' ...")
+				log.Println("Writing single-view output from '" + itemPath + "*' to '" + outputFilePath + "' ...") // itemPath is incomplete; either its a yaml-file or a folder containing an index.yaml -> Therefore it has the '*' behind it.
 			}
 			runTemplate(extendedMappedValues, templateName, template, partialTemplates, outputFilePath)
 		}
