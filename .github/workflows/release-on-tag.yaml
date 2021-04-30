@@ -78,6 +78,14 @@ jobs:
         with:
             name: artifact_${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}.sha256
             path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}.sha256
+      
+      - name: Cleanup
+        if: failure()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete ${{ env.RELEASE_TAG }}
 
   release:
     needs: build
