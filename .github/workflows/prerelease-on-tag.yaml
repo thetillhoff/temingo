@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
+    - "v[0-9]+.[0-9]+.[0-9]+-prerelease"
 
 jobs:
   prerequisites:
@@ -121,7 +121,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: CHANGELOG.md
-          prerelease: false
+          prerelease: true
           fail_on_unmatched_files: true
           files: |
             ${{ env.APP_NAME }}_*
