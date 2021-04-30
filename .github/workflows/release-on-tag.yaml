@@ -82,10 +82,10 @@ jobs:
       - name: Cleanup
         if: failure()
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete ${{ env.RELEASE_TAG }}
+          git config --global user.name 'GithubActions'
+          git config --global user.email 'githubactions@users.noreply.github.com'
+          git push --delete origin ${{ env.RELEASE_TAG }}
 
   release:
     needs: build
@@ -127,11 +127,3 @@ jobs:
             ${{ env.APP_NAME }}_*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Cleanup
-        if: failure()
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete ${{ env.RELEASE_TAG }}
