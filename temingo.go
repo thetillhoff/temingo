@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"html/template"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -214,7 +213,7 @@ func writeTemplateToFile(filePath string, content []byte) error {
 
 func readCliFlags() {
 	var (
-		info fs.FileInfo
+		info os.FileInfo
 		err  error
 	)
 
