@@ -6,7 +6,7 @@ on:
     - "v*.*.*"
 
 jobs:
-  checking-prerequisites:
+  prerequisites:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,6 +20,7 @@ jobs:
           grep "${GITHUB_REF##*/}" CHANGELOG.md
 
   build:
+    needs: prerequisites
     runs-on: ubuntu-20.04
     strategy:
       matrix:
