@@ -51,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: 'actions/upload-artifact@v2'
         with:
-            name: ${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}
+            name: artifact_${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}
             path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}
 
       - name: Generate checksum
@@ -62,7 +62,7 @@ jobs:
       - name: Upload checksum artifact
         uses: 'actions/upload-artifact@v2'
         with:
-            name: ${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}.sha256
+            name: artifact_${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}.sha256
             path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}.sha256
 
   release:
