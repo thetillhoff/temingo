@@ -74,11 +74,6 @@ jobs:
         run: |
           echo "APP_NAME=${PWD##*/}" >> $GITHUB_ENV
           echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          if [[ ${{ matrix.os }} == "windows" ]]; then
-            echo "FILE_EXTENSION=.exe" >> $GITHUB_ENV
-          else
-            echo "FILE_EXTENSION=" >> $GITHUB_ENV
-          fi
 
       - name: Test 1
         shell: bash
