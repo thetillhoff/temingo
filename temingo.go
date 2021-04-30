@@ -215,7 +215,7 @@ func readCliFlags() {
 	var (
 		info os.FileInfo
 		err  error
-	)
+	)as
 
 	flag.StringSliceVarP(&valuesFilePaths, "valuesfile", "f", []string{"values.yaml"}, "Sets the path(s) to the values-file(s).")
 	flag.StringVarP(&inputDir, "inputDir", "i", ".", "Sets the path to the template-file-directory.")
