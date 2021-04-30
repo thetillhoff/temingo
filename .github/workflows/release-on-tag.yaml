@@ -1,0 +1,107 @@
+name: Main
+
+on:
+  push:
+    tags:
+    - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os:
+          - windows
+          - linux
+          - darwin
+        architecture:
+          - amd64
+    steps:
+      - name: Set environment variables
+        shell: bash
+        run: |
+          echo "::set-env name=APP_NAME::${PWD##*/}" && echo $APP_NAME
+          echo "::set-env name=TAG_NAME::${GITHUB_REF##*/}" && echo $TAG_NAME
+          if [[ ${{ matrix.os }} == "windows" ]]; then
+            echo "::set-env name=FILE_EXTENSION::.exe" && echo $FILE_EXTENSION
+          else
+            echo "::set-env name=FILE_EXTENSION::" && echo $FILE_EXTENSION
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v2.3.2
+        with:
+          ref: main
+
+      - name: Set golang version
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.16.3"
+
+      - name: Compile binary by defined matrix
+        shell: bash
+        run: |
+          echo "os: ${{ matrix.os }}"
+          echo "architecture: ${{ matrix.architecture }}"
+          go version
+
+          env GOOS=${{ matrix.os }} GOARCH=${{ matrix.architecture }} go build -o ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${FILE_EXTENSION} ${{ env.APP_NAME }}.go
+          # If FILE_EXTENSION is empty, there is no need to make the binary executable, because it is for windows.
+          if test -z "${FILE_EXTENSION}"; then chmod +x ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${FILE_EXTENSION}; fi
+
+      - name: Upload artifact
+        uses: 'actions/upload-artifact@v2'
+        with:
+            name: ${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}
+            path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}
+
+      - name: Generate checksum
+        shell: bash
+        run: |
+          sha256sum ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${FILE_EXTENSION} | cut -d " " -f 1 > ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${FILE_EXTENSION}.sha256
+
+      - name: Upload checksum artifact
+        uses: 'actions/upload-artifact@v2'
+        with:
+            name: ${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}.sha256
+            path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}.sha256
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Test 1
+        shell: bash
+        run: |
+          ls -R
+
+      - name: Checkout
+        uses: actions/checkout@v2.3.2
+        with:
+          ref: main
+
+      - name: Test 2
+        shell: bash
+        run: |
+          ls -R
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Test 3
+        shell: bash
+        run: |
+          ls -R
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: Release ${{ github.ref }}
+          body_path: CHANGELOG.md
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+            ${{ env.APP_NAME }}_*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
