@@ -495,6 +495,7 @@ func rebuildOutput() {
 	// #####
 
 	render()
+	log.Println("*** Successfully built contents. ***")
 
 	// #####
 	// END Render templates
