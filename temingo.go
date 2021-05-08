@@ -11,12 +11,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/sprig"
 	"github.com/PuerkitoBio/purell"
 	"github.com/imdario/mergo"
 	"github.com/otiai10/copy"
-	"github.com/rjeczalik/notify"
+	"github.com/radovskyb/watcher"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
@@ -55,7 +56,6 @@ func createBreadcrumbs(path string) []Breadcrumb {
 	dirNames := strings.Split(path, "/")
 	for ok := true; ok; ok = (len(dirNames) != 0) {
 		currentPath = currentPath + "/" + dirNames[0]
-		log.Println("currentPath: " + currentPath)
 		breadcrumb := Breadcrumb{dirNames[0], currentPath}
 		breadcrumbs = append(breadcrumbs, breadcrumb)
 		dirNames = dirNames[1:] // remove first one, as it is now added to 'currentPath'
@@ -72,7 +72,7 @@ func isExcluded(path string, exclusions []string) bool {
 			basePath := filepath.Base(path)
 			isMatch, err := filepath.Match(pattern, basePath)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			if isMatch {
 				return true
@@ -80,7 +80,7 @@ func isExcluded(path string, exclusions []string) bool {
 		} else { // f.e. "/*/*.file.a.b.c"
 			isMatch, err := filepath.Match(exclusion, path)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			if isMatch {
 				return true
@@ -96,7 +96,7 @@ func getTemplates(fromPath string, extension string, exclusions []string) [][]st
 
 	dirContents, err := ioutil.ReadDir(fromPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	for _, entry := range dirContents {
 		if !(entry.Name()[:1] == ".") { // ignore hidden files/folders
@@ -109,11 +109,11 @@ func getTemplates(fromPath string, extension string, exclusions []string) [][]st
 					templates = append(templates, getTemplates(entryPath, extension, exclusions)...)
 				} else if strings.HasSuffix(entry.Name(), extension) {
 					if err != nil {
-						log.Fatal(err)
+						log.Fatalln(err)
 					}
 					fileContent, err := ioutil.ReadFile(entryPath)
 					if err != nil {
-						log.Fatal(err)
+						log.Fatalln(err)
 					}
 					templates = append(templates, []string{entryPath, string(fileContent)})
 				}
@@ -133,11 +133,11 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		"addPercentage": func(a string, b string) string {
 			aInt, err := strconv.Atoi(a[:len(a)-1])
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			bInt, err := strconv.Atoi(b[:len(b)-1])
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			cInt := aInt + bInt
 			return strconv.Itoa(cInt) + "%"
@@ -146,7 +146,7 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 			var buf strings.Builder
 			err := tpl.ExecuteTemplate(&buf, name, data)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			result := buf.String()
 			return result
@@ -171,7 +171,7 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		"urlize": func(oldContent string) string {
 			newContent, err := purell.NormalizeURLString(strings.ReplaceAll(oldContent, " ", "_"), purell.FlagsSafe)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			newContent = strings.ToLower(newContent) // Also convert everything to lowercase. Arguable.
 			if debug {
@@ -195,12 +195,12 @@ func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]s
 		partialTemplateContent := partialTemplates[index][1]
 		_, err := tpl.Funcs(funcMap).Parse(partialTemplateContent)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 	_, err := tpl.Funcs(funcMap).Parse(baseTemplate)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	return tpl
 }
@@ -236,42 +236,42 @@ func readCliFlags() {
 		valuesFilePaths[i] = path.Clean(valuesfilePath) // clean path
 		info, err = os.Stat(valuesFilePaths[i])
 		if os.IsNotExist(err) { // if path doesn't exist
-			log.Fatal("Values file does not exist: " + valuesFilePaths[i])
+			log.Fatalln("Values file does not exist: " + valuesFilePaths[i])
 		} else if info.IsDir() { // if is not a directoy
-			log.Fatal("Values file is not a file (but a directory): " + valuesFilePaths[i])
+			log.Fatalln("Values file is not a file (but a directory): " + valuesFilePaths[i])
 		}
 	}
 
 	inputDir = path.Clean(inputDir)
 	info, err = os.Stat(inputDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given input-directory does not exist: " + inputDir)
+		log.Fatalln("Given input-directory does not exist: " + inputDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given input-directory is not a directory: " + inputDir)
+		log.Fatalln("Given input-directory is not a directory: " + inputDir)
 	}
 
 	partialsDir = path.Clean(partialsDir)
 	info, err = os.Stat(partialsDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given partial-files-directory does not exist: " + partialsDir)
+		log.Fatalln("Given partial-files-directory does not exist: " + partialsDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given partial-files-directory is not a directory: " + partialsDir)
+		log.Fatalln("Given partial-files-directory is not a directory: " + partialsDir)
 	}
 
 	outputDir = path.Clean(outputDir)
 	info, err = os.Stat(outputDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given output-directory does not exist: " + outputDir)
+		log.Fatalln("Given output-directory does not exist: " + outputDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given output-directory is not a directory: " + outputDir)
+		log.Fatalln("Given output-directory is not a directory: " + outputDir)
 	}
 
 	staticDir = path.Clean(staticDir)
 	info, err = os.Stat(staticDir)
 	if os.IsNotExist(err) { // if path doesn't exist
-		log.Fatal("Given static-files-directory does not exist: " + staticDir)
+		log.Fatalln("Given static-files-directory does not exist: " + staticDir)
 	} else if !info.IsDir() { // if is not a directory
-		log.Fatal("Given static-files-directory is not a directory: " + staticDir)
+		log.Fatalln("Given static-files-directory is not a directory: " + staticDir)
 	}
 }
 
@@ -282,7 +282,7 @@ func getMappedValues() map[string]interface{} {
 
 		err := mergo.Merge(&mappedValues, tempMappedValues, mergo.WithOverride)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 	return mappedValues
@@ -295,14 +295,14 @@ func runTemplate(mappedValues map[string]interface{}, templateName string, templ
 	mappedValues["breadcrumbs"] = createBreadcrumbs(filepath.Dir(templateName))
 	err := tpl.Execute(outputBuffer, mappedValues)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) { // If output directory doesn't exist
 		createFolderIfNotExists(outputDir)
 	}
 	err = writeTemplateToFile(outputFilePath, outputBuffer.Bytes())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 }
 
@@ -317,7 +317,7 @@ func render() {
 	if debug {
 		valuesYaml, err := yaml.Marshal(mappedValues)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 		log.Println("*** General values-object: ***\n" + string(valuesYaml))
 	}
@@ -361,7 +361,7 @@ func render() {
 
 		dirContents, err := ioutil.ReadDir(filepath.Dir(templateName))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 
 		itemValues := make(map[string]interface{})
@@ -398,42 +398,57 @@ func render() {
 }
 
 func watchAll() {
-	if debug {
-		log.Println("*** Starting to watch for filesystem changes ... ***")
-	}
+	log.Println("*** Starting to watch for file changes ... ***")
 
-	// Make the channel buffered to ensure no event is dropped. Notify will drop
-	// an event if the receiver is not able to keep up the sending pace.
-	c := make(chan notify.EventInfo, 1)
-	// Multiple calls for the channel only expands the event sent, not overwrites it (see https://pkg.go.dev/github.com/rjeczalik/notify?utm_source=godoc#Watch)
-	// Set up a watchpoint listening for events within a directory tree rooted at current working directory.
-	// Events taken from https://pkg.go.dev/github.com/rjeczalik/notify?utm_source=godoc#pkg-constants
-	if err := notify.Watch(inputDir+"/...", c, notify.Create, notify.Remove, notify.Write, notify.Rename); err != nil { // watch the input-files-directory recursively (for all events)
-		log.Fatal(err)
+	// ignoring before adding, so the "to-be-ignored" paths won't be added
+	w := watcher.New()
+
+	// SetMaxEvents to 1 to allow at most 1 event's to be received
+	// on the Event channel per watching cycle.
+	// If SetMaxEvents is not set, the default is to send all events.
+	w.SetMaxEvents(1)
+
+	w.Ignore(outputDir) // ignore the outputfolder
+
+	w.Ignore(".git") // ignore the git-folder natively
+
+	if err := w.AddRecursive(inputDir); err != nil { // watch the input-files-directory recursively
+		log.Fatalln(err)
 	}
-	if err := notify.Watch(inputDir+"/...", c, notify.Create, notify.Remove, notify.Write, notify.Rename); err != nil { // watch the partials-files-directory recursively (for all events)
-		log.Fatal(err)
+	if err := w.AddRecursive(partialsDir); err != nil { // watch the partials-files-directory recursively
+		log.Fatalln(err)
 	}
 	for _, valuesFile := range valuesFilePaths { // for each valuesfilepath
-		if err := notify.Watch(valuesFile, c, notify.Write); err != nil { // watch the path (only for writes/changes)
-			log.Print(err) // Don't fail/crash, but continue on next save
+		if err := w.Add(valuesFile); err != nil { // watch the values-file
+			log.Fatalln(err)
 		}
 	}
 
-	// Clean up watchpoint associated with c. If Stop was not called upon
-	// return the channel would be leaked as notify holds the only reference
-	// to it and does not release it on its own.
-	defer notify.Stop(c)
-
-	for { // while true
-		// Block until an event is received.
-		ei := <-c
-
-		if debug {
-			log.Println("filesystem-change notification received:", ei)
+	if debug {
+		log.Println("Watched paths/files:")
+		// Print a list of all of the files and folders currently being watched and their paths.
+		for watchedPath, f := range w.WatchedFiles() {
+			log.Println(path.Join(watchedPath, f.Name()))
 		}
+	}
 
-		rebuildOutput()
+	go func() {
+		for { // while true
+			select {
+			case event := <-w.Event: // receive events
+				log.Println("*** Rebuilding because of a change in", event.Path, "***")
+				rebuildOutput()
+			case err := <-w.Error: // receive errors
+				log.Fatalln(err)
+			case <-w.Closed:
+				return
+			}
+		}
+	}()
+
+	// Start the watching process - it'll check for changes every 100ms.
+	if err := w.Start(time.Millisecond * 100); err != nil {
+		log.Fatalln(err)
 	}
 }
 
@@ -448,7 +463,7 @@ func rebuildOutput() {
 
 	dirContents, err := ioutil.ReadDir(outputDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	for _, element := range dirContents {
 		elementPath := path.Join(outputDir, element.Name())
@@ -457,7 +472,7 @@ func rebuildOutput() {
 		}
 		err = os.RemoveAll(elementPath)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 
@@ -472,7 +487,7 @@ func rebuildOutput() {
 
 	err = copy.Copy(staticDir, outputDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	// #####
@@ -491,7 +506,7 @@ func loadYaml(filePath string) map[string]interface{} {
 	var mappedObject map[string]interface{}
 	values, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	yaml.Unmarshal([]byte(values), &mappedObject) // store yaml into map
 
@@ -505,7 +520,7 @@ func loadListObjects(listPath string) map[string]interface{} {
 	}
 	contents, err := ioutil.ReadDir(path.Join(path.Clean("."), path.Clean(listPath)))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	mappedObjects := make(map[string]interface{})
 	for _, element := range contents {
