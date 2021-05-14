@@ -1,4 +1,4 @@
-module github.com/tillhoff/temingo
+module github.com/thetillhoff/temingo
 
 go 1.16
 

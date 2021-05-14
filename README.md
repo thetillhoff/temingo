@@ -3,7 +3,7 @@
 This software aims to provide a simple but powerful templating mechanism.
 
 The original idea was to create a simple static site generator, which is not as overloaded with "unnecessary functionality" as f.e. hugo.
-The result, though, should not specifically be bound to website stuff, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/tillhoff/temingo/issues/9) is resolved.
+The result, though, should not specifically be bound to website stuff, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/thetillhoff/temingo/issues/9) is resolved.
 
 
 # notes for later docs
