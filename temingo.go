@@ -58,7 +58,7 @@ func createBreadcrumbs(path string) []Breadcrumb {
 	breadcrumbs := []Breadcrumb{}
 	currentPath := ""
 	dirNames := strings.Split(path, "/")
-	for ok := true; ok; ok = (len(dirNames) != 0) {
+	for ok := true; ok; ok = (len(dirNames) > 1) { // last one is not considered, so no self-reference occurs
 		currentPath = currentPath + "/" + dirNames[0]
 		breadcrumb := Breadcrumb{dirNames[0], currentPath}
 		breadcrumbs = append(breadcrumbs, breadcrumb)
