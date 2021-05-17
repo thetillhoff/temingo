@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/otiai10/copy"
 	"github.com/radovskyb/watcher"
+	gitignore "github.com/sabhiram/go-gitignore"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
@@ -33,9 +35,12 @@ var (
 	templateExtension       string
 	singleTemplateExtension string
 	partialExtension        string
-	generatedExtension      string
+	temingoignoreFilePath   string
 
 	listListObjects = make(map[string]map[string]interface{})
+
+	pathValidator = "^[a-z0-9-_./]+$"
+	rexp          = regexp.MustCompile(pathValidator)
 )
 
 type Breadcrumb struct {
@@ -63,34 +68,47 @@ func createBreadcrumbs(path string) []Breadcrumb {
 	return breadcrumbs
 }
 
-func isExcluded(path string, exclusions []string) bool {
-	for _, exclusion := range exclusions {
-		if strings.Contains(exclusion, "**") { // f.e. "**/file.a.b.c"
-			splittedExclusion := strings.SplitAfter(exclusion, "**/")
-			pattern := splittedExclusion[len(splittedExclusion)-1]
-			basePath := filepath.Base(path)
-			isMatch, err := filepath.Match(pattern, basePath)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			if isMatch {
-				return true
-			}
-		} else { // f.e. "/*/*.file.a.b.c"
-			isMatch, err := filepath.Match(exclusion, path)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			if isMatch {
-				return true
-			}
+func isExcludedByTemingoignore(srcPath string, additionalExclusions []string) bool {
+	srcPath = "/" + srcPath
+
+	ignore, err := gitignore.CompileIgnoreFileAndLines(temingoignoreFilePath, additionalExclusions...)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if ignore.MatchesPath(srcPath) {
+		if debug {
+			log.Println("Exclusion triggered at '" + srcPath + "', specified in '" + temingoignoreFilePath + "'.")
 		}
+		return true
 	}
 
 	return false
 }
 
-func getTemplates(fromPath string, extension string, exclusions []string) [][]string {
+func isExcluded(srcPath string, additionalExclusions []string) bool {
+	srcPath = "/" + srcPath
+
+	additionalExclusions = append(additionalExclusions, "/"+temingoignoreFilePath)      // always ignore the ignore file itself
+	additionalExclusions = append(additionalExclusions, "/"+path.Join(outputDir, "**")) // always ignore the outputDir
+	additionalExclusions = append(additionalExclusions, "/"+path.Join(staticDir, "**")) // always ignore the staticDir
+
+	ignore, err := gitignore.CompileIgnoreFileAndLines(temingoignoreFilePath, additionalExclusions...)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if ignore.MatchesPath((srcPath)) {
+		if debug {
+			log.Println("Exclusion triggered at '" + srcPath + "', specified internally.")
+		}
+		return true
+	}
+
+	return false
+}
+
+func getTemplates(fromPath string, extension string, additionalExclusions []string) [][]string {
 	var templates [][]string
 
 	dirContents, err := ioutil.ReadDir(fromPath)
@@ -103,12 +121,12 @@ func getTemplates(fromPath string, extension string, exclusions []string) [][]st
 			if fromPath == "." { // path.Join adds this to the filename directly ... which has to be prevented here
 				entryPath = entry.Name()
 			}
-			if !isExcluded(entryPath, exclusions) {
+			if !isExcluded(entryPath, additionalExclusions) { // Make all paths absolute from working-directory
 				if entry.IsDir() {
-					templates = append(templates, getTemplates(entryPath, extension, exclusions)...)
+					templates = append(templates, getTemplates(entryPath, extension, additionalExclusions)...)
 				} else if strings.HasSuffix(entry.Name(), extension) {
-					if err != nil {
-						log.Fatalln(err)
+					if !rexp.MatchString(entryPath) {
+						log.Fatalln("The path '" + entryPath + "' doesn't validate against the regular expression '" + pathValidator + "'.")
 					}
 					fileContent, err := ioutil.ReadFile(entryPath)
 					if err != nil {
@@ -225,7 +243,7 @@ func readCliFlags() {
 	flag.StringVarP(&templateExtension, "templateExtension", "t", ".template", "Sets the extension of the template files.")
 	flag.StringVar(&singleTemplateExtension, "singleTemplateExtension", ".single.template", "Sets the extension of the single-view template files. Automatically excluded from normally loaded templates.")
 	flag.StringVar(&partialExtension, "partialExtension", ".partial", "Sets the extension of the partial files.") //TODO: not necessary, should be the same as templateExtension, since they are already distringuished by directory -> Might be useful when "modularization" will be implemented
-	flag.StringVarP(&generatedExtension, "generatedExtension", "g", "", "Sets the extension of the generated files.")
+	flag.StringVar(&temingoignoreFilePath, "temingoignore", ".temingoignore", "Sets the path to the ignore file.")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watches the template-file-directory, partials-directory and values-files.")
 	flag.BoolVarP(&debug, "debug", "d", false, "Enables the debug mode.")
 
@@ -326,15 +344,11 @@ func render() {
 	// START normal templating
 	// #####
 
-	templates := getTemplates(inputDir, templateExtension, []string{
-		path.Join(inputDir, partialsDir, "*"),
-		path.Join(inputDir, outputDir, "*"),
-		"**/*" + singleTemplateExtension,
-	}) // get full html templates - with names
-	partialTemplates := getTemplates(path.Join(inputDir, partialsDir), partialExtension, []string{path.Join(inputDir, outputDir)}) // get partial html templates - without names
+	templates := getTemplates(inputDir, templateExtension, []string{"**/*" + singleTemplateExtension}) // get full html templates - with names
+	partialTemplates := getTemplates(partialsDir, partialExtension, []string{})                        // get partial html templates - without names
 
 	for _, template := range templates {
-		outputFilePath := path.Join(outputDir, strings.TrimSuffix(template[0], templateExtension)+generatedExtension)
+		outputFilePath := path.Join(outputDir, strings.TrimSuffix(template[0], templateExtension))
 		if debug {
 			log.Println("Writing output file '" + outputFilePath + "' ...")
 		}
@@ -348,8 +362,8 @@ func render() {
 
 	// identify & collect single-view templates via their extension
 	singleTemplates := getTemplates(inputDir, singleTemplateExtension, []string{
-		path.Join(inputDir, partialsDir, "*"),
-		path.Join(inputDir, outputDir, "*"),
+		path.Join(inputDir, partialsDir, "**"),
+		path.Join(inputDir, outputDir, "**"),
 	}) // get full html templates - with names
 
 	// for each of the single-view templates
@@ -367,9 +381,7 @@ func render() {
 
 		// Read item-specific values, so they are available independent of the items way of the configuration
 		for _, dirEntry := range dirContents {
-			if !dirEntry.IsDir() && filepath.Ext(dirEntry.Name()) == ".yaml" {
-				itemValues[path.Join(filepath.Dir(templateName), dirEntry.Name())] = loadYaml(path.Join(filepath.Dir(templateName), dirEntry.Name()))
-			} else if dirEntry.IsDir() {
+			if dirEntry.IsDir() {
 				if _, err := os.Stat(path.Join(filepath.Dir(templateName), dirEntry.Name(), "index.yaml")); err == nil { // if the dirEntry-folder contains an "index.yaml"
 					itemValues[path.Join(filepath.Dir(templateName), dirEntry.Name())] = loadYaml(path.Join(filepath.Dir(templateName), dirEntry.Name(), "index.yaml"))
 				}
@@ -381,7 +393,7 @@ func render() {
 			extendedMappedValues := mappedValues
 			itemPath = strings.TrimSuffix(itemPath, filepath.Ext(itemPath))
 			fileName := strings.TrimSuffix(filepath.Base(templateName), singleTemplateExtension)
-			extendedMappedValues["ItemPath"] = itemPath
+			extendedMappedValues["ItemPath"] = "/" + itemPath
 			extendedMappedValues["Item"] = itemValue
 			outputFilePath := path.Join(outputDir, itemPath, fileName)
 			if debug {
@@ -491,8 +503,35 @@ func rebuildOutput() {
 
 	// #####
 	// END Copy static-dir-contents to output-dir
+	// START Copy other contents to output-dir
+	// #####
+
+	if debug {
+		log.Println("*** Copying other contents to output-dir ... ***")
+	}
+
+	opt := copy.Options{
+		Skip: func(src string) (bool, error) {
+			skip := false
+			if isExcluded(src, []string{path.Join("/", partialsDir), "**/*" + templateExtension, "**/index.yaml"}) || isExcludedByTemingoignore(src, []string{}) {
+				skip = true
+			}
+			return skip, nil
+		},
+	}
+	err = copy.Copy(inputDir, outputDir, opt)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// #####
+	// END Copy other contents to output-dir
 	// START Render templates
 	// #####
+
+	if debug {
+		log.Println("*** Starting templating process ... ***")
+	}
 
 	render()
 	log.Println("*** Successfully built contents. ***")
@@ -516,7 +555,7 @@ func loadYaml(filePath string) map[string]interface{} {
 
 func loadListObjects(listPath string) map[string]interface{} {
 	if debug {
-		log.Print("*** Loading list objects from '" + listPath + "' ... ***")
+		log.Println("*** Loading list objects from '" + listPath + "' ... ***")
 	}
 	contents, err := ioutil.ReadDir(path.Join(path.Clean("."), path.Clean(listPath)))
 	if err != nil {
@@ -524,24 +563,17 @@ func loadListObjects(listPath string) map[string]interface{} {
 	}
 	mappedObjects := make(map[string]interface{})
 	for _, element := range contents {
-		elementPath := path.Join(listPath, element.Name()) // f.e. list/element1 for folders, and list/element1.yaml for files
-		if path.Ext(elementPath) == templateExtension {
-			if debug {
-				log.Print("Skipping object from '" + elementPath + "' since it is a template ...")
+		elementPath := path.Join(listPath, element.Name()) // f.e. list/element1 for folders
+		indexPath := path.Join(elementPath, "index.yaml")  // f.e. list/element1/index.yaml
+		if _, err := os.Stat(indexPath); err == nil {      // if list/element1/index.yaml exists
+			if !rexp.MatchString(indexPath) { // if path is not good for urls
+				log.Fatalln("The path '" + indexPath + "' for the list object must validate against the regular expression '" + pathValidator + "'.")
 			}
-		} else {
+			tempMappedObject := loadYaml(indexPath)      // f.e. list/element1/index.yaml
+			tempMappedObject["Path"] = "/" + elementPath // will become /[.../]list/element1 (or actually /[.../]list/element1/index.html)
+			mappedObjects[elementPath] = tempMappedObject
 			if debug {
-				log.Print("Loading object from '" + elementPath + "' ...")
-			}
-			if element.IsDir() {
-				tempMappedObject := loadYaml(path.Join(elementPath, "index.yaml")) // f.e. list/element1/index.yaml
-				tempMappedObject["Path"] = "/" + elementPath                       // f.e. /list/element1
-				mappedObjects[elementPath] = tempMappedObject
-			} else {
-				tempMappedObject := loadYaml(elementPath) // f.e. list/element1.yaml
-				tempMappedObject["Path"] = "/" + strings.TrimSuffix(elementPath, filepath.Ext(elementPath))
-				// If the object is defined via a single file, no (further) path exists
-				mappedObjects[elementPath] = tempMappedObject
+				log.Println("Loaded object from '" + indexPath + "' ...")
 			}
 		}
 	}
@@ -566,7 +598,7 @@ func main() {
 		log.Println("templateExtension:", templateExtension)
 		log.Println("singleTemplateExtension:", singleTemplateExtension)
 		log.Println("partialExtension:", partialExtension)
-		log.Println("generatedExtension:", generatedExtension)
+		log.Println("temingoignoreFilePath:", temingoignoreFilePath)
 		log.Println("staticDir:", staticDir)
 		log.Println("watch:", watch)
 	}
