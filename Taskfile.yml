@@ -19,5 +19,5 @@ tasks:
   build:
     desc: Build executable for current OS
     cmds:
-      - go build temingo.go
+      - go build
       - task: clean-dependencies
