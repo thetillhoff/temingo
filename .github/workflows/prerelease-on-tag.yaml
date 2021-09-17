@@ -1,4 +1,4 @@
-name: Prerelease
+name: Prerelease on tag
 
 on:
   push:
@@ -19,6 +19,14 @@ jobs:
         run: |
           grep "${GITHUB_REF##*/}" CHANGELOG.md
 
+      - name: Delete version-tag when CHANGELOG.md doesn't contain information about it
+        if: failure()
+        shell: bash
+        run: |
+          git config --global user.name 'GithubActions'
+          git config --global user.email 'githubactions@users.noreply.github.com'
+          git push --delete origin ${{ env.RELEASE_TAG }}
+
   build:
     needs: prerequisites
     runs-on: ubuntu-20.04
@@ -27,7 +35,7 @@ jobs:
         os:
           - linux
           - windows
-          #- darwin
+          - darwin
         architecture:
           - amd64
     steps:
@@ -59,7 +67,7 @@ jobs:
           echo "architecture: ${{ matrix.architecture }}"
           go version
 
-          env GOOS=${{ matrix.os }} GOARCH=${{ matrix.architecture }} go build -o ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }} ${{ env.APP_NAME }}.go
+          env GOOS=${{ matrix.os }} GOARCH=${{ matrix.architecture }} go build -o ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}
           # If FILE_EXTENSION is empty, there is no need to make the binary executable, because it is for windows.
           if test -z "${{ env.FILE_EXTENSION }}"; then chmod +x ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}; fi
 
@@ -79,8 +87,8 @@ jobs:
         with:
             name: artifact_${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}.sha256
             path: ./${{ env.APP_NAME }}_${{ matrix.os }}_${{ matrix.architecture }}${{ env.FILE_EXTENSION }}.sha256
-      
-      - name: Cleanup
+
+      - name: Delete version-tag when build fails
         if: failure()
         shell: bash
         run: |
@@ -111,11 +119,6 @@ jobs:
         run: |
           mv ./*/${{ env.APP_NAME }}_* ./
           rm -dr ./*/
-
-      - name: Test 3
-        shell: bash
-        run: |
-          ls -R
 
       - name: Release
         uses: softprops/action-gh-release@v1
