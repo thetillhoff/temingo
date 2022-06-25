@@ -1,0 +1,10 @@
+name: Release Golang executable on tag
+
+on:
+  push:
+    tags:
+    - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  release-on-tag:
+    uses: thetillhoff/.github/.github/workflows/release-golang-executable-on-tag.yaml@main
