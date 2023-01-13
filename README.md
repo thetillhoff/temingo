@@ -9,7 +9,7 @@ The result, though, should not specifically be bound to website stuff, as it can
 ```
 temingo
 temingo -w
-temingo init -> will generate a sample project in the current folder
+temingo init -> will generate a sample project in the current folder. Only starts writing files, if the inputdir doesn't exist yet
 ```
 
 ```

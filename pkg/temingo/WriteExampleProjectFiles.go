@@ -3,10 +3,12 @@ package temingo
 import (
 	"embed"
 	"io/fs"
+	"log"
 	"strings"
 )
 
 // While this variable contains all the files from the example project, it has the prefix `exampleProject/` for each of the paths.
+// Do not remove the following - it configures the embedding!
 //
 //go:embed exampleProject
 var embeddedExampleFilesWithPrefix embed.FS
@@ -40,6 +42,7 @@ func writeExampleProjectFiles() error {
 		if err != nil {
 			return err
 		}
+		log.Println("File created:", path)
 	}
 
 	return nil
