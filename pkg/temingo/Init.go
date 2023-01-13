@@ -5,7 +5,11 @@ import (
 )
 
 func Init() error {
-	err := WriteExampleProjectFiles()
+	var (
+		err error
+	)
+	err = writeExampleProjectFiles()
+	// err = writeTestProjectFiles()
 	if err != nil {
 		return err
 	}

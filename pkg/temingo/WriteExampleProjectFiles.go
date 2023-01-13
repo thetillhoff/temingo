@@ -9,21 +9,21 @@ import (
 // While this variable contains all the files from the example project, it has the prefix `exampleProject/` for each of the paths.
 //
 //go:embed exampleProject
-var embeddedFilesWithPrefix embed.FS
+var embeddedExampleFilesWithPrefix embed.FS
 
-func WriteExampleProjectFiles() error {
+func writeExampleProjectFiles() error {
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
 	)
 
-	err = fs.WalkDir(embeddedFilesWithPrefix, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(embeddedExampleFilesWithPrefix, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !d.IsDir() {
-			exampleProjectFiles[strings.TrimPrefix(path, "exampleProject/")], err = embeddedFilesWithPrefix.ReadFile(path)
+			exampleProjectFiles[strings.TrimPrefix(path, "exampleProject/")], err = embeddedExampleFilesWithPrefix.ReadFile(path)
 			if err != nil {
 				return err
 			}
