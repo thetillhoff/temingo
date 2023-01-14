@@ -3,6 +3,7 @@ package temingo
 import (
 	"io"
 	"os"
+	"path"
 )
 
 // Copies the specified sourcePath to the destinationPath
@@ -38,6 +39,11 @@ func copyFile(sourcePath string, destinationPath string) error {
 			return err
 		}
 		defer sourceFile.Close()
+
+		err = os.MkdirAll(path.Dir(destinationPath), os.ModePerm) // Create containing folder for destination
+		if err != nil {
+			return err
+		}
 
 		destinationFile, err = os.OpenFile(destinationPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, sourceFileStat.Mode().Perm()) // writeonly, create if not exists, not append (==overwrite), file must not exist
 		if err != nil {

@@ -103,7 +103,6 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 	}
 
 	for _, staticPath := range staticPaths {
-		// TODO this will also create empty directories like 'components' at the moment...
 		err = copyFile(path.Join(inputDir, staticPath), path.Join(outputDir, staticPath))
 		if err != nil {
 			return err
