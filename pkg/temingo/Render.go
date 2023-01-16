@@ -2,6 +2,7 @@ package temingo
 
 import (
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -14,9 +15,10 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		err       error
 		filePaths []string
 
-		componentPaths []string
-		templatePaths  []string
-		staticPaths    []string
+		componentPaths    []string
+		templatePaths     []string
+		metatemplatePaths []string
+		staticPaths       []string
 
 		temporaryTemplateEngineName = "temporaryComponentEngine"
 		content                     []byte
@@ -24,11 +26,13 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		componentName               string
 		componentLocations          = make(map[string]string)
 		renderedTemplate            []byte
+		metaTemplateRenderPath      string
 
-		componentExtension = ".component"
-		templateExtension  = ".template"
-		componentFiles     = make(map[string]string)
-		renderedTemplates  = make(map[string][]byte)
+		componentExtension    = ".component"
+		templateExtension     = ".template"
+		metaTemplateExtension = ".metatemplate"
+		componentFiles        = make(map[string]string)
+		renderedTemplates     = make(map[string][]byte)
 	)
 
 	filePaths, err = retrieveFilePaths(inputDir, temingoignorePath) // Get inputDir file-tree
@@ -37,12 +41,15 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 	}
 
 	for _, filePath := range filePaths { // Check what type of file we have
-		if strings.Contains(filePath, componentExtension) { // Multiple extensions are possible, so simply using path.Ext is not enough (it only returns the last extension)
+		if strings.Contains(filePath, componentExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			componentPaths = append(componentPaths, filePath)
 			log.Println("Identified as component file:", filePath)
-		} else if strings.Contains(filePath, templateExtension) { // Multiple extensions are possible, so simply using path.Ext is not enough (it only returns the last extension)
+		} else if strings.Contains(filePath, templateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			templatePaths = append(templatePaths, filePath)
 			log.Println("Identified as template file:", filePath)
+		} else if strings.Contains(filePath, metaTemplateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
+			metatemplatePaths = append(metatemplatePaths, filePath)
+			log.Println("Identified as metatemplate file:", filePath)
 		} else {
 			staticPaths = append(staticPaths, filePath)
 			log.Println("Identified as static file:", filePath)
@@ -86,11 +93,39 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		if err != nil {
 			return err
 		}
-		renderedTemplate, err = renderTemplate(templatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+
+		renderedTemplate, err = renderTemplate(strings.ReplaceAll(templatePath, templateExtension, ""), string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
+
 		renderedTemplates[templatePath] = renderedTemplate
+	}
+
+	for _, metaTemplatePath := range metatemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
+		content, err = readFile(path.Join(inputDir, metaTemplatePath))
+		if err != nil {
+			return err
+		}
+
+		files, err := ioutil.ReadDir(path.Dir(metaTemplatePath)) // Get all child-elements of folder
+		if err != nil {
+			return err
+		}
+
+		for _, f := range files { // For each child-element of folder
+			if f.IsDir() { // Only for folders
+				if _, err = os.Stat(path.Join(metaTemplatePath, f.Name(), "meta.yaml")); !os.IsNotExist(err) { // Check if meta.yaml exists
+					metaTemplateRenderPath = strings.ReplaceAll(path.Join(path.Dir(metaTemplatePath), f.Name(), path.Base(metaTemplatePath)), metaTemplateExtension, "")
+					renderedTemplate, err = renderTemplate(metaTemplateRenderPath, string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		renderedTemplates[metaTemplateRenderPath] = renderedTemplate
 	}
 
 	err = os.RemoveAll(outputDir) // Ensure the outputDir is empty

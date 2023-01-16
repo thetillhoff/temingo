@@ -8,7 +8,10 @@ require (
 	github.com/spf13/viper v1.13.0
 )
 
-require gopkg.in/yaml.v2 v2.4.0 // indirect
+require (
+	github.com/imdario/mergo v0.3.13
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect

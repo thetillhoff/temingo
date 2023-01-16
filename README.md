@@ -15,9 +15,7 @@ temingo init -> will generate a sample project in the current folder. Only start
 ```
 --valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)."
 --inputDir, -i, default "./": Sets the path to the template-file-directory."
---componentsDir, -p, default "components": Sets the path to the components-directory."
 --outputDir, -o, default "output": Sets the destination-path for the compiled templates."
---staticDir, -s, default "static", -Sets the source-path for the static files."
 --templateExtension, -t, default ".template": Sets the extension of the template files."
 --singleTemplateExtension, default ".single.template": Sets the extension of the single-view template files. Automatically excluded from normally loaded templates."
 --componentExtension, default ".component": Sets the extension of the component files." //TODO: not necessary, should be the same as templateExtension, since they are already distinguished by directory -> Might be useful when "modularization" will be implemented
@@ -27,7 +25,8 @@ temingo init -> will generate a sample project in the current folder. Only start
 ```
 
 temingo will by default:
-- take the source files from folder `./src`
+- take the source files from folder `./src`.
+- consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
 - write the rendered files into folder `./output/`
 - take all `*.component` files as intermediate templates / snippets
   - their names must be unique. temingo will check this.
@@ -37,14 +36,19 @@ temingo will by default:
     This means you can iterate over them and generate links for them.
     Check each folder if it contains a `meta.yaml` file. If yes, parse it and make it available in the "parent" template. (key=folder-name, value=`/*/meta.yaml` object)
 - take all `*.metatemplate` files and use them for rendering in all of their subfolders that contain a `meta.yaml` file. Pass the object in that file to each metatemplate
-- take all other files and copy them into the output folder as-is
+- take all other files (static) and copy them into the output folder as-is
 - read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file
-- pass an object to each template-rendering:
+- metadata that is passed to the rendering will be aggregated as follows;
+  - Iterate through folders from inputdir `/` to the folder containing the template
+  - On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one
+  - Pass the final object as `values[meta]` to the respective template rendering process
+- What else does the `values[string]object` map contain tha tis passed to each template rendering process:
   ```
-  breadcrumbs: [] -> path to location of template, split by '/'
-  components: map[string]template -> all components
-  metatemplate: map[string]object -> aggregated metadata of subfolders
-  * (for example the `meta.yaml` object)
+  ["path"] = string -> path to template
+  ["breadcrumbs"] = []string -> path to location of template, split by '/'
+  ["meta"] = map[string]object -> metadata for current folder
+  ["childmeta"] = map[string]object -> aggregated metadata of subfolders, key is the folder name containing the respective metadata
+  * (for example the `meta.yaml` object -> it'll start at the root folder, then start descending the folder-tree and grab all `meta.yaml`s along the way. Merged in a way that overwrites the parents' values.)
   ```
 
 <!--
