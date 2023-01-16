@@ -1,7 +1,7 @@
 package temingo
 
 import (
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Returns the object contained in the provided yaml
