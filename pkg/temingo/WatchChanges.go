@@ -8,7 +8,7 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-func WatchChanges(inputDir string, outputDir string, temingoignorePath string) {
+func WatchChanges(inputDir string, outputDir string, temingoignorePath string) error {
 	log.Println("*** Starting to watch for file changes ... ***")
 
 	// ignoring before adding, so the "to-be-ignored" paths won't be added
@@ -24,10 +24,11 @@ func WatchChanges(inputDir string, outputDir string, temingoignorePath string) {
 	w.Ignore(".git") // ignore the git-folder natively
 
 	if err := w.AddRecursive(inputDir); err != nil { // watch the source-files-directory recursively
-		log.Fatalln(err)
+		return err
+
 	}
 	if err := w.Add(temingoignorePath); err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	// for _, valuesFile := range valuesFilePaths { // for each valuesfilepath
 	// 	if err := w.Add(valuesFile); err != nil { // watch the values-file
@@ -60,6 +61,8 @@ func WatchChanges(inputDir string, outputDir string, temingoignorePath string) {
 
 	// Start the watching process - it'll check for changes every 100ms.
 	if err := w.Start(time.Millisecond * 100); err != nil {
-		log.Fatalln(err)
+		return err
 	}
+
+	return nil
 }

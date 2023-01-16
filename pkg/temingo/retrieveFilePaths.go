@@ -1,6 +1,7 @@
 package temingo
 
 import (
+	"errors"
 	"io/fs"
 	"log"
 	"os"
@@ -19,16 +20,20 @@ func retrieveFilePaths(inputDir string, temingoignorePath string) ([]string, err
 		ignore    *gitignore.GitIgnore
 	)
 
-	if _, err := os.Stat(temingoignorePath); os.IsNotExist(err) {
+	if _, err = os.Stat(inputDir); os.IsNotExist(err) {
+		return filePaths, errors.New("inputDir '" + inputDir + "' doesn't exist.")
+	}
+
+	if _, err = os.Stat(temingoignorePath); os.IsNotExist(err) {
 		// No temingoignore
 	} else if err != nil {
 		// temingoignore exists, but can't be accessed
-		log.Fatalln(err)
+		return filePaths, err
 	} else {
 		// temingoignore exists and can be read
 		ignore, err = gitignore.CompileIgnoreFile(temingoignorePath)
 		if err != nil {
-			log.Fatalln(err)
+			return filePaths, err
 		}
 	}
 
