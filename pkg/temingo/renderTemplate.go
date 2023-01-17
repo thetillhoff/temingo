@@ -2,8 +2,8 @@ package temingo
 
 import (
 	"bytes"
-	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"strings"
 	"text/template"
@@ -34,7 +34,7 @@ func renderTemplate(templatePath string, templateContent string, componentFiles 
 	}
 
 	templateDir, _ = path.Split(templatePath)
-	files, err := ioutil.ReadDir(path.Join(inputDir, templateDir)) // Get all child-elements of folder
+	files, err := os.ReadDir(path.Join(inputDir, templateDir)) // Get all child-elements of folder
 	if err != nil {
 		return nil, err
 	}

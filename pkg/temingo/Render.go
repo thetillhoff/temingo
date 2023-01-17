@@ -2,7 +2,6 @@ package temingo
 
 import (
 	"errors"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -112,7 +111,7 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		}
 
 		log.Println("Reading metatemplate folder contents from", path.Dir(path.Join(inputDir, metaTemplatePath)))
-		files, err := ioutil.ReadDir(path.Dir(path.Join(inputDir, metaTemplatePath))) // Get all child-elements of folder
+		files, err := os.ReadDir(path.Dir(path.Join(inputDir, metaTemplatePath))) // Get all child-elements of folder
 		if err != nil {
 			return err
 		}
