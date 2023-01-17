@@ -3,3 +3,13 @@ hello world
 {{ template "testComponent" }}
 
 {{ template "tastComponent" }}
+
+values: {{ . }}
+
+path: {{ .path }}
+
+breadcrumbs: {{ .breadcrumbs }}
+
+meta: {{ .meta }}
+
+childmeta: {{ .childmeta }}
