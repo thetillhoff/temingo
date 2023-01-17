@@ -36,7 +36,7 @@ temingo will by default:
     This means you can iterate over them and generate links for them.
     Check each folder if it contains a `meta.yaml` file. If yes, parse it and make it available in the "parent" template. (key=folder-name, value=`/*/meta.yaml` object)
 - take all `*.metatemplate` files and use them for rendering in all of their subfolders that contain a `meta.yaml` file. Pass the object in that file to each metatemplate
-- take all other files (static) and copy them into the output folder as-is
+- take all other files (static) and copy them into the output folder as-is. Except `meta.yaml`s.
 - read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file
 - metadata that is passed to the rendering will be aggregated as follows;
   - Iterate through folders from inputdir `/` to the folder containing the template
@@ -65,6 +65,11 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 - optimized media embedding, for example for images. Supported media:
   - images
   - svg (pregenerate different colors?)
+-->
+
+<!--
+TODO
+Instead of doing os.Stat all the time, write functions that check against the existing internal filetree
 -->
 
 ## Development

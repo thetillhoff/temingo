@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -15,9 +16,10 @@ import (
 // Will remove the ignored paths before returning the list (.temingoignore)
 func retrieveFilePaths(inputDir string, temingoignorePath string) ([]string, error) {
 	var (
-		err       error
-		filePaths []string
-		ignore    *gitignore.GitIgnore
+		err          error
+		filePaths    []string
+		ignore       *gitignore.GitIgnore
+		metaFilename = "meta.yaml"
 	)
 
 	if _, err = os.Stat(inputDir); os.IsNotExist(err) {
@@ -57,6 +59,8 @@ func retrieveFilePaths(inputDir string, temingoignorePath string) ([]string, err
 			} else if info.IsDir() { // Let's keep the folders in the list, so it's easier to copy them with the correct permissions
 				// Not a file, but a folder. Therefore no need to add it to the filelist.
 				log.Println("Ignored because of being a folder: '" + relativeFilePath + "'.")
+			} else if path.Base(relativeFilePath) == metaFilename {
+				log.Println("Ignored because of being a `meta.yaml`: '" + relativeFilePath + "'.")
 			} else {
 				// Valid filepath
 				filePaths = append(filePaths, relativeFilePath) // Add filepath to list
