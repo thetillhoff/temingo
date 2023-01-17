@@ -26,6 +26,7 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		componentName               string
 		componentLocations          = make(map[string]string)
 		renderedTemplate            []byte
+		templateRenderPath          string
 		metaTemplateRenderPath      string
 
 		componentExtension    = ".component"
@@ -104,29 +105,35 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 	}
 
 	for _, metaTemplatePath := range metatemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
+		log.Println("Reading metatemplate from", path.Join(inputDir, metaTemplatePath))
 		content, err = readFile(path.Join(inputDir, metaTemplatePath))
 		if err != nil {
 			return err
 		}
 
-		files, err := ioutil.ReadDir(path.Dir(metaTemplatePath)) // Get all child-elements of folder
+		log.Println("Reading metatemplate folder contents from", path.Dir(path.Join(inputDir, metaTemplatePath)))
+		files, err := ioutil.ReadDir(path.Dir(path.Join(inputDir, metaTemplatePath))) // Get all child-elements of folder
 		if err != nil {
 			return err
 		}
 
 		for _, f := range files { // For each child-element of folder
 			if f.IsDir() { // Only for folders
-				if _, err = os.Stat(path.Join(metaTemplatePath, f.Name(), "meta.yaml")); !os.IsNotExist(err) { // Check if meta.yaml exists
+				log.Println("Found folder in metatemplatefolder", path.Join(inputDir, metaTemplatePath, f.Name()))
+				if _, err = os.Stat(path.Join(inputDir, metaTemplatePath, f.Name(), "meta.yaml")); !os.IsNotExist(err) { // Check if meta.yaml exists
+					log.Println("Found meta.yaml in", path.Join(inputDir, metaTemplatePath, f.Name(), "meta.yaml"))
 					metaTemplateRenderPath = strings.ReplaceAll(path.Join(path.Dir(metaTemplatePath), f.Name(), path.Base(metaTemplatePath)), metaTemplateExtension, "")
 					renderedTemplate, err = renderTemplate(metaTemplateRenderPath, string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 					if err != nil {
 						return err
 					}
+					log.Println("metatemplateRenderPath", metaTemplateRenderPath)
+
+					renderedTemplates[metaTemplateRenderPath] = renderedTemplate
 				}
 			}
 		}
 
-		renderedTemplates[metaTemplateRenderPath] = renderedTemplate
 	}
 
 	err = os.RemoveAll(outputDir) // Ensure the outputDir is empty
@@ -143,7 +150,7 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		if err != nil {
 			return err
 		}
-		log.Println("writing static file to " + path.Join(outputDir, staticPath))
+		log.Println("Writing static file to " + path.Join(outputDir, staticPath))
 	}
 
 	for templatePath, renderedTemplate := range renderedTemplates {
@@ -151,7 +158,7 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		if err != nil {
 			return err
 		}
-		log.Println("writing rendered template to " + path.Join(outputDir, templatePath))
+		log.Println("Writing rendered template to " + path.Join(outputDir, templatePath))
 	}
 
 	log.Println("Build completed.")
