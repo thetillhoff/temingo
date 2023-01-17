@@ -94,12 +94,13 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 			return err
 		}
 
-		renderedTemplate, err = renderTemplate(strings.ReplaceAll(templatePath, templateExtension, ""), string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		templateRenderPath = strings.ReplaceAll(templatePath, templateExtension, "")
+		renderedTemplate, err = renderTemplate(templateRenderPath, string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
 
-		renderedTemplates[templatePath] = renderedTemplate
+		renderedTemplates[templateRenderPath] = renderedTemplate
 	}
 
 	for _, metaTemplatePath := range metatemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
