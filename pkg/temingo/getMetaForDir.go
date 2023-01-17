@@ -1,6 +1,7 @@
 package temingo
 
 import (
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -8,20 +9,23 @@ import (
 	"github.com/imdario/mergo"
 )
 
-func getMetaForDir(dirPath string, inputDir string) (interface{}, error) {
+func getMetaForDir(startDir string, dirPath string) (map[string]interface{}, error) {
 	var (
 		err error
 
-		currentFolder string
-		content       []byte
-		tempValues    interface{}
-		values        interface{}
+		currentFolder       = ""
+		currentMetaLocation string
+		content             []byte
+		tempValues          map[string]interface{}
+		values              map[string]interface{}
 	)
 
-	for _, folder := range strings.Split(path.Dir(path.Join(inputDir, dirPath)), "/") {
+	for _, folder := range strings.Split(path.Join(startDir, dirPath), "/") {
 		currentFolder = path.Join(currentFolder, folder)
-		if _, err = os.Stat(path.Join(currentFolder, "meta.yaml")); !os.IsNotExist(err) {
-			content, err = readFile(path.Join(currentFolder, "meta.yaml"))
+		currentMetaLocation = path.Join(currentFolder, "meta.yaml")
+		if _, err = os.Stat(currentMetaLocation); !os.IsNotExist(err) {
+			log.Println("Reading metadata from", currentMetaLocation)
+			content, err = readFile(currentMetaLocation)
 			if err != nil {
 				return values, err
 			}
