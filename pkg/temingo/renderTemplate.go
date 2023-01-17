@@ -50,10 +50,16 @@ func renderTemplate(templatePath string, templateContent string, componentFiles 
 	}
 
 	// tpl.Funcs(funcMap).Parse(baseTemplate)
-	templateEngine.Parse(templateContent) // Parse the template
+	_, err = templateEngine.Parse(templateContent) // Parse the template
+	if err != nil {
+		return nil, err
+	}
 	// TODO Template functionmap is missing here
 	err = templateEngine.Execute(outputBuffer, values)
+	if err != nil {
+		return nil, err
+	}
 
 	// return template
-	return outputBuffer.Bytes(), err
+	return outputBuffer.Bytes(), nil
 }
