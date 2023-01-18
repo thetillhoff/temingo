@@ -60,7 +60,7 @@ temingo will by default:
 
 <!--
 TODO
-temingo _can_ do (alternatively this should be put into a dedicated application ("website optimizer"?)):
+temingo _can_ do (alternatively this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
 - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
   - `.html`
   - `.css`
@@ -81,7 +81,9 @@ Instead of doing os.Stat all the time, write functions that check against the ex
 
 <!--
 TODO
+- extract all "read from file" and "write to file" methods to the caller-method, so the methods can be better unit-tested
 - write unit tests
+- merge testProject and exampleProject into one
 - move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
 -->
 
