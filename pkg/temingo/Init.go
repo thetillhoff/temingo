@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func Init(inputDir string) error {
+func Init(inputDir string, temingoignore string) error {
 	var (
 		err error
 	)
@@ -17,7 +17,7 @@ func Init(inputDir string) error {
 
 	// TODO change below to writeExampleProjectfiles instead of writeTestProjectFiles
 	// err = writeExampleProjectFiles(inputDir)
-	err = writeTestProjectFiles(inputDir)
+	err = writeTestProjectFiles(inputDir, temingoignore)
 	if err != nil {
 		return err
 	}

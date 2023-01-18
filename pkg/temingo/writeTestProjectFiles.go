@@ -14,7 +14,7 @@ import (
 //go:embed all:testProject
 var embeddedTestFilesWithPrefix embed.FS
 
-func writeTestProjectFiles(inputDir string) error {
+func writeTestProjectFiles(inputDir string, temingoignore string) error {
 	var (
 		err              error
 		testProjectFiles map[string][]byte = map[string][]byte{}
@@ -42,6 +42,8 @@ func writeTestProjectFiles(inputDir string) error {
 		if strings.HasPrefix(treepath, "src/") {
 			treepath = strings.TrimPrefix(treepath, "src/")
 			treepath = path.Join(inputDir, treepath)
+		} else if temingoignore != ".temingoignore" && treepath == ".temingoignore" {
+			treepath = temingoignore
 		}
 		err = writeFile(treepath, content) // Write the file to disk
 		if err != nil {
