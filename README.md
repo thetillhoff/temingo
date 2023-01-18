@@ -85,7 +85,6 @@ TODO
 - add cli help for all commands
 - write unit tests
 - `temingo init` needs to respect the cli flags:
-  - inputDir
   - temingoignore
   - templateExtension
   - metatemplateExtension

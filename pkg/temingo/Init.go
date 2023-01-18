@@ -16,8 +16,8 @@ func Init(inputDir string) error {
 	}
 
 	// TODO change below to writeExampleProjectfiles instead of writeTestProjectFiles
-	// err = writeExampleProjectFiles()
-	err = writeTestProjectFiles()
+	// err = writeExampleProjectFiles(inputDir)
+	err = writeTestProjectFiles(inputDir)
 	if err != nil {
 		return err
 	}

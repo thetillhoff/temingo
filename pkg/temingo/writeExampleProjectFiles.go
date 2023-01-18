@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"log"
+	"path"
 	"strings"
 )
 
@@ -13,19 +14,19 @@ import (
 //go:embed all:exampleProject
 var embeddedExampleFilesWithPrefix embed.FS
 
-func writeExampleProjectFiles() error {
+func writeExampleProjectFiles(inputDir string) error {
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
 	)
 
-	err = fs.WalkDir(embeddedExampleFilesWithPrefix, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(embeddedExampleFilesWithPrefix, ".", func(filepath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !d.IsDir() {
-			exampleProjectFiles[strings.TrimPrefix(path, "exampleProject/")], err = embeddedExampleFilesWithPrefix.ReadFile(path)
+			exampleProjectFiles[strings.TrimPrefix(filepath, "exampleProject/")], err = embeddedExampleFilesWithPrefix.ReadFile(filepath)
 			if err != nil {
 				return err
 			}
@@ -37,12 +38,16 @@ func writeExampleProjectFiles() error {
 		return err
 	}
 
-	for path, content := range exampleProjectFiles { // For each file of the exampleProject (but without the path prefix)
-		err = writeFile(path, content) // Write the file to disk
+	for treepath, content := range exampleProjectFiles { // For each file of the exampleProject (but without the path prefix)
+		if strings.HasPrefix(treepath, "src/") {
+			treepath = strings.TrimPrefix(treepath, "src/")
+			treepath = path.Join(inputDir, treepath)
+		}
+		err = writeFile(treepath, content) // Write the file to disk
 		if err != nil {
 			return err
 		}
-		log.Println("File created:", path)
+		log.Println("File created:", treepath)
 	}
 
 	return nil
