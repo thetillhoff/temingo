@@ -11,7 +11,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile               string
+	inputDir              string
+	outputDir             string
+	temingoignore         string
+	templateExtension     string
+	metaTemplateExtension string
+	componentExtension    string
+
+	verbose bool
+	watch   bool
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -25,9 +36,21 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		err := temingo.Render("src/", "output/", ".temingoignore")
-		if err != nil {
-			log.Fatalln(err)
+		var (
+			err error
+		)
+
+		if watch {
+			err = temingo.WatchChanges(inputDir, outputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		} else {
+			err = temingo.Render(inputDir, outputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			log.Println("Build complete.")
 		}
 	},
 }
@@ -47,9 +70,15 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.temingo.yaml)")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVarP(&inputDir, "inputDir", "i", "src/", "inputDir contains the source files")
+	rootCmd.PersistentFlags().StringVarP(&outputDir, "outputDir", "o", "output/", "outputDir is where temingo builds to")
+	rootCmd.PersistentFlags().StringVar(&temingoignore, "temingoignore", ".temingoignore", "path to the temingo ignore file (works like gitignore`)")
+	rootCmd.PersistentFlags().StringVarP(&templateExtension, "templateExtension", "t", ".template", "templateExtension marks a file as template that correlates to a rendered file")
+	rootCmd.PersistentFlags().StringVarP(&metaTemplateExtension, "metaTemplateExtension", "m", ".metatemplate", "metaTemplateExtension marks a file as template that correlates to multiple rendered files")
+	rootCmd.PersistentFlags().StringVarP(&componentExtension, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
+
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose increases the level of detail of the logs")
+	rootCmd.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
 }
 
 // initConfig reads in config file and ENV variables if set.

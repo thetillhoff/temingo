@@ -3,33 +3,40 @@
 This software aims to provide a simple but powerful templating mechanism.
 
 The original idea was to create a simple static site generator, which is not as overloaded with "unnecessary functionality" as f.e. hugo.
-The result, though, should not specifically be bound to website stuff, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/thetillhoff/temingo/issues/9) is resolved.
+The result, though, should not specifically be bound to website contents, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/thetillhoff/temingo/issues/9) is resolved.
+
+Temingo supports
+- normal-type templates (== single-output templates) that correlate to exactly one output file,
+- component-type templates (== partial templates) that can be included in other templates,
+- meta-type templates (== multi-output templates) that will render to multiple output files,
+- static files that will be copied to the output directory as is - respecting their location in the input directory filetree,
+- an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
+- a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
 
 ## Usage
 ```
 temingo
-temingo -w
 temingo init -> will generate a sample project in the current folder. Only starts writing files, if the inputdir doesn't exist yet
 ```
 
 ```
---valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)."
---inputDir, -i, default "./": Sets the path to the template-file-directory."
---outputDir, -o, default "output": Sets the destination-path for the compiled templates."
+--valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)." // TODO -> doesn't even work yet
+--inputDir, -i, default "./src": Sets the path to the template-file-directory."
+--outputDir, -o, default "./output": Sets the destination-path for the compiled templates."
 --templateExtension, -t, default ".template": Sets the extension of the template files."
---singleTemplateExtension, default ".single.template": Sets the extension of the single-view template files. Automatically excluded from normally loaded templates."
---componentExtension, default ".component": Sets the extension of the component files." //TODO: not necessary, should be the same as templateExtension, since they are already distinguished by directory -> Might be useful when "modularization" will be implemented
+--metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates."
+--componentExtension, -c, default ".component": Sets the extension of the component files."
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
---watch, -w", default false: Watches the template-file-directory, components-directory and values-files.
---debug, -d", default false: Enables the debug mode.
+--watch, -w, default false: Watches the template-file-directory, components-directory and values-files. // TODO
+--verbose, -v, default false: Enables the debug mode which prints more logs. // TODO
 ```
 
 temingo will by default:
 - take the source files from folder `./src`.
 - consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
-- write the rendered files into folder `./output/`
+- write the rendered files into folder `./output`
 - take all `*.component` files as intermediate templates / snippets
-  - their names must be unique. temingo will check this.
+  - their names must be globally unique. temingo will check this.
 - take all `*.template` files to be rendered
   - their names must be unique. temingo will check this.
   - for each of those file, temingo will check their folder for any subfolders. If there are any, their names will be added to a list which is available in this "parent" template
@@ -44,7 +51,7 @@ temingo will by default:
   - Pass the final object as `values[meta]` to the respective template rendering process
 - What else does the `values[string]object` map contain tha tis passed to each template rendering process:
   ```
-  ["path"] = string -> path to template
+  ["path"] = string -> path to template (within `./src/`)
   ["breadcrumbs"] = []string -> path to location of template, split by '/'
   ["meta"] = map[string]object -> metadata for current folder
   ["childmeta"] = map[string]object -> aggregated metadata of subfolders, key is the folder name containing the respective metadata
@@ -70,6 +77,20 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 <!--
 TODO
 Instead of doing os.Stat all the time, write functions that check against the existing internal filetree
+-->
+
+<!--
+TODO
+- add cli flags
+- add cli help for all commands
+- write unit tests
+- `temingo init` needs to respect the cli flags:
+  - inputDir
+  - temingoignore
+  - templateExtension
+  - metatemplateExtension
+  - componentExtension
+- move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
 -->
 
 ## Development

@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-func Render(inputDir string, outputDir string, temingoignorePath string) error {
+func Render(inputDir string, outputDir string, temingoignorePath string, templateExtension string, metaTemplateExtension string, componentExtension string, verbose bool) error {
 	var (
 		err       error
 		filePaths []string
@@ -28,11 +28,8 @@ func Render(inputDir string, outputDir string, temingoignorePath string) error {
 		templateRenderPath          string
 		metaTemplateRenderPath      string
 
-		componentExtension    = ".component"
-		templateExtension     = ".template"
-		metaTemplateExtension = ".metatemplate"
-		componentFiles        = make(map[string]string)
-		renderedTemplates     = make(map[string][]byte)
+		componentFiles    = make(map[string]string)
+		renderedTemplates = make(map[string][]byte)
 	)
 
 	filePaths, err = retrieveFilePaths(inputDir, temingoignorePath) // Get inputDir file-tree
