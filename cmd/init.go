@@ -19,7 +19,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		err := temingo.Init(inputDir, temingoignore)
+		err := temingo.Init(inputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
 		if err != nil {
 			log.Fatalln(err)
 		}

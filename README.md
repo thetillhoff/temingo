@@ -16,7 +16,7 @@ Temingo supports
 ## Usage
 ```
 temingo
-temingo init -> will generate a sample project in the current folder. Only starts writing files, if the inputdir doesn't exist yet
+temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `-w`.
 ```
 
 ```
@@ -81,14 +81,8 @@ Instead of doing os.Stat all the time, write functions that check against the ex
 
 <!--
 TODO
-- add cli flags
 - add cli help for all commands
 - write unit tests
-- `temingo init` needs to respect the cli flags:
-  - temingoignore
-  - templateExtension
-  - metatemplateExtension
-  - componentExtension
 - move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
 -->
 

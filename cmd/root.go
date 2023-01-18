@@ -78,7 +78,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&componentExtension, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
 
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose increases the level of detail of the logs")
-	rootCmd.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
+	rootCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -8,13 +8,15 @@ import (
 	"strings"
 )
 
-// While this variable contains all the files from the test project, it has the prefix `testProject/` for each of the paths.
-// Do not remove the following - it configures the embedding!
-//
-//go:embed all:testProject
-var embeddedTestFilesWithPrefix embed.FS
+var (
+	// While this variable contains all the files from the test project, it has the prefix `testProject/` for each of the paths.
+	// Do not remove the following - it configures the embedding!
+	//
+	//go:embed all:testProject
+	embeddedTestFilesWithPrefix embed.FS
+)
 
-func writeTestProjectFiles(inputDir string, temingoignore string) error {
+func writeTestProjectFiles(inputDir string, temingoignore string, templateExtension string, metaTemplateExtension string, componentExtension string, verbose bool) error {
 	var (
 		err              error
 		testProjectFiles map[string][]byte = map[string][]byte{}
@@ -42,14 +44,23 @@ func writeTestProjectFiles(inputDir string, temingoignore string) error {
 		if strings.HasPrefix(treepath, "src/") {
 			treepath = strings.TrimPrefix(treepath, "src/")
 			treepath = path.Join(inputDir, treepath)
-		} else if temingoignore != ".temingoignore" && treepath == ".temingoignore" {
+		} else if treepath == ".temingoignore" { // No need to check if the value is actually different - simply overriding it is faster
 			treepath = temingoignore
+		} else if strings.Contains(treepath, defaultTemplateExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultTemplateExtension, templateExtension)
+		} else if strings.Contains(treepath, defaultMetaTemplateExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultMetaTemplateExtension, metaTemplateExtension)
+		} else if strings.Contains(treepath, defaultComponentExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultComponentExtension, componentExtension)
 		}
+
 		err = writeFile(treepath, content) // Write the file to disk
 		if err != nil {
 			return err
 		}
-		log.Println("File created:", treepath)
+		if verbose {
+			log.Println("File created:", treepath)
+		}
 	}
 
 	return nil

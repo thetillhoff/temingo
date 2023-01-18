@@ -8,13 +8,15 @@ import (
 	"strings"
 )
 
-// While this variable contains all the files from the example project, it has the prefix `exampleProject/` for each of the paths.
-// Do not remove the following - it configures the embedding!
-//
-//go:embed all:exampleProject
-var embeddedExampleFilesWithPrefix embed.FS
+var (
+	// While this variable contains all the files from the example project, it has the prefix `exampleProject/` for each of the paths.
+	// Do not remove the following - it configures the embedding!
+	//
+	//go:embed all:exampleProject
+	embeddedExampleFilesWithPrefix embed.FS
+)
 
-func writeExampleProjectFiles(inputDir string) error {
+func writeExampleProjectFiles(inputDir string, temingoignore string, templateExtension string, metaTemplateExtension string, componentExtension string, verbose bool) error {
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
@@ -42,12 +44,23 @@ func writeExampleProjectFiles(inputDir string) error {
 		if strings.HasPrefix(treepath, "src/") {
 			treepath = strings.TrimPrefix(treepath, "src/")
 			treepath = path.Join(inputDir, treepath)
+		} else if treepath == ".temingoignore" { // No need to check if the value is actually different - simply overriding it is faster
+			treepath = temingoignore
+		} else if strings.Contains(treepath, defaultTemplateExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultTemplateExtension, templateExtension)
+		} else if strings.Contains(treepath, defaultMetaTemplateExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultMetaTemplateExtension, metaTemplateExtension)
+		} else if strings.Contains(treepath, defaultComponentExtension) {
+			treepath = strings.ReplaceAll(treepath, defaultComponentExtension, componentExtension)
 		}
+
 		err = writeFile(treepath, content) // Write the file to disk
 		if err != nil {
 			return err
 		}
-		log.Println("File created:", treepath)
+		if verbose {
+			log.Println("File created:", treepath)
+		}
 	}
 
 	return nil
