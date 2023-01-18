@@ -81,7 +81,6 @@ Instead of doing os.Stat all the time, write functions that check against the ex
 
 <!--
 TODO
-- add cli help for all commands
 - write unit tests
 - move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
 -->
