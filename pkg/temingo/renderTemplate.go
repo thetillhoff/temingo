@@ -10,7 +10,7 @@ import (
 )
 
 // Returns the rendered template
-func renderTemplate(templatePath string, templateContent string, componentFiles map[string]string, inputDir string) ([]byte, error) {
+func renderTemplate(templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
 	var (
 		err             error
 		values          map[string]interface{} = make(map[string]interface{})
@@ -27,8 +27,10 @@ func renderTemplate(templatePath string, templateContent string, componentFiles 
 	templateDir, _ = path.Split(templatePath)
 	values["breadcrumbs"] = strings.Split(templateDir, "/") // Breadcrumbs to the current file
 
-	log.Println("Searching metadata for", templatePath)
-	values["meta"], err = getMetaForDir(inputDir, templateDir) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
+	if verbose {
+		log.Println("Searching metadata for", templatePath)
+	}
+	values["meta"], err = getMetaForDir(inputDir, templateDir, verbose) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +42,10 @@ func renderTemplate(templatePath string, templateContent string, componentFiles 
 	}
 	for _, f := range files { // For each child-element of folder
 		if f.IsDir() { // Only for folders
-			log.Println("Searching child metadata for", inputDir+path.Join(path.Dir(templatePath), f.Name()))
-			childMetaForDir, err = getMetaForDir(inputDir, path.Join(path.Dir(templatePath), f.Name()))
+			if verbose {
+				log.Println("Searching child metadata for", inputDir+path.Join(path.Dir(templatePath), f.Name()))
+			}
+			childMetaForDir, err = getMetaForDir(inputDir, path.Join(path.Dir(templatePath), f.Name()), verbose)
 			if err != nil {
 				return nil, err
 			}

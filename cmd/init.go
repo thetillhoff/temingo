@@ -7,6 +7,10 @@ import (
 	"github.com/thetillhoff/temingo/pkg/temingo"
 )
 
+var (
+	projectType string
+)
+
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -19,7 +23,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		err := temingo.Init(inputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+		err := temingo.Init(inputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose, projectType)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -39,4 +43,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	initCmd.Flags().StringVar(&projectType, "type", "example", "The type of project for which initial files should be generated")
 }

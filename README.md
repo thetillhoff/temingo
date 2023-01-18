@@ -81,10 +81,10 @@ Instead of doing os.Stat all the time, write functions that check against the ex
 
 <!--
 TODO
-- extract all "read from file" and "write to file" methods to the caller-method, so the methods can be better unit-tested
 - write unit tests
-- merge testProject and exampleProject into one
 - move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
+- Set proper cmd descriptions
+- think how the path processing in Render(), Init(), and Watch() can be simplified in a way that doesn't require dedicated testing...
 -->
 
 ## Development

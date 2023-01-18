@@ -1,88 +1,58 @@
 package temingo
 
 import (
-	"errors"
 	"log"
 	"os"
 	"path"
 	"strings"
-	"text/template"
 )
 
-func Render(inputDir string, outputDir string, temingoignorePath string, templateExtension string, metaTemplateExtension string, componentExtension string, verbose bool) error {
+func Render(inputDirFlag string, outputDirFlag string, temingoignorePathFlag string, templateExtensionFlag string, metaTemplateExtensionFlag string, componentExtensionFlag string, verboseFlag bool) error {
 	var (
 		err       error
 		filePaths []string
 
 		componentPaths    []string
 		templatePaths     []string
-		metatemplatePaths []string
+		metaTemplatePaths []string
 		staticPaths       []string
 
-		temporaryTemplateEngineName = "temporaryComponentEngine"
-		content                     []byte
-		temporaryTemplateEngine     *template.Template
-		componentName               string
-		componentLocations          = make(map[string]string)
-		renderedTemplate            []byte
-		templateRenderPath          string
-		metaTemplateRenderPath      string
+		content              []byte
+		renderedTemplatePath string
 
-		componentFiles    = make(map[string]string)
-		renderedTemplates = make(map[string][]byte)
+		componentFiles        = make(map[string]string)
+		renderedTemplates     = make(map[string][]byte)
+		renderedMetaTemplates map[string][]byte
 	)
 
-	filePaths, err = retrieveFilePaths(inputDir, temingoignorePath) // Get inputDir file-tree
+	// Set flags globally so they don't have to be passed around all the time
+	inputDir = inputDirFlag
+	outputDir = outputDirFlag
+	temingoignorePath = temingoignorePathFlag
+	templateExtension = templateExtensionFlag
+	metaTemplateExtension = metaTemplateExtensionFlag
+	componentExtension = componentExtensionFlag
+	verbose = verboseFlag
+
+	filePaths, err = retrieveFilePaths() // Get inputDir file-tree
 	if err != nil {
 		return err
 	}
 
-	for _, filePath := range filePaths { // Check what type of file we have
-		if strings.Contains(filePath, componentExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
-			componentPaths = append(componentPaths, filePath)
-			log.Println("Identified as component file:", filePath)
-		} else if strings.Contains(filePath, templateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
-			templatePaths = append(templatePaths, filePath)
-			log.Println("Identified as template file:", filePath)
-		} else if strings.Contains(filePath, metaTemplateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
-			metatemplatePaths = append(metatemplatePaths, filePath)
-			log.Println("Identified as metatemplate file:", filePath)
-		} else {
-			staticPaths = append(staticPaths, filePath)
-			log.Println("Identified as static file:", filePath)
-		}
-	}
+	templatePaths, metaTemplatePaths, componentPaths, staticPaths = sortPaths(filePaths)
 
-	for _, componentPath := range componentPaths { // For each component filepath
+	for _, componentPath := range componentPaths { // Read contents of each component file
 		content, err = readFile(path.Join(inputDir, componentPath)) // Read file contents
 		if err != nil {
 			return err
 		}
 
-		// Checking for duplicate components
-		temporaryTemplateEngine = template.New(temporaryTemplateEngineName) // Create a new temporary template
-		_, err = temporaryTemplateEngine.Parse(string(content))             // Parse the component into the temporary template engine
-		if err != nil {
-			return err
-		}
-		componentName = strings.TrimPrefix(temporaryTemplateEngine.DefinedTemplates(), "; defined templates are: ") // Prefix comes from the offical text.template library
-		componentName = strings.ReplaceAll(componentName, "\"", "")                                                 // remove '"'
-		componentName = strings.ReplaceAll(componentName, " ", "")                                                  // remove ' '
-		for _, subcomponentName := range strings.Split(componentName, ",") {                                        // For all components in this component file (check if it's name is unique)
-			if subcomponentName == temporaryTemplateEngineName { // Skip the manually added initial template engine name
-				continue
-			} else {
-				for existingComponentName, existingComponentPath := range componentLocations { // For each component that already exists
-					if subcomponentName == existingComponentName { // If new component would overwrite an existing component (==same name)
-						return errors.New("duplicate component name '" + subcomponentName + "' found in " + componentPath + " and " + existingComponentPath)
-					}
-				}
-				// If the component is truly new
-				componentLocations[subcomponentName] = componentPath // Add the component name to the list. ComponentPath is only used to provide a better error message
-			}
-		}
-		// All components in this component file are unique
-		componentFiles[componentPath] = string(content) // Add the component file contents to the component file list
+		componentFiles[componentPath] = string(content)
+	}
+
+	err = verifyComponents(componentFiles) // Check if the components are unique
+	if err != nil {
+		return err
 	}
 
 	for _, templatePath := range templatePaths { // Read template contents and execute them
@@ -91,45 +61,23 @@ func Render(inputDir string, outputDir string, temingoignorePath string, templat
 			return err
 		}
 
-		templateRenderPath = strings.ReplaceAll(templatePath, templateExtension, "")
-		renderedTemplate, err = renderTemplate(templateRenderPath, string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplatePath = strings.ReplaceAll(templatePath, templateExtension, "")
+		renderedTemplates[renderedTemplatePath], err = renderTemplate(renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
-
-		renderedTemplates[templateRenderPath] = renderedTemplate
 	}
 
-	for _, metaTemplatePath := range metatemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
-		log.Println("Reading metatemplate from", path.Join(inputDir, metaTemplatePath))
+	for _, metaTemplatePath := range metaTemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
 		content, err = readFile(path.Join(inputDir, metaTemplatePath))
 		if err != nil {
 			return err
 		}
 
-		log.Println("Reading metatemplate folder contents from", path.Dir(path.Join(inputDir, metaTemplatePath)))
-		files, err := os.ReadDir(path.Dir(path.Join(inputDir, metaTemplatePath))) // Get all child-elements of folder
-		if err != nil {
-			return err
+		renderedMetaTemplates, err = renderMetaTemplate(metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
+		for renderedTemplatePath, content = range renderedMetaTemplates {
+			renderedTemplates[renderedTemplatePath] = content
 		}
-
-		for _, f := range files { // For each child-element of folder
-			if f.IsDir() { // Only for folders
-				log.Println("Found folder in metatemplatefolder", path.Join(inputDir, metaTemplatePath, f.Name()))
-				if _, err = os.Stat(path.Join(inputDir, metaTemplatePath, f.Name(), "meta.yaml")); !os.IsNotExist(err) { // Check if meta.yaml exists
-					log.Println("Found meta.yaml in", path.Join(inputDir, metaTemplatePath, f.Name(), "meta.yaml"))
-					metaTemplateRenderPath = strings.ReplaceAll(path.Join(path.Dir(metaTemplatePath), f.Name(), path.Base(metaTemplatePath)), metaTemplateExtension, "")
-					renderedTemplate, err = renderTemplate(metaTemplateRenderPath, string(content), componentFiles, inputDir) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
-					if err != nil {
-						return err
-					}
-					log.Println("metatemplateRenderPath", metaTemplateRenderPath)
-
-					renderedTemplates[metaTemplateRenderPath] = renderedTemplate
-				}
-			}
-		}
-
 	}
 
 	err = os.RemoveAll(outputDir) // Ensure the outputDir is empty
@@ -146,7 +94,9 @@ func Render(inputDir string, outputDir string, temingoignorePath string, templat
 		if err != nil {
 			return err
 		}
-		log.Println("Writing static file to " + path.Join(outputDir, staticPath))
+		if verbose {
+			log.Println("Writing static file to " + path.Join(outputDir, staticPath))
+		}
 	}
 
 	for templatePath, renderedTemplate := range renderedTemplates {
@@ -154,10 +104,10 @@ func Render(inputDir string, outputDir string, temingoignorePath string, templat
 		if err != nil {
 			return err
 		}
-		log.Println("Writing rendered template to " + path.Join(outputDir, templatePath))
+		if verbose {
+			log.Println("Writing rendered template to " + path.Join(outputDir, templatePath))
+		}
 	}
-
-	log.Println("Build completed.")
 
 	return nil
 }

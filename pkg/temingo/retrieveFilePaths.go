@@ -14,7 +14,7 @@ import (
 
 // Returns the paths of all files within the inputDir (recursive traversal)
 // Will remove the ignored paths before returning the list (.temingoignore)
-func retrieveFilePaths(inputDir string, temingoignorePath string) ([]string, error) {
+func retrieveFilePaths() ([]string, error) {
 	var (
 		err          error
 		filePaths    []string
@@ -52,20 +52,28 @@ func retrieveFilePaths(inputDir string, temingoignorePath string) ([]string, err
 				return nil
 			} else if ignore != nil && ignore.MatchesPath(relativeFilePath) { // Check if temingoignore was found and parsed earlier, then if it matches the current path
 				// Path excluded by temingoignore
-				log.Println("Ignored by temingoignore: '" + relativeFilePath + "'.")
+				if verbose {
+					log.Println("Ignored by temingoignore: '" + relativeFilePath + "'.")
+				}
 				if info.IsDir() { // If the current path points to a folder
 					return filepath.SkipDir // Don't dive deeper in ignored folders
 				}
 			} else if info.IsDir() { // Let's keep the folders in the list, so it's easier to copy them with the correct permissions
 				// Not a file, but a folder. Therefore no need to add it to the filelist.
-				log.Println("Ignored because of being a folder: '" + relativeFilePath + "'.")
+				if verbose {
+					log.Println("Ignored because of being a folder: '" + relativeFilePath + "'.")
+				}
 			} else if path.Base(relativeFilePath) == metaFilename {
-				log.Println("Ignored because of being a `meta.yaml`: '" + relativeFilePath + "'.")
+				if verbose {
+					log.Println("Ignored because of being a `meta.yaml`: '" + relativeFilePath + "'.")
+				}
 			} else {
 				// Valid filepath
 				filePaths = append(filePaths, relativeFilePath) // Add filepath to list
 
-				log.Println("Found file: " + relativeFilePath)
+				if verbose {
+					log.Println("Found file: " + relativeFilePath)
+				}
 			}
 			return nil
 		})

@@ -9,13 +9,16 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-func WatchChanges(inputDir string, outputDir string, temingoignore string, templateExtension string, metaTemplateExtension string, componentExtension string, verbose bool) error {
+func WatchChanges(inputDirFlag string, outputDirFlag string, temingoignorePathFlag string, templateExtensionFlag string, metaTemplateExtensionFlag string, componentExtensionFlag string, verboseFlag bool) error {
 	var (
 		err         error
 		w           *watcher.Watcher
 		f           fs.FileInfo
 		watchedPath string
 	)
+
+	// Set flags globally so they don't have to be passed around all the time
+	verbose = verboseFlag
 
 	log.Println("*** Started to watch for file changes ***")
 
@@ -35,7 +38,7 @@ func WatchChanges(inputDir string, outputDir string, temingoignore string, templ
 		return err
 
 	}
-	if err = w.Add(temingoignore); err != nil {
+	if err = w.Add(temingoignorePath); err != nil {
 		return err
 	}
 	// for _, valuesFile := range valuesFilePaths { // for each valuesfilepath
@@ -57,7 +60,7 @@ func WatchChanges(inputDir string, outputDir string, temingoignore string, templ
 			select {
 			case event := <-w.Event: // receive events
 				log.Println("*** Rebuild triggered by a change detected in", event.Path, "***")
-				err = Render(inputDir, outputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+				err = Render(inputDirFlag, outputDirFlag, temingoignorePathFlag, templateExtensionFlag, metaTemplateExtensionFlag, componentExtensionFlag, verbose)
 				if err != nil {
 					log.Fatalln(err)
 				}

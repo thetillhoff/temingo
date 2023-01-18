@@ -9,7 +9,7 @@ import (
 	"github.com/imdario/mergo"
 )
 
-func getMetaForDir(startDir string, dirPath string) (map[string]interface{}, error) {
+func getMetaForDir(startDir string, dirPath string, verbose bool) (map[string]interface{}, error) {
 	var (
 		err error
 
@@ -24,7 +24,9 @@ func getMetaForDir(startDir string, dirPath string) (map[string]interface{}, err
 		currentFolder = path.Join(currentFolder, folder)
 		currentMetaLocation = path.Join(currentFolder, "meta.yaml")
 		if _, err = os.Stat(currentMetaLocation); !os.IsNotExist(err) {
-			log.Println("Reading metadata from", currentMetaLocation)
+			if verbose {
+				log.Println("Reading metadata from", currentMetaLocation)
+			}
 			content, err = readFile(currentMetaLocation)
 			if err != nil {
 				return values, err
