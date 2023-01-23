@@ -98,7 +98,7 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
-		renderedMetaTemplates, err = engine.renderMetaTemplate(metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
+		renderedMetaTemplates, err = engine.renderMetaTemplate(fileList, metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
 		for renderedTemplatePath, content = range renderedMetaTemplates {
 			renderedTemplates[renderedTemplatePath] = content
 		}
