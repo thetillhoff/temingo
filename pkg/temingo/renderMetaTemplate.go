@@ -22,7 +22,7 @@ func (engine *Engine) renderMetaTemplate(fileList fileIO.FileList, metaTemplateP
 		}
 
 		metaTemplateRenderPath = strings.ReplaceAll(path.Join(path.Dir(metaFilePath), path.Base(metaTemplatePath)), engine.MetaTemplateExtension, "")
-		renderedMetaTemplate, err = engine.renderTemplate(metaTemplateRenderPath, metaTemplateContent, componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedMetaTemplate, err = engine.renderTemplate(fileList, metaTemplateRenderPath, metaTemplateContent, componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return renderedMetaTemplates, err
 		}

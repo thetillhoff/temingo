@@ -7,10 +7,12 @@ import (
 	"path"
 	"strings"
 	"text/template"
+
+	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
 // Returns the rendered template
-func (engine *Engine) renderTemplate(templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
+func (engine *Engine) renderTemplate(fileList fileIO.FileList, templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
 	var (
 		err             error
 		values          map[string]interface{} = make(map[string]interface{})
@@ -30,7 +32,7 @@ func (engine *Engine) renderTemplate(templatePath string, templateContent string
 	if engine.Verbose {
 		log.Println("Searching metadata for", templatePath)
 	}
-	values["meta"], err = getMetaForDir(engine.InputDir, templateDir, engine.Verbose) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
+	values["meta"], err = getMetaForDir(fileList, engine.InputDir, templateDir, engine.Verbose) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +47,7 @@ func (engine *Engine) renderTemplate(templatePath string, templateContent string
 			if engine.Verbose {
 				log.Println("Searching child metadata for", engine.InputDir+path.Join(path.Dir(templatePath), f.Name()))
 			}
-			childMetaForDir, err = getMetaForDir(engine.InputDir, path.Join(path.Dir(templatePath), f.Name()), engine.Verbose)
+			childMetaForDir, err = getMetaForDir(fileList, engine.InputDir, path.Join(path.Dir(templatePath), f.Name()), engine.Verbose)
 			if err != nil {
 				return nil, err
 			}

@@ -84,7 +84,7 @@ func (engine *Engine) Render() error {
 		}
 
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
-		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileList, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
