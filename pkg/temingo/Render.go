@@ -5,12 +5,15 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
-func Render(inputDirFlag string, outputDirFlag string, temingoignorePathFlag string, templateExtensionFlag string, metaTemplateExtensionFlag string, componentExtensionFlag string, verboseFlag bool) error {
+func (engine *Engine) Render() error {
 	var (
-		err       error
-		filePaths []string
+		err         error
+		ignoreLines []string
+		fileList    fileIO.FileList
 
 		componentPaths    []string
 		templatePaths     []string
@@ -25,24 +28,39 @@ func Render(inputDirFlag string, outputDirFlag string, temingoignorePathFlag str
 		renderedMetaTemplates map[string][]byte
 	)
 
-	// Set flags globally so they don't have to be passed around all the time
-	inputDir = inputDirFlag
-	outputDir = outputDirFlag
-	temingoignorePath = temingoignorePathFlag
-	templateExtension = templateExtensionFlag
-	metaTemplateExtension = metaTemplateExtensionFlag
-	componentExtension = componentExtensionFlag
-	verbose = verboseFlag
+	// Parse temingoignore if exists
 
-	filePaths, err = retrieveFilePaths() // Get inputDir file-tree
+	if _, err = os.Stat(engine.TemingoignorePath); os.IsNotExist(err) {
+		// No ignore file
+	} else if err != nil {
+		// ignore file exists, but can't be accessed
+		return err
+	} else {
+		// temingoignore exists and can be read
+
+		ignoreLines, err = fileIO.ReadFileLineByLine(engine.TemingoignorePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Read filetree with ignoreLines
+
+	fileList = fileIO.FileList{Path: engine.InputDir}
+
+	err = fileList.GenerateWithIgnoreLines(ignoreLines, engine.Verbose) // Get inputDir file-tree
 	if err != nil {
 		return err
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths = sortPaths(filePaths)
+	// Sort retrieved filepaths
+
+	templatePaths, metaTemplatePaths, componentPaths, staticPaths = engine.sortPaths(fileList)
+
+	// Read component files
 
 	for _, componentPath := range componentPaths { // Read contents of each component file
-		content, err = readFile(path.Join(inputDir, componentPath)) // Read file contents
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, componentPath)) // Read file contents
 		if err != nil {
 			return err
 		}
@@ -50,62 +68,70 @@ func Render(inputDirFlag string, outputDirFlag string, temingoignorePathFlag str
 		componentFiles[componentPath] = string(content)
 	}
 
+	// Verify components
+
 	err = verifyComponents(componentFiles) // Check if the components are unique
 	if err != nil {
 		return err
 	}
 
-	for _, templatePath := range templatePaths { // Read template contents and execute them
-		content, err = readFile(path.Join(inputDir, templatePath))
+	// Read template files and execute them
+
+	for _, templatePath := range templatePaths {
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, templatePath))
 		if err != nil {
 			return err
 		}
 
-		renderedTemplatePath = strings.ReplaceAll(templatePath, templateExtension, "")
-		renderedTemplates[renderedTemplatePath], err = renderTemplate(renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
+		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
 	}
 
+	// Read metatemplate files, check metadata and execute them
+
 	for _, metaTemplatePath := range metaTemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta.yaml
-		content, err = readFile(path.Join(inputDir, metaTemplatePath))
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaTemplatePath))
 		if err != nil {
 			return err
 		}
 
-		renderedMetaTemplates, err = renderMetaTemplate(metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
+		renderedMetaTemplates, err = engine.renderMetaTemplate(metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
 		for renderedTemplatePath, content = range renderedMetaTemplates {
 			renderedTemplates[renderedTemplatePath] = content
 		}
 	}
 
-	err = os.RemoveAll(outputDir) // Ensure the outputDir is empty
+	// Update output
+
+	err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
 	if err != nil {
 		return err
 	}
-	err = copyFile(inputDir, outputDir) // Recreate the outputDir with the same permissions as the inputDir
+	err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
 	if err != nil {
 		return err
 	}
 
 	for _, staticPath := range staticPaths {
-		err = copyFile(path.Join(inputDir, staticPath), path.Join(outputDir, staticPath))
+		err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
 		if err != nil {
 			return err
 		}
-		if verbose {
-			log.Println("Writing static file to " + path.Join(outputDir, staticPath))
+		if engine.Verbose {
+			log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
 		}
 	}
 
-	for templatePath, renderedTemplate := range renderedTemplates {
-		err = writeFile(path.Join(outputDir, templatePath), renderedTemplate)
+	for templatePath, renderedTemplate := range renderedTemplates { // includes both templates and metaTemplates
+		err = fileIO.WriteFile(path.Join(engine.OutputDir, templatePath), renderedTemplate)
 		if err != nil {
 			return err
 		}
-		if verbose {
-			log.Println("Writing rendered template to " + path.Join(outputDir, templatePath))
+		if engine.Verbose {
+			log.Println("Writing rendered template to " + path.Join(engine.OutputDir, templatePath))
 		}
 	}
 

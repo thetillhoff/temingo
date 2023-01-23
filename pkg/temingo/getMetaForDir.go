@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/imdario/mergo"
+	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
 func getMetaForDir(startDir string, dirPath string, verbose bool) (map[string]interface{}, error) {
@@ -27,7 +28,7 @@ func getMetaForDir(startDir string, dirPath string, verbose bool) (map[string]in
 			if verbose {
 				log.Println("Reading metadata from", currentMetaLocation)
 			}
-			content, err = readFile(currentMetaLocation)
+			content, err = fileIO.ReadFile(currentMetaLocation)
 			if err != nil {
 				return values, err
 			}

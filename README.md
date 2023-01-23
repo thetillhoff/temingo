@@ -20,15 +20,15 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 ```
 
 ```
---valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)." // TODO -> doesn't even work yet
+<!-- --valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)." // TODO -> doesn't even work yet -->
 --inputDir, -i, default "./src": Sets the path to the template-file-directory."
 --outputDir, -o, default "./output": Sets the destination-path for the compiled templates."
 --templateExtension, -t, default ".template": Sets the extension of the template files."
 --metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates."
 --componentExtension, -c, default ".component": Sets the extension of the component files."
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
---watch, -w, default false: Watches the template-file-directory, components-directory and values-files. // TODO
---verbose, -v, default false: Enables the debug mode which prints more logs. // TODO
+--watch, -w, default false: Watches the inputDir and the temingoignore.
+--verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
 temingo will by default:
@@ -82,9 +82,34 @@ Instead of doing os.Stat all the time, write functions that check against the ex
 <!--
 TODO
 - write unit tests
-- move WatchChanges (==whole filesystem watcher) to its own dedicated package, then pass the Render(...) call as an argument
 - Set proper cmd descriptions
 - think how the path processing in Render(), Init(), and Watch() can be simplified in a way that doesn't require dedicated testing...
+
+- fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
+- inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
+- pass global variables like datetime (both one value for all, f.e. startTime, but also renderTime?)
+- fileWatcher should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
+- automatically prettify generated files by default - or minify, depending on configuration
+- prettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, but them in dedicated repos.
+
+- components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
+  - references are to git repos and tags therein.
+  - alternatively introduce a global registry for components, like godocs
+  - either helm-repo approach, or apt/godocs-approach
+  - local overrides should still be possible / components need to be able to be adjusted per project still
+  - maybe a `values.yaml` (optional) that can add additional properties/variables or overriding default ones for the whole lib
+- make it possible to print all css dependencies & overriding tree -> per component
+- use html <meta> tag for listview attributes
+- (div-merge on minifyHtml) // might clash with css rules...
+- templating engine should savea pamming of (inserted) line-numbers. That way, when the html/css/js is invalid, it can point to the corrent file and line.
+-->
+
+<!--
+html parser notes
+- parent -> Node / node-ref
+- siblings -> []Node
+- attributes (contains, not equals) -> map[string]string
+- content -> string/[]Node
 -->
 
 ## Development
@@ -95,6 +120,12 @@ TODO
 ```
 go test ./...
 ```
+
+### Decisions / best practices
+- Don't have global variables in a package -> they would be obstructed for the consumer and are not threadsafe
+- Don't use functional options -> they require a lot of code / maintenance. Also, having functions to set a context object every time a function is called is tedious
+- Use Context (called engine in this project). Not necessarily the go-context package, but implement "instance of package" as context and use that.
+- For packages that have "global" variables / arguments, use Context (called engine in this project) as well.
 
 
 # notes for later docs

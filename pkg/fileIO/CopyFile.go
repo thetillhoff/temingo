@@ -1,4 +1,4 @@
-package temingo
+package fileIO
 
 import (
 	"io"
@@ -8,10 +8,10 @@ import (
 
 // Copies the specified sourcePath to the destinationPath
 // Will NOT create the required folders.
-// If the specified sourcePath is a folder, it will create the folder at the destination, but not copy the contents.
-// This copy process respects permissions of the sourcePaths while creating the new files.
+// If the specified sourcePath is a folder, it will create the folder at the destination, but not copy the contents (== non-recursive).
+// This copy process respects permissions of the sourcePaths while creating the new files/folders.
 // The destinationPath must not exist.
-func copyFile(sourcePath string, destinationPath string) error {
+func CopyFile(sourcePath string, destinationPath string) error {
 	var (
 		err error
 		// Read different recommendations about the buffer size;

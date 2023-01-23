@@ -10,7 +10,7 @@ import (
 )
 
 // Returns the rendered template
-func renderTemplate(templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
+func (engine *Engine) renderTemplate(templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
 	var (
 		err             error
 		values          map[string]interface{} = make(map[string]interface{})
@@ -27,25 +27,25 @@ func renderTemplate(templatePath string, templateContent string, componentFiles 
 	templateDir, _ = path.Split(templatePath)
 	values["breadcrumbs"] = strings.Split(templateDir, "/") // Breadcrumbs to the current file
 
-	if verbose {
+	if engine.Verbose {
 		log.Println("Searching metadata for", templatePath)
 	}
-	values["meta"], err = getMetaForDir(inputDir, templateDir, verbose) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
+	values["meta"], err = getMetaForDir(engine.InputDir, templateDir, engine.Verbose) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return nil, err
 	}
 
 	templateDir, _ = path.Split(templatePath)
-	files, err := os.ReadDir(path.Join(inputDir, templateDir)) // Get all child-elements of folder
+	files, err := os.ReadDir(path.Join(engine.InputDir, templateDir)) // Get all child-elements of folder
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range files { // For each child-element of folder
 		if f.IsDir() { // Only for folders
-			if verbose {
-				log.Println("Searching child metadata for", inputDir+path.Join(path.Dir(templatePath), f.Name()))
+			if engine.Verbose {
+				log.Println("Searching child metadata for", engine.InputDir+path.Join(path.Dir(templatePath), f.Name()))
 			}
-			childMetaForDir, err = getMetaForDir(inputDir, path.Join(path.Dir(templatePath), f.Name()), verbose)
+			childMetaForDir, err = getMetaForDir(engine.InputDir, path.Join(path.Dir(templatePath), f.Name()), engine.Verbose)
 			if err != nil {
 				return nil, err
 			}

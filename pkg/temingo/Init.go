@@ -4,42 +4,39 @@ import (
 	"errors"
 	"log"
 	"os"
+
+	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
-func Init(inputDirFlag string, temingoignorePathFlag string, templateExtensionFlag string, metaTemplateExtensionFlag string, componentExtensionFlag string, verboseFlag bool, projectType string) error {
+func (engine *Engine) InitProject(projectType string) error {
 	var (
 		err   error
 		files map[string][]byte
 	)
 
-	// Set flags globally so they don't have to be passed around all the time
-	inputDir = inputDirFlag
-	temingoignorePath = temingoignorePathFlag
-	templateExtension = templateExtensionFlag
-	metaTemplateExtension = metaTemplateExtensionFlag
-	componentExtension = componentExtensionFlag
-	verbose = verboseFlag
-
-	if _, err := os.Stat(inputDir); !os.IsNotExist(err) { // Check if the inputDir already exists
-		return errors.New("the folder '" + inputDir + "' already exists") // Fail if the inputdir already exists
+	if _, err := os.Stat(engine.InputDir); !os.IsNotExist(err) { // Check if the inputDir already exists
+		return errors.New("the folder '" + engine.InputDir + "' already exists") // Fail if the inputdir already exists
 	}
 
-	files, err = writeExampleProjectFiles(projectType)
+	if _, err := os.Stat(engine.TemingoignorePath); !os.IsNotExist(err) { // Check if the temingoignore already exists
+		return errors.New("the file '" + engine.TemingoignorePath + "' already exists") // Fail if the temingoignore already exists
+	}
+
+	files, err = engine.writeExampleProjectFiles(projectType)
 	if err != nil {
 		return err
 	}
 
 	for path, content := range files {
-		err = writeFile(path, content) // Write the file to disk
+		err = fileIO.WriteFile(path, content) // Write the file to disk
 		if err != nil {
 			return err
 		}
-		if verbose {
+		if engine.Verbose {
 			log.Println("File created:", path)
 		}
 	}
-
-	log.Println("Project initialized.")
+	log.Println(projectType, "project initialized.")
 
 	return nil
 }

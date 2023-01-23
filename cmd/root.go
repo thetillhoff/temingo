@@ -4,24 +4,27 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"github.com/radovskyb/watcher"
 	"github.com/spf13/cobra"
+	"github.com/thetillhoff/temingo/pkg/fileIO"
 	"github.com/thetillhoff/temingo/pkg/temingo"
 
 	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile               string
-	inputDir              string
-	outputDir             string
-	temingoignore         string
-	templateExtension     string
-	metaTemplateExtension string
-	componentExtension    string
+	cfgFile                   string
+	inputDirFlag              string
+	outputDirFlag             string
+	temingoignoreFlag         string
+	templateExtensionFlag     string
+	metaTemplateExtensionFlag string
+	componentExtensionFlag    string
 
-	verbose bool
-	watch   bool
+	verboseFlag bool
+	watchFlag   bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -40,13 +43,40 @@ to quickly create a Cobra application.`,
 			err error
 		)
 
-		if watch {
-			err = temingo.WatchChanges(inputDir, outputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+		engine := temingo.Engine{
+			InputDir:              inputDirFlag,
+			OutputDir:             outputDirFlag,
+			TemingoignorePath:     temingoignoreFlag,
+			TemplateExtension:     templateExtensionFlag,
+			MetaTemplateExtension: metaTemplateExtensionFlag,
+			ComponentExtension:    componentExtensionFlag,
+			Verbose:               verboseFlag,
+		}
+
+		if watchFlag {
+			log.Println("*** Started to watch for file changes ***")
+
+			err = fileIO.Watch(
+				[]string{
+					engine.InputDir,
+					engine.TemingoignorePath,
+				},
+				[]string{
+					engine.OutputDir,
+					".git",
+				},
+				engine.Verbose,
+				100*time.Millisecond,
+				func(event watcher.Event) error {
+					log.Println("*** Rebuild triggered by a change detected in", event.Path, "***")
+					// TODO inform frontend via websocket connection
+					return engine.Render()
+				})
 			if err != nil {
 				log.Fatalln(err)
 			}
 		} else {
-			err = temingo.Render(inputDir, outputDir, temingoignore, templateExtension, metaTemplateExtension, componentExtension, verbose)
+			err = engine.Render()
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -70,15 +100,15 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.temingo.yaml)")
 
-	rootCmd.PersistentFlags().StringVarP(&inputDir, "inputDir", "i", "src/", "inputDir contains the source files")
-	rootCmd.PersistentFlags().StringVarP(&outputDir, "outputDir", "o", "output/", "outputDir is where temingo builds to")
-	rootCmd.PersistentFlags().StringVar(&temingoignore, "temingoignore", ".temingoignore", "path to the temingo ignore file (works like gitignore`)")
-	rootCmd.PersistentFlags().StringVarP(&templateExtension, "templateExtension", "t", ".template", "templateExtension marks a file as template that correlates to a rendered file")
-	rootCmd.PersistentFlags().StringVarP(&metaTemplateExtension, "metaTemplateExtension", "m", ".metatemplate", "metaTemplateExtension marks a file as template that correlates to multiple rendered files")
-	rootCmd.PersistentFlags().StringVarP(&componentExtension, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
+	rootCmd.PersistentFlags().StringVarP(&inputDirFlag, "inputDir", "i", "src/", "inputDir contains the source files")
+	rootCmd.PersistentFlags().StringVarP(&outputDirFlag, "outputDir", "o", "output/", "outputDir is where temingo builds to")
+	rootCmd.PersistentFlags().StringVar(&temingoignoreFlag, "temingoignore", ".temingoignore", "path to the temingo ignore file (works like gitignore`)")
+	rootCmd.PersistentFlags().StringVarP(&templateExtensionFlag, "templateExtension", "t", ".template", "templateExtension marks a file as template that correlates to a rendered file")
+	rootCmd.PersistentFlags().StringVarP(&metaTemplateExtensionFlag, "metaTemplateExtension", "m", ".metatemplate", "metaTemplateExtension marks a file as template that correlates to multiple rendered files")
+	rootCmd.PersistentFlags().StringVarP(&componentExtensionFlag, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
 
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose increases the level of detail of the logs")
-	rootCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
+	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")
+	rootCmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
 }
 
 // initConfig reads in config file and ENV variables if set.

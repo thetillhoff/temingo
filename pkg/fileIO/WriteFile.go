@@ -1,13 +1,13 @@
-package temingo
-
-// This is automatically tested if `WriteExampleProjectFiles` is tested.
+package fileIO
 
 import (
 	"os"
 	"path"
 )
 
-func writeFile(filePath string, content []byte) error {
+// Creates a file at filePath and writes the content to it
+// Will create all necessary parent folders
+func WriteFile(filePath string, content []byte) error {
 	var (
 		err error
 	)
