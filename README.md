@@ -16,7 +16,7 @@ Temingo supports
 ## Usage
 ```
 temingo
-temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `-w`.
+temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `--watch`.
 ```
 
 ```
@@ -49,7 +49,7 @@ temingo will by default:
   - Iterate through folders from inputdir `/` to the folder containing the template
   - On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one
   - Pass the final object as `values[meta]` to the respective template rendering process
-- What else does the `values[string]object` map contain tha tis passed to each template rendering process:
+- What else does the `values[string]object` map contain that is passed to each template rendering process:
   ```
   ["path"] = string -> path to template (within `./src/`)
   ["breadcrumbs"] = []string -> path to location of template, split by '/'
@@ -76,22 +76,24 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 
 <!--
 TODO
-Instead of doing os.Stat all the time, write functions that check against the existing internal filetree
+- write unit tests for temingo and fileIO
+- Set proper cmd descriptions
+- Write a comment/description for each method (temingo and fileIO)
+- Move fileIO into dedicated repo
+
+- pass global variables like datetime (both one value for all, f.e. startTime, but also renderTime?)
+- fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
 -->
 
 <!--
-TODO
-- write unit tests
-- Set proper cmd descriptions
-- think how the path processing in Render(), Init(), and Watch() can be simplified in a way that doesn't require dedicated testing...
+html parser notes
+- parent -> Node / node-ref
+- siblings -> []Node
+- attributes (contains, not equals) -> map[string]string
+- content -> string/[]Node
 
-- fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
-- inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
-- pass global variables like datetime (both one value for all, f.e. startTime, but also renderTime?)
-- fileWatcher should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
-- automatically prettify generated files by default - or minify, depending on configuration
 - prettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, but them in dedicated repos.
-
+- fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
 - components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
   - references are to git repos and tags therein.
   - alternatively introduce a global registry for components, like godocs
@@ -102,14 +104,8 @@ TODO
 - use html <meta> tag for listview attributes
 - (div-merge on minifyHtml) // might clash with css rules...
 - templating engine should savea pamming of (inserted) line-numbers. That way, when the html/css/js is invalid, it can point to the corrent file and line.
--->
-
-<!--
-html parser notes
-- parent -> Node / node-ref
-- siblings -> []Node
-- attributes (contains, not equals) -> map[string]string
-- content -> string/[]Node
+- automatically prettify generated files by default - or minify, depending on configuration
+- inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
 -->
 
 ## Development
