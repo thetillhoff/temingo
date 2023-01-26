@@ -22,7 +22,7 @@ func (engine *Engine) InitProject(projectType string) error {
 		return errors.New("the file '" + engine.TemingoignorePath + "' already exists") // Fail if the temingoignore already exists
 	}
 
-	files, err = engine.writeExampleProjectFiles(projectType)
+	files, err = engine.getExampleProjectFiles(projectType)
 	if err != nil {
 		return err
 	}

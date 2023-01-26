@@ -55,5 +55,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	initCmd.Flags().StringVar(&projectTypeFlag, "type", "example", "The type of project for which initial files should be generated (options: "+strings.Join(temingo.ProjectTypes, ", ")+")")
+	initCmd.Flags().StringVar(&projectTypeFlag, "type", "example", "The type of project for which initial files should be generated (options: "+strings.Join(temingo.ProjectTypes(), ", ")+")")
 }

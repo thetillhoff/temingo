@@ -17,7 +17,9 @@ var (
 	embeddedExampleProjectFilesWithPrefix embed.FS
 )
 
-func (engine *Engine) writeExampleProjectFiles(projectType string) (map[string][]byte, error) {
+// Meant to initialize the current folder by creating some initial template files - depending on the chosen projectType (options can be retrieved by calling ProjectTypes())
+// Will not write anything to disk, but returns the files as map[path]content
+func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]byte, error) {
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
@@ -28,7 +30,7 @@ func (engine *Engine) writeExampleProjectFiles(projectType string) (map[string][
 
 	// Check if passed projectType (passed as string) is valid
 	contains := false
-	for _, validProjectType := range ProjectTypes {
+	for _, validProjectType := range ProjectTypes() {
 		if projectType == validProjectType {
 			contains = true
 		}

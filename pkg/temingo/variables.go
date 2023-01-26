@@ -5,5 +5,4 @@ var (
 	defaultMetaTemplateExtension string = ".metatemplate"
 	defaultComponentExtension    string = ".component"
 	defaultMetaFileName          string = "meta.yaml"
-	ProjectTypes                        = []string{"test", "example", "website"}
 )
