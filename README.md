@@ -76,6 +76,7 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 <!--
 TODO
 - write unit tests for temingo and fileIO
+- move all fileIO accesses out of non-public functions
 - Set proper cmd descriptions
 - Write a comment/description for each method (temingo and fileIO)
 - allow to override `meta.yaml` filename via cli flag

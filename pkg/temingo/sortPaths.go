@@ -8,6 +8,8 @@ import (
 	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
+// Takes the paths from FileList.Files and sorts them into one list per filetype
+// Order of returned lists: templatePaths, metaTemplatePaths, componentPaths, staticPaths
 func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, []string, []string) {
 	var (
 		templatePaths     []string

@@ -15,10 +15,10 @@ import (
 func (engine *Engine) renderTemplate(fileList fileIO.FileList, templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
 	var (
 		err             error
-		values          map[string]interface{} = make(map[string]interface{})
+		values          map[string]interface{} = map[string]interface{}{}
 		templateDir     string
 		childMetaForDir map[string]interface{}
-		childMeta       map[string]interface{} = make(map[string]interface{})
+		childMeta       map[string]interface{} = map[string]interface{}{}
 		outputBuffer    *bytes.Buffer          = new(bytes.Buffer)
 	)
 

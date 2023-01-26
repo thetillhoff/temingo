@@ -14,7 +14,7 @@ func (engine *Engine) renderMetaTemplate(fileList fileIO.FileList, metaTemplateP
 		// files                  []fs.DirEntry
 		metaTemplateRenderPath string
 		renderedMetaTemplate   []byte
-		renderedMetaTemplates  = make(map[string][]byte)
+		renderedMetaTemplates  = map[string][]byte{}
 	)
 	for _, metaFilePath := range fileList.FilterByLevelAtPath(path.Dir(metaTemplatePath), 2).FilterByFileName(defaultMetaFileName).Files {
 		if engine.Verbose {

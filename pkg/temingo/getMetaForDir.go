@@ -26,12 +26,12 @@ func getMetaForDir(fileList fileIO.FileList, startDir string, dirPath string, ve
 		if err != nil {
 			return values, err
 		}
-		err = yaml.Unmarshal(content, &tempValues) // store yaml into map
+		err = yaml.Unmarshal(content, &tempValues) // Store yaml into map
 		if err != nil {
 			return values, err
 		}
 
-		err := mergo.Merge(&values, tempValues, mergo.WithOverride)
+		err := mergo.Merge(&values, tempValues, mergo.WithOverride) // Merge while overriding existing values
 		if err != nil {
 			return values, err
 		}

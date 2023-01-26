@@ -7,17 +7,17 @@ import (
 )
 
 // Verify that each component has a unique name
-func verifyComponents(components map[string]string) error {
+func verifyComponents(componentFiles map[string]string) error {
 	var (
 		err error
 
 		temporaryTemplateEngine     *template.Template
 		temporaryTemplateEngineName = "temporaryComponentEngine"
 		componentName               string
-		componentLocations          = make(map[string]string)
+		componentLocations          = map[string]string{}
 	)
 
-	for componentPath, content := range components {
+	for componentPath, content := range componentFiles {
 		// Checking for duplicate components
 		temporaryTemplateEngine = template.New(temporaryTemplateEngineName) // Create a new temporary template
 		_, err = temporaryTemplateEngine.Parse(content)                     // Parse the component into the temporary template engine

@@ -23,8 +23,8 @@ func (engine *Engine) Render() error {
 		content              []byte
 		renderedTemplatePath string
 
-		componentFiles        = make(map[string]string)
-		renderedTemplates     = make(map[string][]byte)
+		componentFiles        = map[string]string{}
+		renderedTemplates     = map[string][]byte{}
 		renderedMetaTemplates map[string][]byte
 	)
 
@@ -83,6 +83,10 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
+		// TODO move getMetaForDir here (currently in renderTemplate())
+		// it should return two maps; meta and childMeta
+		// OR it should return one map, where map["meta"] and map["childMeta"] are already set
+
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
 		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileList, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
@@ -99,6 +103,9 @@ func (engine *Engine) Render() error {
 		}
 
 		renderedMetaTemplates, err = engine.renderMetaTemplate(fileList, metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
+		if err != nil {
+			return err
+		}
 		for renderedTemplatePath, content = range renderedMetaTemplates {
 			renderedTemplates[renderedTemplatePath] = content
 		}
