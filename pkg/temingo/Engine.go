@@ -9,3 +9,15 @@ type Engine struct {
 	ComponentExtension    string
 	Verbose               bool
 }
+
+func DefaultEngine() Engine {
+	return Engine{
+		InputDir:              "src/",
+		OutputDir:             "output/",
+		TemingoignorePath:     ".temingoignore",
+		TemplateExtension:     ".template",
+		MetaTemplateExtension: ".metatemplate",
+		ComponentExtension:    ".component",
+		Verbose:               false,
+	}
+}
