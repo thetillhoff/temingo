@@ -113,32 +113,35 @@ func (engine *Engine) Render() error {
 
 	// Update output
 
-	err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
-	if err != nil {
-		return err
-	}
-	err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
-	if err != nil {
-		return err
-	}
+	if !engine.DryRun { // Only if dry-run is disabled
 
-	for _, staticPath := range staticPaths {
-		err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
+		err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
 		if err != nil {
 			return err
 		}
-		if engine.Verbose {
-			log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
-		}
-	}
-
-	for templatePath, renderedTemplate := range renderedTemplates { // includes both templates and metaTemplates
-		err = fileIO.WriteFile(path.Join(engine.OutputDir, templatePath), renderedTemplate)
+		err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
 		if err != nil {
 			return err
 		}
-		if engine.Verbose {
-			log.Println("Writing rendered template to " + path.Join(engine.OutputDir, templatePath))
+
+		for _, staticPath := range staticPaths {
+			err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
+			if err != nil {
+				return err
+			}
+			if engine.Verbose {
+				log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
+			}
+		}
+
+		for templatePath, renderedTemplate := range renderedTemplates { // includes both templates and metaTemplates
+			err = fileIO.WriteFile(path.Join(engine.OutputDir, templatePath), renderedTemplate)
+			if err != nil {
+				return err
+			}
+			if engine.Verbose {
+				log.Println("Writing rendered template to " + path.Join(engine.OutputDir, templatePath))
+			}
 		}
 	}
 

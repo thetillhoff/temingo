@@ -8,6 +8,7 @@ type Engine struct {
 	MetaTemplateExtension string
 	ComponentExtension    string
 	Verbose               bool
+	DryRun                bool
 }
 
 func DefaultEngine() Engine {
@@ -19,5 +20,6 @@ func DefaultEngine() Engine {
 		MetaTemplateExtension: ".metatemplate",
 		ComponentExtension:    ".component",
 		Verbose:               false,
+		DryRun:                false,
 	}
 }

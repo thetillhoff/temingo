@@ -33,6 +33,7 @@ to quickly create a Cobra application.`,
 			MetaTemplateExtension: metaTemplateExtensionFlag,
 			ComponentExtension:    componentExtensionFlag,
 			Verbose:               verboseFlag,
+			DryRun:                dryRunFlag,
 		}
 
 		err := engine.InitProject(projectTypeFlag)

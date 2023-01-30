@@ -24,6 +24,7 @@ var (
 	componentExtensionFlag    string
 
 	verboseFlag bool
+	dryRunFlag  bool
 	watchFlag   bool
 )
 
@@ -52,6 +53,7 @@ to quickly create a Cobra application.`,
 			MetaTemplateExtension: metaTemplateExtensionFlag,
 			ComponentExtension:    componentExtensionFlag,
 			Verbose:               verboseFlag,
+			DryRun:                dryRunFlag,
 		}
 
 		if watchFlag {
@@ -109,6 +111,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&componentExtensionFlag, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
 
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")
+	rootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "don't output files")
 	rootCmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
 }
 
