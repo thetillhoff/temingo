@@ -16,31 +16,37 @@ func TestSortPathWithAll(t *testing.T) {
 			"src/index.template.html",
 			"src/index.metatemplate.html",
 			"src/components/some.component.css",
+			"src/meta.yaml",
 			"src/static.asset",
 		},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 1 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 1, got", len(templatePaths))
 		if templatePaths[0] != "src/index.template.html" {
-			t.Fatal("wrong return value of sortPaths: expected src/index.template.html, got", templatePaths[0])
+			t.Fatal("wrong return value of sortPath templatePaths: expected src/index.template.html, got", templatePaths[0])
 		}
 	} else if len(metaTemplatePaths) != 1 {
 		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 1, got", len(metaTemplatePaths))
 		if metaTemplatePaths[0] != "src/index.metatemplate.html" {
-			t.Fatal("wrong return value of sortPaths: expected src/index.metatemplate.html, got", metaTemplatePaths[0])
+			t.Fatal("wrong return value of sortPath metaTemplatePaths: expected src/index.metatemplate.html, got", metaTemplatePaths[0])
 		}
 	} else if len(componentPaths) != 1 {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 1, got", len(componentPaths))
 		if componentPaths[0] != "src/components/some.component.css" {
-			t.Fatal("wrong return value of sortPaths: expected src/components/some.component.css, got", componentPaths[0])
+			t.Fatal("wrong return value of sortPath componentPaths: expected src/components/some.component.css, got", componentPaths[0])
+		}
+	} else if len(metaPaths) != 1 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 1, got", len(metaPaths))
+		if metaPaths[0] != "" {
+			t.Fatal("wrong return value of sortPath metaPaths: expected src/meta.yaml, got", staticPaths[0])
 		}
 	} else if len(staticPaths) != 1 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 1, got", len(staticPaths))
 		if staticPaths[0] != "src/static.asset" {
-			t.Fatal("wrong return value of sortPaths: expected src/static.asset, got", staticPaths[0])
+			t.Fatal("wrong return value of sortPath staticPaths: expected src/static.asset, got", staticPaths[0])
 		}
 	}
 }
@@ -56,7 +62,7 @@ func TestSortPathWithOnlyTemplate(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 1 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 1, got", len(templatePaths))
@@ -67,6 +73,8 @@ func TestSortPathWithOnlyTemplate(t *testing.T) {
 		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 0, got", len(metaTemplatePaths))
 	} else if len(componentPaths) != 0 {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(componentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}
@@ -84,7 +92,7 @@ func TestSortPathWithOnlyMetaTemplate(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -95,6 +103,8 @@ func TestSortPathWithOnlyMetaTemplate(t *testing.T) {
 		}
 	} else if len(componentPaths) != 0 {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(componentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}
@@ -112,7 +122,7 @@ func TestSortPathWithOnlyComponents(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -122,6 +132,38 @@ func TestSortPathWithOnlyComponents(t *testing.T) {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 1, got", len(componentPaths))
 		if componentPaths[0] != "src/components/some.component.css" {
 			t.Fatal("wrong return value of sortPaths: expected src/components/some.component.css, got", componentPaths[0])
+		}
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(staticPaths) != 0 {
+		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
+	}
+
+}
+
+// Check if sorting works if only one type of path is passed - meta
+func TestSortPathWithOnlyMeta(t *testing.T) {
+
+	engine := DefaultEngine()
+
+	fileList := fileIO.FileList{
+		Files: []string{
+			"src/meta.yaml",
+		},
+	}
+
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+
+	if len(templatePaths) != 0 {
+		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
+	} else if len(metaTemplatePaths) != 0 {
+		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 0, got", len(metaTemplatePaths))
+	} else if len(componentPaths) != 0 {
+		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(metaPaths) != 1 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 1, got", len(componentPaths))
+		if metaPaths[0] != "src/meta.yaml" {
+			t.Fatal("wrong return value of sortPaths: expected src/meta.yaml, got", metaPaths[0])
 		}
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
@@ -140,7 +182,7 @@ func TestSortPathWithOnlyStatic(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -148,6 +190,8 @@ func TestSortPathWithOnlyStatic(t *testing.T) {
 		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 0, got", len(metaTemplatePaths))
 	} else if len(componentPaths) != 0 {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(componentPaths))
 	} else if len(staticPaths) != 1 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 1, got", len(staticPaths))
 		if staticPaths[0] != "src/static.asset" {
@@ -166,7 +210,7 @@ func TestSortPathWithEmpty(t *testing.T) {
 		Files: []string{},
 	}
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -174,6 +218,8 @@ func TestSortPathWithEmpty(t *testing.T) {
 		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 0, got", len(metaTemplatePaths))
 	} else if len(componentPaths) != 0 {
 		t.Fatal("wrong amount of componentPaths returned from sortPaths: expected 0, got", len(componentPaths))
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}

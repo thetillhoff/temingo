@@ -9,12 +9,13 @@ import (
 )
 
 // Takes the paths from FileList.Files and sorts them into one list per filetype
-// Order of returned lists: templatePaths, metaTemplatePaths, componentPaths, staticPaths
-func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, []string, []string) {
+// Order of returned lists: templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths
+func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, []string, []string, []string) {
 	var (
 		templatePaths     []string
 		metaTemplatePaths []string
 		componentPaths    []string
+		metaPaths         []string
 		staticPaths       []string
 	)
 
@@ -34,9 +35,10 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 			if engine.Verbose {
 				log.Println("Identified as metatemplate file:", filePath)
 			}
-		} else if path.Base(filePath) == defaultMetaFileName { // Excluding meta files from sorting - they are not static files that should be copied to the outputDir
+		} else if path.Base(filePath) == defaultMetaFileName { // Making it easier to filter through them later and exclude them from staticPaths - they are not static files that should be copied to the outputDir
+			metaPaths = append(metaPaths, filePath)
 			if engine.Verbose {
-				log.Println("Identified as meta.yaml:", filePath)
+				log.Println("Identified as meta file:", filePath)
 			}
 		} else {
 			staticPaths = append(staticPaths, filePath)
@@ -46,5 +48,5 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 		}
 	}
 
-	return templatePaths, metaTemplatePaths, componentPaths, staticPaths
+	return templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths
 }

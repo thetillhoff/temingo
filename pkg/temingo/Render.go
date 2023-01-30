@@ -18,6 +18,7 @@ func (engine *Engine) Render() error {
 		componentPaths    []string
 		templatePaths     []string
 		metaTemplatePaths []string
+		metaPaths         []string
 		staticPaths       []string
 
 		content              []byte
@@ -55,7 +56,7 @@ func (engine *Engine) Render() error {
 
 	// Sort retrieved filepaths
 
-	templatePaths, metaTemplatePaths, componentPaths, staticPaths = engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths = engine.sortPaths(fileList)
 
 	// Read component files
 
