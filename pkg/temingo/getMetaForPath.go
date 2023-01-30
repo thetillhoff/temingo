@@ -8,13 +8,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func getMetaForDir(fileList fileIO.FileList, startDir string, dirPath string, verbose bool) (map[string]interface{}, error) {
+// Reads all meta files from all directories from the root-dirPath to dirPath and merges them.
+// Returns a interface{} of the result.
+func getMetaForPath(fileList fileIO.FileList, dirPath string, verbose bool) (interface{}, error) {
 	var (
 		err error
 
 		content    []byte
-		tempValues map[string]interface{}
-		values     map[string]interface{}
+		tempValues interface{}
+		values     interface{}
 	)
 
 	for _, metaFilePath := range fileList.FilterByTreePath(dirPath).FilterByFileName(defaultMetaFileName).Files {

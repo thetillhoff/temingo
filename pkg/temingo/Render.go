@@ -24,9 +24,8 @@ func (engine *Engine) Render() error {
 		content              []byte
 		renderedTemplatePath string
 
-		componentFiles        = map[string]string{}
-		renderedTemplates     = map[string][]byte{}
-		renderedMetaTemplates map[string][]byte
+		componentFiles    = map[string]string{}
+		renderedTemplates = map[string][]byte{}
 	)
 
 	// Parse temingoignore if exists
@@ -88,8 +87,10 @@ func (engine *Engine) Render() error {
 		// it should return two maps; meta and childMeta
 		// OR it should return one map, where map["meta"] and map["childMeta"] are already set
 
+		// TODO renderTemplate should get the full meta/values object passed, without having to access the filesystem
+
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
-		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileList, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, templatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
@@ -103,12 +104,19 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
-		renderedMetaTemplates, err = engine.renderMetaTemplate(fileList, metaTemplatePath, string(content), componentFiles) // There will be multiple rendered files out of one meta template
-		if err != nil {
-			return err
-		}
-		for renderedTemplatePath, content = range renderedMetaTemplates {
-			renderedTemplates[renderedTemplatePath] = content
+		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 2).FilterByFileName(defaultMetaFileName).Files { // For each meta.yaml in a direct subfolder
+			if engine.Verbose {
+				log.Println("Found metatemplate child at", metaFilePath)
+			}
+
+			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaFilePath))                 // == Location of meta.yaml, minus meta.yaml, plus filename of metatemplate
+			renderedTemplatePath = strings.ReplaceAll(renderedTemplatePath, engine.MetaTemplateExtension, "") // Remove template extension from filename
+
+			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+			if err != nil {
+				return err
+			}
+
 		}
 	}
 

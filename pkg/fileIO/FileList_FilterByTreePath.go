@@ -18,7 +18,7 @@ func (fileList *FileList) FilterByTreePath(treepath string) *FileList {
 
 	for _, folder := range folders {
 		currentFolder = path.Join(currentFolder, folder)
-		files = append(fileList.FilterByLevelAtPath(currentFolder, 0).Files)
+		files = append(fileList.FilterByLevelAtFolderPath(currentFolder, 0).Files)
 	}
 
 	fileList.Files = files
