@@ -104,7 +104,7 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
-		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 2).FilterByFileName(defaultMetaFileName).Files { // For each meta.yaml in a direct subfolder
+		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 2).FilterByFilename(defaultMetaFileName).Files { // For each meta.yaml in a direct subfolder
 			if engine.Verbose {
 				log.Println("Found metatemplate child at", metaFilePath)
 			}

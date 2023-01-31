@@ -38,7 +38,7 @@ func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose b
 			} else if ignore != nil && ignore.MatchesPath(relativeFilePath) { // Check if ignore is set, then if it matches the current path
 				// Path excluded by ignore
 				if verbose {
-					log.Println("Ignored because of exclusion")
+					log.Println("Ignored because of exclusion:", relativeFilePath)
 				}
 				if info.IsDir() { // If the current path points to a folder
 					return filepath.SkipDir // Don't dive deeper in ignored folders
@@ -46,7 +46,7 @@ func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose b
 			} else if info.IsDir() { // Let's keep the folders in the list, so it's easier to copy them with the correct permissions // TODO fix comment
 				// Not a file, but a folder. Therefore no need to add it to the filelist.
 				if verbose {
-					log.Println("Ignored because of being a folder: '" + relativeFilePath + "'.")
+					log.Println("Ignored because of being a folder: " + relativeFilePath)
 				}
 			} else {
 				// Valid filepath

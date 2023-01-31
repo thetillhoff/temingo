@@ -13,8 +13,11 @@ import (
 // Returns the rendered template
 func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
 	var (
-		err         error
-		meta        map[string]interface{} = map[string]interface{}{}
+		err       error
+		meta      map[string]interface{} = map[string]interface{}{}
+		fileMeta  interface{}
+		childMeta map[string]interface{}
+
 		templateDir string
 
 		outputBuffer *bytes.Buffer = new(bytes.Buffer)
@@ -31,10 +34,13 @@ func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, template
 		log.Println("Searching metadata for", templatePath)
 	}
 
-	meta, err = engine.getMetaForTemplatePath(metaTemplatePaths, templatePath) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
+	fileMeta, childMeta, err = engine.getMetaForTemplatePath(metaTemplatePaths, templatePath) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return nil, err
 	}
+
+	meta["meta"] = fileMeta
+	meta["childMeta"] = childMeta
 
 	outputBuffer.Reset()                         // Ensure the buffer is empty
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name
