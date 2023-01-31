@@ -11,15 +11,18 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 )
 
-func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose bool) error {
+func GenerateFileListWithIgnoreLines(fileListPath string, ignoreLines []string, verbose bool) (FileList, error) {
 	var (
-		err       error
-		filePaths []string
-		ignore    *gitignore.GitIgnore
+		err      error
+		fileList FileList = FileList{
+			Path:  fileListPath,
+			Files: []string{},
+		}
+		ignore *gitignore.GitIgnore
 	)
 
 	if _, err = os.Stat(fileList.Path); os.IsNotExist(err) {
-		return errors.New("folder doesn't exist '" + fileList.Path + "'")
+		return fileList, errors.New("folder doesn't exist '" + fileList.Path + "'")
 	}
 
 	ignore = gitignore.CompileIgnoreLines(ignoreLines...)
@@ -50,7 +53,7 @@ func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose b
 				}
 			} else {
 				// Valid filepath
-				filePaths = append(filePaths, relativeFilePath) // Add filepath to list
+				fileList.Files = append(fileList.Files, relativeFilePath) // Add filepath to list
 
 				if verbose {
 					log.Println("Found file: " + relativeFilePath)
@@ -60,10 +63,8 @@ func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose b
 		})
 
 	if err != nil {
-		return err
+		return fileList, err
 	}
 
-	fileList.Files = filePaths
-
-	return nil
+	return fileList, nil
 }

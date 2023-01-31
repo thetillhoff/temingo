@@ -11,14 +11,17 @@ import (
 
 // Returns the paths of all files within the inputDir (recursive traversal)
 // Will remove the ignored paths before returning the list - does not fail if this doesn't exist!
-func (fileList FileList) Generate(verbose bool) error {
+func GenerateFileList(fileListPath string, verbose bool) (FileList, error) {
 	var (
-		err       error
-		filePaths []string
+		err      error
+		fileList FileList = FileList{
+			Path:  fileListPath,
+			Files: []string{},
+		}
 	)
 
 	if _, err = os.Stat(fileList.Path); os.IsNotExist(err) {
-		return errors.New("folder doesn't exist '" + fileList.Path + "'")
+		return fileList, errors.New("folder doesn't exist '" + fileList.Path + "'")
 	}
 
 	err = filepath.Walk(fileList.Path,
@@ -39,7 +42,7 @@ func (fileList FileList) Generate(verbose bool) error {
 				}
 			} else {
 				// Valid filepath
-				filePaths = append(filePaths, relativeFilePath) // Add filepath to list
+				fileList.Files = append(fileList.Files, relativeFilePath) // Add filepath to list
 
 				if verbose {
 					log.Println("Found file: " + relativeFilePath)
@@ -49,10 +52,8 @@ func (fileList FileList) Generate(verbose bool) error {
 		})
 
 	if err != nil {
-		return err
+		return fileList, err
 	}
 
-	fileList.Files = filePaths
-
-	return nil
+	return fileList, nil
 }
