@@ -12,10 +12,10 @@ import (
 // Reads the meta data for the specified templatePath
 // Returns the metadata from the treePath (meta yamls of the template-dir and the direct children-dirs),
 // the childMetadata in map[folderName]metadata format
-func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (interface{}, map[string]interface{}, error) {
+func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (map[string]interface{}, map[string]interface{}, error) {
 	var (
 		err       error
-		meta      interface{}
+		meta      map[string]interface{} = map[string]interface{}{}
 		childMeta map[string]interface{} = map[string]interface{}{}
 
 		content       []byte
@@ -23,16 +23,16 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 		folderName    string
 	)
 
-	log.Println("Getting metadata for", templatePath)
-	log.Println("metadata:", metaTemplatePaths.Files)
-	log.Println("filtered metadatapaths:", metaTemplatePaths.FilterByTreePath(path.Dir(templatePath)).Files)
+	if engine.Verbose {
+		log.Println("Getting metadata for", templatePath)
+	}
 
 	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta.yaml in dirTree for templatePath
 		if engine.Verbose {
 			log.Println("Reading metadata from", metaFilePath)
 		}
 
-		content, err = fileIO.ReadFile(metaFilePath) // Read file contents
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaFilePath)) // Read file contents
 		if err != nil {
 			return nil, nil, err
 		}
@@ -41,7 +41,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 			return nil, nil, err
 		}
 
-		err := mergo.Merge(meta, parsedContent, mergo.WithOverride) // Merge while overriding existing values
+		err := mergo.Merge(&meta, parsedContent, mergo.WithOverride) // Merge while overriding existing values
 		if err != nil {
 			return nil, nil, err
 		}
@@ -52,7 +52,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 			log.Println("Reading child-metadata from", childMetaFilePath)
 		}
 
-		content, err = fileIO.ReadFile(childMetaFilePath) // Read file contents
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, childMetaFilePath)) // Read file contents
 		if err != nil {
 			return nil, nil, err
 		}

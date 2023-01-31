@@ -46,11 +46,12 @@ func (engine *Engine) Render() error {
 
 	// Read filetree with ignoreLines
 
-	fileList = fileIO.FileList{Path: engine.InputDir}
-
-	err = fileList.GenerateWithIgnoreLines(ignoreLines, engine.Verbose) // Get inputDir file-tree
+	fileList, err = fileIO.GenerateFileListWithIgnoreLines(engine.InputDir, ignoreLines, engine.Verbose) // Get inputDir file-tree
 	if err != nil {
 		return err
+	}
+	if len(fileList.Files) == 0 {
+		log.Println("There were no files found in", fileList.Path)
 	}
 
 	// Sort retrieved filepaths
@@ -104,12 +105,12 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
-		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 2).FilterByFilename(defaultMetaFileName).Files { // For each meta.yaml in a direct subfolder
+		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 1).FilterByFilename(defaultMetaFileName).Files { // For each meta.yaml in a direct subfolder
 			if engine.Verbose {
 				log.Println("Found metatemplate child at", metaFilePath)
 			}
 
-			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaFilePath))                 // == Location of meta.yaml, minus meta.yaml, plus filename of metatemplate
+			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaTemplatePath))             // == Location of meta.yaml, minus meta.yaml, plus filename of metatemplate
 			renderedTemplatePath = strings.ReplaceAll(renderedTemplatePath, engine.MetaTemplateExtension, "") // Remove template extension from filename
 
 			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
