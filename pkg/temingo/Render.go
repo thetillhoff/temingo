@@ -153,6 +153,16 @@ func (engine *Engine) Render() error {
 				log.Println("Writing rendered template to " + path.Join(engine.OutputDir, templatePath))
 			}
 		}
+	} else { // DryRun, so provide information about what would be done instead of doing it
+		log.Println("Would write the following", len(renderedTemplates), "rendered templates:")
+		for templatePath := range renderedTemplates {
+			log.Println("-", templatePath)
+		}
+
+		log.Println("Would write the following", len(staticPaths), "static files:")
+		for _, staticPath := range staticPaths {
+			log.Println("-", staticPath)
+		}
 	}
 
 	return nil
