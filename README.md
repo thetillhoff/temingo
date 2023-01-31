@@ -52,8 +52,8 @@ temingo will by default:
   ```
   ["path"] = string -> path to template (within `./src/`)
   ["breadcrumbs"] = []string -> path to location of template, split by '/'
-  ["meta"] = map[string]object -> metadata for current folder
-  ["childmeta"] = map[string]object -> aggregated metadata of subfolders, key is the folder name containing the respective metadata
+  ["meta"] = map[string]object -> aggregated metadata for current folder
+  ["childMeta"] = map[string]object -> metadata of subfolders, key is the folder name containing the respective metadata
   * (for example the `meta.yaml` object -> it'll start at the root folder, then start descending the folder-tree and grab all `meta.yaml`s along the way. Merged in a way that overwrites the parents' values.)
   ```
 
@@ -76,8 +76,6 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 <!--
 TODO
 - write unit tests for temingo and fileIO
-- move all fileIO accesses out of non-public functions
-- Set proper cmd descriptions
 - Write a comment/description for each method (temingo and fileIO)
 - allow to override `meta.yaml` filename via cli flag
 - Move fileIO into dedicated git-repo
