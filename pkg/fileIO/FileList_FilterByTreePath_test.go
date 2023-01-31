@@ -7,14 +7,14 @@ import (
 
 // Test if only the paths are returned that match a specified treepath
 func TestFilterByTreePath(t *testing.T) {
-	expectedValues := []string{"folderA/random.file", "folderA/subfolderA/random.file"}
+	expectedValues := []string{"match.file", "folderA/match.file", "folderA/subfolderA/match.file"}
 
 	fileList := FileList{Files: []string{
-		"random.file",
-		"folderA/random.file",
-		"folderA/subfolderA/random.file",
+		"match.file",
+		"folderA/match.file",
+		"folderA/subfolderA/match.file",
 		"folderB/random.file",
-		"folderB/subfolder/random.file",
+		"folderB/subfolderA/random.file",
 		"folderA/subfolderB/random.file",
 		"folderA/subfolderA/onemore/random.file",
 	}}
