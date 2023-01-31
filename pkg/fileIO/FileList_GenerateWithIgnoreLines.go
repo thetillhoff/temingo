@@ -11,7 +11,7 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 )
 
-func (fileList *FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose bool) error {
+func (fileList FileList) GenerateWithIgnoreLines(ignoreLines []string, verbose bool) error {
 	var (
 		err       error
 		filePaths []string

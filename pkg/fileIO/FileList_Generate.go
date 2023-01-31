@@ -11,7 +11,7 @@ import (
 
 // Returns the paths of all files within the inputDir (recursive traversal)
 // Will remove the ignored paths before returning the list - does not fail if this doesn't exist!
-func (fileList *FileList) Generate(verbose bool) error {
+func (fileList FileList) Generate(verbose bool) error {
 	var (
 		err       error
 		filePaths []string

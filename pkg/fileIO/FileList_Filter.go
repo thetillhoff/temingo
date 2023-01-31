@@ -1,6 +1,7 @@
 package fileIO
 
-func (fileList *FileList) Filter(filterFunc func(string) bool) *FileList {
+// Implicitly tested by all the other included Filters
+func (fileList FileList) Filter(filterFunc func(string) bool) FileList {
 	var (
 		include bool
 		files   []string = []string{}

@@ -4,9 +4,9 @@ import (
 	"strings"
 )
 
-func (fileList *FileList) RemovePrefixFromAllPaths(prefix string) *FileList {
-	for _, filePath := range fileList.Files {
-		filePath = strings.TrimPrefix(filePath, prefix)
+func (fileList FileList) RemovePrefixFromAllPaths(prefix string) FileList {
+	for index := range fileList.Files {
+		fileList.Files[index] = strings.TrimPrefix(fileList.Files[index], prefix)
 	}
 
 	return fileList

@@ -1,6 +1,6 @@
 package fileIO
 
-func (fileList *FileList) Remove(filePathsToRemove ...string) *FileList {
+func (fileList FileList) Remove(filePathsToRemove ...string) FileList {
 
 	var filePaths = []string{}
 
