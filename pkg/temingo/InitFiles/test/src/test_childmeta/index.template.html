@@ -1,15 +1,15 @@
 {{ . }}
-{{ .childmeta }}
-{{ .childmeta.child1 }}
-{{ .childmeta.child1.name }}
+{{ .childMeta }}
+{{ .childMeta.child1 }}
+{{ .childMeta.child1.name }}
 
-{{ range $index, $element := .childmeta }}
+{{ range $index, $element := .childMeta }}
 {{ $index }}: {{ $element.name }}
 {{else}}
 no children
 {{end}}
 
-{{ range $index, $element := .nochildren }}
+{{ range $index, $element := .noChildren }}
 {{ $index }}: {{ $element.name }}
 {{else}}
 no children
