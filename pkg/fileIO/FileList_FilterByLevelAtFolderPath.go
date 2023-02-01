@@ -4,8 +4,8 @@ import (
 	"strings"
 )
 
-// Returns the filepaths below the provided path, which are the specified amount of path-levels below it
-// Requires a trailing slash. If there is none, it will be automatically added.
+// Retains the filepaths below the provided path, which are the specified amount of path-levels below it
+// Requires a trailing slash. If there is none, it will be automatically added temporarily.
 func (fileList FileList) FilterByLevelAtFolderPath(path string, level int) FileList {
 	path = ensureTrailingSlash(path)
 	return fileList.FilterByFolderPath(path).Filter(

@@ -4,10 +4,11 @@ import (
 	"strings"
 )
 
+// Retains all filePaths that have the exact specified level from the root position.
+// Works by counting slashes.
 func (fileList FileList) FilterByLevel(level int) FileList {
 	return fileList.Filter(
 		func(s string) bool {
-			// TODO doesn't work fully yet, as it cannot filter for a level at a specific path
 			return (strings.Count(s, "/") == level)
 		})
 }

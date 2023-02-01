@@ -11,6 +11,8 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 )
 
+// Returns a fileList with the paths of all files within the provided path (recursive traversal)
+// Will remove the ignored paths before returning the list.
 func GenerateFileListWithIgnoreLines(fileListPath string, ignoreLines []string, verbose bool) (FileList, error) {
 	var (
 		err      error

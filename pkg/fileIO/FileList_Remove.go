@@ -1,5 +1,6 @@
 package fileIO
 
+// Removes the provided filePaths to the fileList.Files
 func (fileList FileList) Remove(filePathsToRemove ...string) FileList {
 
 	var filePaths = []string{}

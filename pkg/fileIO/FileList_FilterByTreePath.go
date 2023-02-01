@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// Retains all filePaths that match the specified treepath
+// This means from the root down to the lowest folder, only files in those directories are retained.
 func (fileList FileList) FilterByTreePath(treepath string) FileList {
 	var (
 		files         []string

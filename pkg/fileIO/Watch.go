@@ -9,7 +9,8 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-// Will watch all included paths recusively for changes
+// Will watch all included paths recusively for changes regularly
+// and run the provided actionEvent
 func Watch(inclusionPaths []string, exclusionPaths []string, verbose bool, interval time.Duration, actionEvent func(watcher.Event) error) error {
 	var (
 		err         error

@@ -9,8 +9,7 @@ import (
 	"strings"
 )
 
-// Returns the paths of all files within the inputDir (recursive traversal)
-// Will remove the ignored paths before returning the list - does not fail if this doesn't exist!
+// Returns a fileList with the paths of all files within the provided path (recursive traversal)
 func GenerateFileList(fileListPath string, verbose bool) (FileList, error) {
 	var (
 		err      error
