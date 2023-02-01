@@ -11,6 +11,7 @@ type Engine struct {
 	DryRun                bool
 }
 
+// Returns an engine with default values
 func DefaultEngine() Engine {
 	return Engine{
 		InputDir:              "src/",

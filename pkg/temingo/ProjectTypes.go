@@ -2,6 +2,7 @@ package temingo
 
 import "log"
 
+// Returns the available ProjectTypes for the Init() function
 func ProjectTypes() []string { // "static" slice
 	var typeList []string
 

@@ -8,6 +8,8 @@ import (
 	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
+// Initializes the current directory with an example project
+// It checks beforehand if the files / folders that will be written already exist and not do a thing if they do.
 func (engine *Engine) InitProject(projectType string) error {
 	var (
 		err   error

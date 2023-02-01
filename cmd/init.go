@@ -11,7 +11,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:       "init {" + strings.Join(temingo.ProjectTypes(), ",") + "}",
-	Short:     "Initializes the current directory with and example project. Available types are " + strings.Join(temingo.ProjectTypes(), ", ") + ".",
+	Short:     "Initializes the current directory with an example project. Available types are " + strings.Join(temingo.ProjectTypes(), ", ") + ".",
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: temingo.ProjectTypes(),
 	Run: func(cmd *cobra.Command, args []string) {

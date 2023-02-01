@@ -9,6 +9,7 @@ import (
 	"github.com/thetillhoff/temingo/pkg/fileIO"
 )
 
+// Renders the templates in the inputDir, writes them to the outputDir and copies the static files
 func (engine *Engine) Render() error {
 	var (
 		err         error
