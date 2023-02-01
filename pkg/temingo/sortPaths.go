@@ -35,7 +35,7 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 			if engine.Verbose {
 				log.Println("Identified as metatemplate file:", filePath)
 			}
-		} else if path.Base(filePath) == defaultMetaFileName { // Making it easier to filter through them later and exclude them from staticPaths - they are not static files that should be copied to the outputDir
+		} else if path.Base(filePath) == engine.MetaFilename { // Making it easier to filter through them later and exclude them from staticPaths - they are not static files that should be copied to the outputDir
 			metaPaths = append(metaPaths, filePath)
 			if engine.Verbose {
 				log.Println("Identified as meta file:", filePath)

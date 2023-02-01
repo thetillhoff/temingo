@@ -34,7 +34,7 @@ func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, template
 		log.Println("Searching metadata for", templatePath)
 	}
 
-	fileMeta, childMeta, err = engine.getMetaForTemplatePath(metaTemplatePaths, templatePath) // Contains aggregated `meta.yaml`s (up to parent dir, were children overwrite their parents values during the merge)
+	fileMeta, childMeta, err = engine.getMetaForTemplatePath(metaTemplatePaths, templatePath) // Contains aggregated meta yamls (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return nil, err
 	}

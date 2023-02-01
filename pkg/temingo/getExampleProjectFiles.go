@@ -63,17 +63,21 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 
 	for treepath, content = range exampleProjectFiles { // For each file of the exampleProject (but without the path prefix)
 		modifiedTreepath = treepath
-		if strings.HasPrefix(modifiedTreepath, "src/") {
+		if strings.HasPrefix(modifiedTreepath, "src/") { // Needs to be done for all the files except the ones in the root dir like the .temingoignore
 			modifiedTreepath = strings.TrimPrefix(modifiedTreepath, "src/")
 			modifiedTreepath = path.Join(engine.InputDir, modifiedTreepath)
 		} else if modifiedTreepath == ".temingoignore" { // No need to check if the value is actually different - simply overriding it is faster (should only be one file max anyway)
 			modifiedTreepath = engine.TemingoignorePath
-		} else if strings.Contains(modifiedTreepath, defaultTemplateExtension) {
+		}
+
+		if strings.Contains(modifiedTreepath, defaultTemplateExtension) {
 			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultTemplateExtension, engine.TemplateExtension)
 		} else if strings.Contains(modifiedTreepath, defaultMetaTemplateExtension) {
 			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultMetaTemplateExtension, engine.MetaTemplateExtension)
 		} else if strings.Contains(modifiedTreepath, defaultComponentExtension) {
 			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultComponentExtension, engine.ComponentExtension)
+		} else if path.Base(modifiedTreepath) == defaultMetaFilename {
+			modifiedTreepath = path.Join(path.Dir(modifiedTreepath), engine.MetaFilename)
 		}
 
 		if engine.Verbose {

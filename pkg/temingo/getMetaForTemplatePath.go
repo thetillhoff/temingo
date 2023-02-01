@@ -27,7 +27,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 		log.Println("Getting metadata for", templatePath)
 	}
 
-	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta.yaml in dirTree for templatePath
+	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta yaml in dirTree for templatePath
 		if engine.Verbose {
 			log.Println("Reading metadata from", metaFilePath)
 		}
@@ -47,7 +47,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 		}
 	}
 
-	for _, childMetaFilePath := range metaTemplatePaths.FilterByLevelAtFolderPath(path.Dir(templatePath), 1).Files { // For each direct child meta.yaml
+	for _, childMetaFilePath := range metaTemplatePaths.FilterByLevelAtFolderPath(path.Dir(templatePath), 1).Files { // For each direct child meta yaml
 		if engine.Verbose {
 			log.Println("Reading child-metadata from", childMetaFilePath)
 		}

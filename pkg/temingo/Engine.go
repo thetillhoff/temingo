@@ -7,6 +7,7 @@ type Engine struct {
 	TemplateExtension     string
 	MetaTemplateExtension string
 	ComponentExtension    string
+	MetaFilename          string
 	Verbose               bool
 	DryRun                bool
 }
@@ -20,6 +21,7 @@ func DefaultEngine() Engine {
 		TemplateExtension:     ".template",
 		MetaTemplateExtension: ".metatemplate",
 		ComponentExtension:    ".component",
+		MetaFilename:          "meta.yaml",
 		Verbose:               false,
 		DryRun:                false,
 	}

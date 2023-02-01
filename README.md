@@ -76,8 +76,6 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 <!--
 TODO
 - write unit tests for temingo and fileIO
-- Write a comment/description for each method (temingo and fileIO)
-- allow to override `meta.yaml` filename via cli flag
 - Move fileIO into dedicated git-repo
 
 - pass global variables like datetime (globally equal renderTime only)
@@ -91,7 +89,7 @@ html parser notes
 - attributes (contains, not equals) -> map[string]string
 - content -> string/[]Node
 
-- prettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, but them in dedicated repos.
+- prettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, put them in dedicated repos.
 - fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
 - components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
   - references are to git repos and tags therein.
