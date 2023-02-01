@@ -28,6 +28,7 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 --componentExtension, -c, default ".component": Sets the extension of the component files."
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
+--dry-run, default false: If enabled, will not touch the outputDir.
 --verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
@@ -117,8 +118,3 @@ html parser notes
 - Don't use functional options -> they require a lot of code / maintenance. Also, having functions to set a context object every time a function is called is tedious
 - Use Context (called engine in this project). Not necessarily the go-context package, but implement "instance of package" as context and use that.
 - For packages that have "global" variables / arguments, use Context (called "engine" in this project) as well.
-
-
-# notes for later docs
-## dry-run
-- add a `--dry-run` flag to do all templating and so on, but dont interact with the outputDir at all.
