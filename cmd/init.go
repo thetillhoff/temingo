@@ -23,6 +23,7 @@ var initCmd = &cobra.Command{
 			TemplateExtension:     templateExtensionFlag,
 			MetaTemplateExtension: metaTemplateExtensionFlag,
 			ComponentExtension:    componentExtensionFlag,
+			MetaFilename:          metaFilenameFlag,
 			Verbose:               verboseFlag,
 			DryRun:                dryRunFlag,
 		}

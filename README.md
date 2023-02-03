@@ -20,12 +20,13 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 ```
 
 ```
-<!-- --valuesfile, -f, default: []string{"values.yaml"}, "Sets the path(s) to the values-file(s)." // TODO adjust docs as its already implemented via meta.yaml -->
---inputDir, -i, default "./src": Sets the path to the template-file-directory."
---outputDir, -o, default "./output": Sets the destination-path for the compiled templates."
---templateExtension, -t, default ".template": Sets the extension of the template files."
---metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates."
---componentExtension, -c, default ".component": Sets the extension of the component files."
+<!-- --valuesfile, -f, default []string{"values.yaml"}:Sets the path(s) to the values-file(s). // TODO adjust docs as its already implemented via meta.yaml -->
+--inputDir, -i, default "./src": Sets the path to the template-file-directory.
+--outputDir, -o, default "./output": Sets the destination-path for the compiled templates.
+--templateExtension, -t, default ".template": Sets the extension of the template files.
+--metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates.
+--componentExtension, -c, default ".component": Sets the extension of the component files.
+--metaFilename, default "meta.yaml": Sets the filename of the meta files.
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
 --dry-run, default false: If enabled, will not touch the outputDir.
