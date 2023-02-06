@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/thetillhoff/temingo/pkg/fileIO"
+	prettifyhtml "github.com/thetillhoff/temingo/pkg/prettifyHTML"
 )
 
 // Renders the templates in the inputDir, writes them to the outputDir and copies the static files
@@ -96,6 +97,12 @@ func (engine *Engine) Render() error {
 		if err != nil {
 			return err
 		}
+
+		switch path.Ext(renderedTemplatePath) { // File type autodetection
+		case ".html":
+			// Prettify by default
+			renderedTemplates[renderedTemplatePath] = []byte(prettifyhtml.Format(string(renderedTemplates[renderedTemplatePath]))) // Meh about the conversions
+		}
 	}
 
 	// Read metatemplate files, check metadata and execute them
@@ -117,6 +124,12 @@ func (engine *Engine) Render() error {
 			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 			if err != nil {
 				return err
+			}
+
+			switch path.Ext(renderedTemplatePath) { // File type autodetection
+			case ".html":
+				// Prettify by default
+				renderedTemplates[renderedTemplatePath] = []byte(prettifyhtml.Format(string(renderedTemplates[renderedTemplatePath]))) // Meh about the conversions
 			}
 
 		}
