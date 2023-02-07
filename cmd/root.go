@@ -21,7 +21,7 @@ var (
 	temingoignoreFlag         string
 	templateExtensionFlag     string
 	metaTemplateExtensionFlag string
-	componentExtensionFlag    string
+	partialExtensionFlag      string
 	metaFilenameFlag          string
 
 	verboseFlag bool
@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 			TemingoignorePath:     temingoignoreFlag,
 			TemplateExtension:     templateExtensionFlag,
 			MetaTemplateExtension: metaTemplateExtensionFlag,
-			ComponentExtension:    componentExtensionFlag,
+			PartialExtension:      partialExtensionFlag,
 			MetaFilename:          metaFilenameFlag,
 			Verbose:               verboseFlag,
 			DryRun:                dryRunFlag,
@@ -102,7 +102,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&temingoignoreFlag, "temingoignore", ".temingoignore", "path to the temingo ignore file (works like gitignore`)")
 	rootCmd.PersistentFlags().StringVarP(&templateExtensionFlag, "templateExtension", "t", ".template", "templateExtension marks a file as template that correlates to a rendered file")
 	rootCmd.PersistentFlags().StringVarP(&metaTemplateExtensionFlag, "metaTemplateExtension", "m", ".metatemplate", "metaTemplateExtension marks a file as template that correlates to multiple rendered files")
-	rootCmd.PersistentFlags().StringVarP(&componentExtensionFlag, "componentExtension", "c", ".component", "componentExtension marks a file as partial template without a rendered file")
+	rootCmd.PersistentFlags().StringVarP(&partialExtensionFlag, "partialExtension", "c", ".partial", "partialExtension marks a file as partial template without a rendered file")
 	rootCmd.PersistentFlags().StringVar(&metaFilenameFlag, "metaFilename", "meta.yaml", "the yaml files for the metadata")
 
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")

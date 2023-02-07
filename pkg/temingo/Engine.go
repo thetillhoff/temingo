@@ -6,7 +6,7 @@ type Engine struct {
 	TemingoignorePath     string
 	TemplateExtension     string
 	MetaTemplateExtension string
-	ComponentExtension    string
+	PartialExtension      string
 	MetaFilename          string
 	Verbose               bool
 	DryRun                bool
@@ -20,7 +20,7 @@ func DefaultEngine() Engine {
 		TemingoignorePath:     ".temingoignore",
 		TemplateExtension:     ".template",
 		MetaTemplateExtension: ".metatemplate",
-		ComponentExtension:    ".component",
+		PartialExtension:      ".partial",
 		MetaFilename:          "meta.yaml",
 		Verbose:               false,
 		DryRun:                false,

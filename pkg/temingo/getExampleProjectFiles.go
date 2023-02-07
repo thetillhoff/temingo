@@ -74,8 +74,8 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultTemplateExtension, engine.TemplateExtension)
 		} else if strings.Contains(modifiedTreepath, defaultMetaTemplateExtension) {
 			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultMetaTemplateExtension, engine.MetaTemplateExtension)
-		} else if strings.Contains(modifiedTreepath, defaultComponentExtension) {
-			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultComponentExtension, engine.ComponentExtension)
+		} else if strings.Contains(modifiedTreepath, defaultPartialExtension) {
+			modifiedTreepath = strings.ReplaceAll(modifiedTreepath, defaultPartialExtension, engine.PartialExtension)
 		} else if path.Base(modifiedTreepath) == defaultMetaFilename {
 			modifiedTreepath = path.Join(path.Dir(modifiedTreepath), engine.MetaFilename)
 		}

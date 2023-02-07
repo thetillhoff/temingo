@@ -11,7 +11,7 @@ import (
 )
 
 // Returns the rendered template
-func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, templatePath string, templateContent string, componentFiles map[string]string) ([]byte, error) {
+func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, templatePath string, templateContent string, partialFiles map[string]string) ([]byte, error) {
 	var (
 		err       error
 		meta      map[string]interface{} = map[string]interface{}{}
@@ -45,8 +45,8 @@ func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, template
 	outputBuffer.Reset()                         // Ensure the buffer is empty
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name
 
-	for _, componentFileContent := range componentFiles { // For each componentFile
-		templateEngine.Parse(componentFileContent) // Parse the components contained in it
+	for _, partialFileContent := range partialFiles { // For each partialFile
+		templateEngine.Parse(partialFileContent) // Parse the partials contained in it
 	}
 
 	// tpl.Funcs(funcMap).Parse(baseTemplate)

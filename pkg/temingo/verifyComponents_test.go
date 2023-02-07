@@ -4,86 +4,86 @@ import (
 	"testing"
 )
 
-// Check if component verification succeeds if all component names are unique
-func TestVerifyComponentsAllUnique(t *testing.T) {
+// Check if partial verification succeeds if all partial names are unique
+func TestVerifyPartialsAllUnique(t *testing.T) {
 
-	componentFiles := map[string]string{} // map(path)content
+	partialFiles := map[string]string{} // map(path)content
 
-	componentFiles["src/components/a.component.html"] = `
-	{{ define "testComponent1" }}
+	partialFiles["src/partials/a.partial.html"] = `
+	{{ define "testPartial1" }}
 	test
 	{{ end }}
 	`
-	componentFiles["src/components/b.component.html"] = `
-	{{ define "testComponent2" }}
+	partialFiles["src/partials/b.partial.html"] = `
+	{{ define "testPartial2" }}
 	test
 	{{ end }}
 
-	{{ define "testComponent3" }}
+	{{ define "testPartial3" }}
 	test
 	{{ end }}
 	`
 
-	err := verifyComponents(componentFiles) // Check if the components are unique
+	err := verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err != nil {
-		t.Fatal("expected component verification to succeed, got error:", err)
+		t.Fatal("expected partial verification to succeed, got error:", err)
 	}
 
 }
 
-// Check if component verification fails if not all component names in one of the files are unique
-func TestVerifyComponentsNonUniqueOneFile(t *testing.T) {
+// Check if partial verification fails if not all partial names in one of the files are unique
+func TestVerifyPartialsNonUniqueOneFile(t *testing.T) {
 
-	componentFiles := map[string]string{} // map(path)content
+	partialFiles := map[string]string{} // map(path)content
 
-	componentFiles["src/components/a.component.html"] = `
-	{{ define "testComponent1" }}
+	partialFiles["src/partials/a.partial.html"] = `
+	{{ define "testPartial1" }}
 	test
 	{{ end }}
 	`
-	componentFiles["src/components/b.component.html"] = `
-	{{ define "testComponent2" }}
+	partialFiles["src/partials/b.partial.html"] = `
+	{{ define "testPartial2" }}
 	test
 	{{ end }}
 
-	{{ define "testComponent2" }}
+	{{ define "testPartial2" }}
 	test
 	{{ end }}
 	`
 
-	err := verifyComponents(componentFiles) // Check if the components are unique
+	err := verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err == nil {
-		t.Fatal("expected component verification to fail, got success")
+		t.Fatal("expected partial verification to fail, got success")
 	}
 
 }
 
-// Check if component verification fails if not all component names in multiple files are unique
-func TestVerifyComponentsNonUniqueMultipleFiles(t *testing.T) {
+// Check if partial verification fails if not all partial names in multiple files are unique
+func TestVerifyPartialsNonUniqueMultipleFiles(t *testing.T) {
 
-	componentFiles := map[string]string{} // map(path)content
+	partialFiles := map[string]string{} // map(path)content
 
-	componentFiles["src/components/a.component.html"] = `
-	{{ define "testComponent1" }}
+	partialFiles["src/partials/a.partial.html"] = `
+	{{ define "testPartial1" }}
 	test
 	{{ end }}
 	`
-	componentFiles["src/components/b.component.html"] = `
-	{{ define "testComponent2" }}
+	partialFiles["src/partials/b.partial.html"] = `
+	{{ define "testPartial2" }}
 	test
 	{{ end }}
 
-	{{ define "testComponent1" }}
+	{{ define "testPartial1" }}
 	test
 	{{ end }}
 	`
 
-	err := verifyComponents(componentFiles) // Check if the components are unique
+	err := verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err == nil {
-		t.Fatal("expected component verification to fail, got success")
+		t.Fatal("expected partial verification to fail, got success")
 	}
 
 }

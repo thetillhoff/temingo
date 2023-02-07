@@ -1,19 +1,19 @@
 package temingo
 
-// // Check if valid template without component references renders successfully and to the expected result
+// // Check if valid template without partial references renders successfully and to the expected result
 // func TestRenderTemplateWithValidTemplate(t *testing.T) {
 // 	fileList := fileIO.FileList{
 // 		Files: []string{},
 // 	}
 // 	templatePath := "random/path/test.template.txt"
 // 	templateContent := `{{ .path }}`
-// 	componentFiles := map[string]string{}
+// 	partialFiles := map[string]string{}
 
 // 	expectedValue := `random/path/test.template.txt`
 
 // 	engine := DefaultEngine()
 
-// 	renderedTemplate, err := engine.renderTemplate(fileList, templatePath, templateContent, componentFiles)
+// 	renderedTemplate, err := engine.renderTemplate(fileList, templatePath, templateContent, partialFiles)
 // 	if err != nil {
 // 		t.Fatal("expected template rendering to be successful, got error:", err)
 // 	}
@@ -24,16 +24,16 @@ package temingo
 
 // }
 
-// // Check if valid template with component references renders successfully and to the expected result
-// func TestRenderTemplateWithValidTemplateAndComponentFile(t *testing.T) {
+// // Check if valid template with partial references renders successfully and to the expected result
+// func TestRenderTemplateWithValidTemplateAndPartialFile(t *testing.T) {
 // 	fileList := fileIO.FileList{
 // 		Files: []string{},
 // 	}
 // 	templatePath := "random/path/test.template.txt"
-// 	templateContent := `{{ template "componentA" }}`
+// 	templateContent := `{{ template "partialA" }}`
 // 	expectedValue := `test`
-// 	componentFiles := map[string]string{
-// 		"path does not matter here": `{{ define "componentA" }}
+// 	partialFiles := map[string]string{
+// 		"path does not matter here": `{{ define "partialA" }}
 // test
 // {{ end }}
 // `,
@@ -41,7 +41,7 @@ package temingo
 
 // 	engine := DefaultEngine()
 
-// 	renderedTemplate, err := engine.renderTemplate(fileList, templatePath, templateContent, componentFiles)
+// 	renderedTemplate, err := engine.renderTemplate(fileList, templatePath, templateContent, partialFiles)
 // 	if err != nil {
 // 		t.Fatal("expected template rendering to be successful, got error:", err)
 // 	}

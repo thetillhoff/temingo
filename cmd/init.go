@@ -22,7 +22,7 @@ var initCmd = &cobra.Command{
 			TemingoignorePath:     temingoignoreFlag,
 			TemplateExtension:     templateExtensionFlag,
 			MetaTemplateExtension: metaTemplateExtensionFlag,
-			ComponentExtension:    componentExtensionFlag,
+			PartialExtension:      partialExtensionFlag,
 			MetaFilename:          metaFilenameFlag,
 			Verbose:               verboseFlag,
 			DryRun:                dryRunFlag,

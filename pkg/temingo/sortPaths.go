@@ -9,21 +9,21 @@ import (
 )
 
 // Takes the paths from FileList.Files and sorts them into one list per filetype
-// Order of returned lists: templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths
+// Order of returned lists: templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths
 func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, []string, []string, []string) {
 	var (
 		templatePaths     []string
 		metaTemplatePaths []string
-		componentPaths    []string
+		partialPaths      []string
 		metaPaths         []string
 		staticPaths       []string
 	)
 
 	for _, filePath := range fileList.Files { // Check what type of file we have
-		if strings.Contains(filePath, engine.ComponentExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
-			componentPaths = append(componentPaths, filePath)
+		if strings.Contains(filePath, engine.PartialExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
+			partialPaths = append(partialPaths, filePath)
 			if engine.Verbose {
-				log.Println("Identified as component file:", filePath)
+				log.Println("Identified as partial file:", filePath)
 			}
 		} else if strings.Contains(filePath, engine.TemplateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			templatePaths = append(templatePaths, filePath)
@@ -48,5 +48,5 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 		}
 	}
 
-	return templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths
+	return templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths
 }

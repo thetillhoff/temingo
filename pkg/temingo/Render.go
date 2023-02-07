@@ -17,7 +17,7 @@ func (engine *Engine) Render() error {
 		ignoreLines []string
 		fileList    fileIO.FileList
 
-		componentPaths    []string
+		partialPaths      []string
 		templatePaths     []string
 		metaTemplatePaths []string
 		metaPaths         []string
@@ -26,7 +26,7 @@ func (engine *Engine) Render() error {
 		content              []byte
 		renderedTemplatePath string
 
-		componentFiles    = map[string]string{}
+		partialFiles      = map[string]string{}
 		renderedTemplates = map[string][]byte{}
 	)
 
@@ -58,22 +58,22 @@ func (engine *Engine) Render() error {
 
 	// Sort retrieved filepaths
 
-	templatePaths, metaTemplatePaths, componentPaths, metaPaths, staticPaths = engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths = engine.sortPaths(fileList)
 
-	// Read component files
+	// Read partial files
 
-	for _, componentPath := range componentPaths { // Read contents of each component file
-		content, err = fileIO.ReadFile(path.Join(engine.InputDir, componentPath)) // Read file contents
+	for _, partialPath := range partialPaths { // Read contents of each partial file
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, partialPath)) // Read file contents
 		if err != nil {
 			return err
 		}
 
-		componentFiles[componentPath] = string(content)
+		partialFiles[partialPath] = string(content)
 	}
 
-	// Verify components
+	// Verify partials
 
-	err = verifyComponents(componentFiles) // Check if the components are unique
+	err = verifyPartials(partialFiles) // Check if the partials are unique
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (engine *Engine) Render() error {
 		// TODO renderTemplate should get the full meta/values object passed, without having to access the filesystem
 
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
-		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, templatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, templatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func (engine *Engine) Render() error {
 			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaTemplatePath))             // == Location of meta yaml, minus meta yaml, plus filename of metatemplate
 			renderedTemplatePath = strings.ReplaceAll(renderedTemplatePath, engine.MetaTemplateExtension, "") // Remove template extension from filename
 
-			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), componentFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 			if err != nil {
 				return err
 			}

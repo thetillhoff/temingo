@@ -7,7 +7,7 @@ The result, though, should not specifically be bound to website contents, as it 
 
 Temingo supports
 - normal-type templates (== single-output templates) that will render to exactly one output file,
-- component-type templates (== partial templates) that can be included in other templates,
+- partial-type templates (== partial templates) that can be included in other templates,
 - meta-type templates (== multi-output templates) that will render to multiple output files,
 - static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files),
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
@@ -25,7 +25,7 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 --outputDir, -o, default "./output": Sets the destination-path for the compiled templates.
 --templateExtension, -t, default ".template": Sets the extension of the template files.
 --metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates.
---componentExtension, -c, default ".component": Sets the extension of the component files.
+--partialExtension, -c, default ".partial": Sets the extension of the partial files.
 --metaFilename, default "meta.yaml": Sets the filename of the meta files.
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
@@ -37,7 +37,7 @@ temingo will by default:
 - take the source files from folder `./src`.
 - consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
 - write the rendered files into folder `./output`
-- take all `*.component*` files as intermediate templates / snippets
+- take all `*.partial*` files as intermediate templates / snippets
   - the defined intermediate template names must be globally unique so they can be imported properly later. Temingo checks this.
 - take all `*.template*` files to be rendered
   - for each of those file, temingo will check their folder for any subfolders. If there are any, their names will be added to a list which is available in this "parent" template

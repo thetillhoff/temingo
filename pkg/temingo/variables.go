@@ -4,6 +4,6 @@ var (
 	// These variables are needed for the example project files
 	defaultTemplateExtension     string = ".template"
 	defaultMetaTemplateExtension string = ".metatemplate"
-	defaultComponentExtension    string = ".component"
+	defaultPartialExtension      string = ".partial"
 	defaultMetaFilename          string = "meta.yaml"
 )
