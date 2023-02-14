@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/thetillhoff/fileIO/v2"
+	"github.com/thetillhoff/fileIO"
 )
 
 // Takes the paths from FileList.Files and sorts them into one list per filetype

@@ -8,7 +8,7 @@ import (
 
 	"github.com/radovskyb/watcher"
 	"github.com/spf13/cobra"
-	"github.com/thetillhoff/fileIO/v2"
+	"github.com/thetillhoff/fileIO"
 	"github.com/thetillhoff/temingo/pkg/temingo"
 
 	"github.com/spf13/viper"

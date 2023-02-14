@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/thetillhoff/fileIO/v2"
+	"github.com/thetillhoff/fileIO"
 )
 
 // Initializes the current directory with an example project

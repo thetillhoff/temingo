@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/thetillhoff/fileIO/v2"
+	"github.com/thetillhoff/fileIO"
 )
 
 // Returns the rendered template

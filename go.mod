@@ -10,12 +10,12 @@ require (
 
 require (
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 )
 
 require (
 	github.com/imdario/mergo v0.3.13
-	github.com/thetillhoff/fileIO/v2 v2.0.0-20230214113405-624a68deb1a2
+	github.com/thetillhoff/fileIO v1.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -32,7 +32,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )

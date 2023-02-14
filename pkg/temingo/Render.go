@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/thetillhoff/fileIO/v2"
+	"github.com/thetillhoff/fileIO"
 )
 
 // Renders the templates in the inputDir, writes them to the outputDir and copies the static files
