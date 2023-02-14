@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/thetillhoff/temingo/pkg/fileIO"
+	"github.com/thetillhoff/fileIO/v2"
 )
 
 // Returns the rendered template

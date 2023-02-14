@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/thetillhoff/temingo/pkg/fileIO"
+	"github.com/thetillhoff/fileIO/v2"
 )
 
 // Initializes the current directory with an example project

@@ -15,6 +15,7 @@ require (
 
 require (
 	github.com/imdario/mergo v0.3.13
+	github.com/thetillhoff/fileIO/v2 v2.0.0-20230214113405-624a68deb1a2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -25,7 +26,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
-	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

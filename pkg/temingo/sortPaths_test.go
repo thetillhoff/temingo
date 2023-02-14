@@ -3,7 +3,7 @@ package temingo
 import (
 	"testing"
 
-	"github.com/thetillhoff/temingo/pkg/fileIO"
+	"github.com/thetillhoff/fileIO/v2"
 )
 
 // Check if sorting works if all types of paths are passed

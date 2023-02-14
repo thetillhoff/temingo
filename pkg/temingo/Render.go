@@ -6,8 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/thetillhoff/temingo/pkg/fileIO"
-	prettifyhtml "github.com/thetillhoff/temingo/pkg/prettifyHTML"
+	"github.com/thetillhoff/fileIO/v2"
 )
 
 // Renders the templates in the inputDir, writes them to the outputDir and copies the static files

@@ -5,7 +5,7 @@ import (
 	"path"
 
 	"github.com/imdario/mergo"
-	"github.com/thetillhoff/temingo/pkg/fileIO"
+	"github.com/thetillhoff/fileIO/v2"
 	"gopkg.in/yaml.v3"
 )
 
