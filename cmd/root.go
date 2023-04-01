@@ -9,6 +9,7 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/spf13/cobra"
 	"github.com/thetillhoff/fileIO"
+	"github.com/thetillhoff/serve/pkg/serve"
 	"github.com/thetillhoff/temingo/pkg/temingo"
 
 	"github.com/spf13/viper"
@@ -27,6 +28,7 @@ var (
 	verboseFlag bool
 	dryRunFlag  bool
 	watchFlag   bool
+	serveFlag   bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -38,7 +40,7 @@ var rootCmd = &cobra.Command{
 			err error
 		)
 
-		engine := temingo.Engine{
+		temingoEngine := temingo.Engine{
 			InputDir:              inputDirFlag,
 			OutputDir:             outputDirFlag,
 			TemingoignorePath:     temingoignoreFlag,
@@ -50,34 +52,47 @@ var rootCmd = &cobra.Command{
 			DryRun:                dryRunFlag,
 		}
 
-		if watchFlag {
+		// Build once
+		err = temingoEngine.Render()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		log.Println("Build complete.")
+
+		if serveFlag { // Start webserver if desired
+			serveEngine := serve.DefaultEngine()
+			serveEngine.Directory = outputDirFlag
+			serveEngine.Verbose = verboseFlag
+			go func() { // Start the webserver in the background
+				err = serveEngine.Serve()
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}()
+		}
+
+		if watchFlag { // Start watching if desired
 			log.Println("*** Started to watch for file changes ***")
 
 			err = fileIO.Watch(
 				[]string{
-					engine.InputDir,
-					engine.TemingoignorePath,
+					temingoEngine.InputDir,
+					temingoEngine.TemingoignorePath,
 				},
 				[]string{
-					engine.OutputDir,
+					temingoEngine.OutputDir,
 					".git",
 				},
-				engine.Verbose,
+				temingoEngine.Verbose,
 				100*time.Millisecond,
 				func(event watcher.Event) error {
 					log.Println("*** Rebuild triggered by a change detected in", event.Path, "***")
 					// TODO inform frontend via websocket connection
-					return engine.Render()
+					return temingoEngine.Render()
 				})
 			if err != nil {
 				log.Fatalln(err)
 			}
-		} else {
-			err = engine.Render()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			log.Println("Build complete.")
 		}
 	},
 }
@@ -108,6 +123,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")
 	rootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "don't output files")
 	rootCmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")
+	rootCmd.Flags().BoolVarP(&serveFlag, "serve", "s", false, "serve makes temingo serve your outputDir with a small simple webserver")
 }
 
 // initConfig reads in config file and ENV variables if set.
