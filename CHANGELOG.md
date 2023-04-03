@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.0.0
+Reworked whole application
+- New internal structure
+- New docs
+- Automatic tests
+- New command syntax
+- New component/partial integration
+- New meta handling (i.e. lists in childfolders)
+
 ## v0.0.3 on 2021-09-17
 - Fixed a bug, where temingo would fail if no `.temingoignore` file exists.
   From now on, it will assume nothing should be ignored in such a case.

@@ -10,6 +10,8 @@ type Engine struct {
 	MetaFilename          string
 	Verbose               bool
 	DryRun                bool
+	Beautify              bool
+	Minify                bool
 }
 
 // Returns an engine with default values
@@ -24,5 +26,7 @@ func DefaultEngine() Engine {
 		MetaFilename:          "meta.yaml",
 		Verbose:               false,
 		DryRun:                false,
+		Beautify:              false,
+		Minify:                false,
 	}
 }

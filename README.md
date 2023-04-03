@@ -59,8 +59,26 @@ temingo will by default:
   * (for example the `meta.yaml` object -> it'll start at the root folder, then start descending the folder-tree and grab all `meta.yaml`s along the way. Merged in a way that overwrites the parents' values.)
   ```
 
+## TODO
+
+- [x] partials are added automatically with path, `component/page.partial.html` is the automatic default name for that component.
+- [x] it's not needed to add the `{{define ...}} ... {{ end }}` part, it's added automatically.
+- [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
+- [x] add --serve / -s for including a webserver
+- [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
+- [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
+  - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
+  - for each of those, register them as equally named functions that are then passed to the funcMap for templating
+  - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
+  - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
+  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead.
+
 <!--
 TODO
+- add `--beautify` and `--minify` with file extension autodiscover.
+  - add table in readme on which extensions are covered
+  - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
+
 temingo _can_ do (alternatively this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
 - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
   - `.html`
@@ -77,9 +95,6 @@ temingo _can_ do (alternatively this should be put into a dedicated application 
 
 <!--
 TODO
-- write unit tests for temingo and fileIO
-- Move fileIO into dedicated git-repo
-
 - pass global variables like datetime (globally equal renderTime only)
 - fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
 -->

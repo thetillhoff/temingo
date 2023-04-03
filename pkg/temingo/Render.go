@@ -66,8 +66,7 @@ func (engine *Engine) Render() error {
 		if err != nil {
 			return err
 		}
-
-		partialFiles[partialPath] = string(content)
+		partialFiles[partialPath] = "{{ define \"" + partialPath + "\" -}}\n" + string(content) + "\n{{- end -}}"
 	}
 
 	// Verify partials
@@ -96,12 +95,6 @@ func (engine *Engine) Render() error {
 		if err != nil {
 			return err
 		}
-
-		switch path.Ext(renderedTemplatePath) { // File type autodetection
-		case ".html":
-			// Prettify by default
-			renderedTemplates[renderedTemplatePath] = []byte(prettifyhtml.Format(string(renderedTemplates[renderedTemplatePath]))) // Meh about the conversions
-		}
 	}
 
 	// Read metatemplate files, check metadata and execute them
@@ -124,13 +117,20 @@ func (engine *Engine) Render() error {
 			if err != nil {
 				return err
 			}
+		}
+	}
 
-			switch path.Ext(renderedTemplatePath) { // File type autodetection
-			case ".html":
-				// Prettify by default
-				renderedTemplates[renderedTemplatePath] = []byte(prettifyhtml.Format(string(renderedTemplates[renderedTemplatePath]))) // Meh about the conversions
-			}
+	// Beautify/Minify
 
+	// TODO Validate cmd flags, fail if both are set -> Should be done in cmd package, but also when Render is initially called ("validateEngine()"?)
+
+	if engine.Beautify { // TODO
+		for renderedTemplatePath, content := range renderedTemplates {
+			renderedTemplates[renderedTemplatePath] = engine.beautify(content, path.Ext(renderedTemplatePath))
+		}
+	} else if engine.Minify { // TODO
+		for renderedTemplatePath, content := range renderedTemplates {
+			renderedTemplates[renderedTemplatePath] = engine.minify(content, path.Ext(renderedTemplatePath))
 		}
 	}
 
