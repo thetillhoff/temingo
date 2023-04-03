@@ -8,6 +8,7 @@ Reworked whole application
 - New command syntax
 - New component/partial integration
 - New meta handling (i.e. lists in childfolders)
+- Now includes webserver for development
 
 ## v0.0.3 on 2021-09-17
 - Fixed a bug, where temingo would fail if no `.temingoignore` file exists.
