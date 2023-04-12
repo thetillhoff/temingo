@@ -8,13 +8,119 @@ The result, though, should not specifically be bound to website contents, as it 
 Temingo supports
 - normal-type templates (== single-output templates) that will render to exactly one output file,
 - partial-type templates (== partial templates) that can be included in other templates,
+(- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...)
 - meta-type templates (== multi-output templates) that will render to multiple output files,
 - static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files),
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
 - a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
 
+
+## Features
+
+### Templating engine
+Temingo will by default:
+- take all `*.template*` files from the source folder `./src`.
+- write the rendered files into folder `./output`.
+
+### Ignoring source files
+Consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
+
+### Support for static files / assets
+Take all other files (static) and copy them into the output folder as-is. Except `meta.yaml`s.
+
+### Partial templates
+Take all `*.partial*` files as intermediate templates / snippets
+- [x] the defined intermediate template names must be globally unique so they can be imported properly later. Temingo verifies the uniqueness.
+- [x] partials are added automatically with path, `component/page.partial.html` is the automatic default name for that component.
+- [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
+- [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
+
+### Component template
+- [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
+  - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
+  - for each of those, register them as equally named functions that are then passed to the funcMap for templating
+  - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
+  - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
+  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead.
+
+### Dynamic metadata
+- [ ] pass global variables like datetime (globally equal renderTime only)
+
+### Metadata hierarchy
+Metadata that is passed to the rendering will be aggregated as follows;
+- Iterate through folders from inputDir `./src` down to the folder containing the template file
+- On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one (overwrite if necessary)
+- Pass the final object to the respective template rendering process
+
+### Metadata child list
+For each `*.template*` file, temingo searches for all `./*/meta.yaml`s and adds them as `childMeta.<foldername>.<content-object>` pair to the template.
+This means you can iterate over them and for example generate links for them.
+
+optional TODO have a path that can be set in the template, for which the files can be read
+
+### Metatemplates
+Take all `*.metatemplate*` files and use them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
+
+### Supports configuration file
+Read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file
+
+TODO verify
+
+### Watch-mode
+- [x] add --watch / -w flag for watching for file changes in the source folder
+- [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
+      fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
+
+### Integrated simple webserver
+- [x] add --serve / -s flag for running a simple integrated webserver directly on the output folder.
+
+### Optimizations
+- file extension autodiscover
+  - add table in readme on which extensions are covered
+  - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
+
+temingo _can_ do (this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
+- content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
+  - `.html`
+  - `.css`
+  - `.js`
+- content minification, for example for html files. Supported extensions:
+  - `.html`
+  - `.css`
+  - `.js`
+- optimized media embedding, for example for images. Supported media:
+  - images
+  - svg (pregenerate different colors?)
+
+#### Prettify
+TBD
+- is it good to do this there? Wouldn't it be better to use something else intead? Linux approach, do one thing, but do it good.
+
+- [ ] add flag / setting
+- [ ] prettify html
+- [ ] prettify css
+- [ ] prettify js
+
+#### Minify
+TBD
+- is it good to do this here? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
+
+- [ ] add flag / setting
+- [ ] minify html, warn user if there are undefined css classes used
+- [ ] minify css, warn user if there are unused css classes
+- [ ] minify js
+
+#### Media & Media references
+TBD
+- is it good to do this here? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
+
+- [ ] add flag / setting
+- [ ] file extension autodiscover (html files only, which image format is used, depending on setting media format can be transformed as well)
+- [ ] optimize media embedding automatically, but warn the user
+
+
 ## Usage
-```
+```sh
 temingo
 temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `--watch`.
 ```
@@ -34,22 +140,6 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 ```
 
 temingo will by default:
-- take the source files from folder `./src`.
-- consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
-- write the rendered files into folder `./output`
-- take all `*.partial*` files as intermediate templates / snippets
-  - the defined intermediate template names must be globally unique so they can be imported properly later. Temingo checks this.
-- take all `*.template*` files to be rendered
-  - for each of those file, temingo will check their folder for any subfolders. If there are any, their names will be added to a list which is available in this "parent" template
-    This means you can iterate over them and generate links for them.
-    Check each folder if it contains a `meta.yaml` file. If yes, parse it and make it available in the "parent" template. (key=folder-name, value=`/*/meta.yaml` object)
-- take all `*.metatemplate*` files and use them for rendering in all of their subfolders that contain a `meta.yaml` file. Pass the object in that file to each metatemplate
-- take all other files (static) and copy them into the output folder as-is. Except `meta.yaml`s.
-- read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file
-- metadata that is passed to the rendering will be aggregated as follows;
-  - Iterate through folders from inputDir `./src` down to the folder containing the template file
-  - On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one (overwrite if necessary)
-  - Pass the final object to the respective template rendering process
 - What else does this passed object contain that is passed to each template rendering process:
   ```
   ["path"] = string -> path to template (within `./src/`)
@@ -60,44 +150,6 @@ temingo will by default:
   ```
 
 ## TODO
-
-- [x] partials are added automatically with path, `component/page.partial.html` is the automatic default name for that component.
-- [x] it's not needed to add the `{{define ...}} ... {{ end }}` part, it's added automatically.
-- [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
-- [x] add --serve / -s for including a webserver
-- [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
-- [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
-  - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
-  - for each of those, register them as equally named functions that are then passed to the funcMap for templating
-  - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
-  - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
-  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead.
-
-<!--
-TODO
-- add `--beautify` and `--minify` with file extension autodiscover.
-  - add table in readme on which extensions are covered
-  - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
-
-temingo _can_ do (alternatively this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
-- content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- content minification, for example for html files. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- optimized media embedding, for example for images. Supported media:
-  - images
-  - svg (pregenerate different colors?)
--->
-
-<!--
-TODO
-- pass global variables like datetime (globally equal renderTime only)
-- fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
--->
 
 <!--
 html parser notes
