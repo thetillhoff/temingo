@@ -8,7 +8,9 @@ Reworked whole application
 - New command syntax
 - New component/partial integration
 - New meta handling (i.e. lists in childfolders)
+- New meta templates (i.e. same template file for all childfolders)
 - Now includes webserver for development
+- Can now create initial project files
 
 ## v0.0.3 on 2021-09-17
 - Fixed a bug, where temingo would fail if no `.temingoignore` file exists.
