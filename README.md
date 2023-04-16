@@ -31,7 +31,7 @@ Take all other files (static) and copy them into the output folder as-is. Except
 ### Partial templates
 Take all `*.partial*` files as intermediate templates / snippets
 - [x] the defined intermediate template names must be globally unique so they can be imported properly later. Temingo verifies the uniqueness.
-- [x] partials are added automatically with path, `component/page.partial.html` is the automatic default name for that component.
+- [x] partials are added automatically with path, `partial/page.partial.html` is the automatic default name for that partial.
 - [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
 - [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
 
@@ -92,14 +92,16 @@ temingo _can_ do (this should be put into a dedicated application ("website opti
   - images
   - svg (pregenerate different colors?)
 
-#### Prettify
+#### Beautify
 TBD
 - is it good to do this there? Wouldn't it be better to use something else intead? Linux approach, do one thing, but do it good.
 
+This is currently enabled by default.
+
 - [ ] add flag / setting
-- [ ] prettify html
-- [ ] prettify css
-- [ ] prettify js
+- [x] beautify html
+- [ ] beautify css
+- [ ] beautify js
 
 #### Minify
 TBD
@@ -150,6 +152,8 @@ temingo will by default:
   ```
 
 ## TODO
+
+Test the rendering via golang tests, not manually.
 
 <!--
 html parser notes

@@ -50,6 +50,8 @@ var rootCmd = &cobra.Command{
 			MetaFilename:          metaFilenameFlag,
 			Verbose:               verboseFlag,
 			DryRun:                dryRunFlag,
+			Beautify:              true,
+			Minify:                false,
 		}
 
 		// Build once

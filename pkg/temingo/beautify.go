@@ -9,7 +9,7 @@ import (
 func (engine Engine) beautify(content []byte, ext string) []byte {
 
 	switch ext {
-	// TODO
+	// TODO add more
 	case ".html":
 		if engine.Verbose {
 			log.Println("beautified", ext)
