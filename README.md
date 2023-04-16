@@ -45,6 +45,8 @@ Take all `*.partial*` files as intermediate templates / snippets
 
 ### Dynamic metadata
 - [ ] pass global variables like datetime (globally equal renderTime only)
+- [x] `.meta.path` of the rendered template
+- [x] `.meta.breadcrumbs` contains a slice of the folder hierarchy for each template
 
 ### Metadata hierarchy
 Metadata that is passed to the rendering will be aggregated as follows;
