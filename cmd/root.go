@@ -24,6 +24,7 @@ var (
 	metaTemplateExtensionFlag string
 	partialExtensionFlag      string
 	metaFilenameFlag          string
+	markdownFilenameFlag      string
 
 	verboseFlag bool
 	dryRunFlag  bool
@@ -41,17 +42,18 @@ var rootCmd = &cobra.Command{
 		)
 
 		temingoEngine := temingo.Engine{
-			InputDir:              inputDirFlag,
-			OutputDir:             outputDirFlag,
-			TemingoignorePath:     temingoignoreFlag,
-			TemplateExtension:     templateExtensionFlag,
-			MetaTemplateExtension: metaTemplateExtensionFlag,
-			PartialExtension:      partialExtensionFlag,
-			MetaFilename:          metaFilenameFlag,
-			Verbose:               verboseFlag,
-			DryRun:                dryRunFlag,
-			Beautify:              true,
-			Minify:                false,
+			InputDir:                inputDirFlag,
+			OutputDir:               outputDirFlag,
+			TemingoignorePath:       temingoignoreFlag,
+			TemplateExtension:       templateExtensionFlag,
+			MetaTemplateExtension:   metaTemplateExtensionFlag,
+			PartialExtension:        partialExtensionFlag,
+			MetaFilename:            metaFilenameFlag,
+			MarkdownContentFilename: markdownFilenameFlag,
+			Verbose:                 verboseFlag,
+			DryRun:                  dryRunFlag,
+			Beautify:                true,
+			Minify:                  false,
 		}
 
 		// Build once
@@ -121,6 +123,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&metaTemplateExtensionFlag, "metaTemplateExtension", "m", ".metatemplate", "metaTemplateExtension marks a file as template that correlates to multiple rendered files")
 	rootCmd.PersistentFlags().StringVarP(&partialExtensionFlag, "partialExtension", "c", ".partial", "partialExtension marks a file as partial template without a rendered file")
 	rootCmd.PersistentFlags().StringVar(&metaFilenameFlag, "metaFilename", "meta.yaml", "the yaml files for the metadata")
+	rootCmd.PersistentFlags().StringVar(&markdownFilenameFlag, "markdownFilename", "content.md", "the markdown files for the markdown contents")
 
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")
 	rootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "don't output files")

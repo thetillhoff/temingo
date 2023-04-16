@@ -11,6 +11,7 @@ Reworked whole application
 - New meta templates (i.e. same template file for all childfolders)
 - Now includes webserver for development
 - Can now create initial project files
+- New markdown content integration (i.e. available as metadata in templates)
 
 ## v0.0.3 on 2021-09-17
 - Fixed a bug, where temingo would fail if no `.temingoignore` file exists.

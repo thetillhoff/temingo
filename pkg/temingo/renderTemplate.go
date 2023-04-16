@@ -2,45 +2,16 @@ package temingo
 
 import (
 	"bytes"
-	"log"
-	"path"
-	"strings"
 	"text/template"
-
-	"github.com/thetillhoff/fileIO"
 )
 
 // Returns the rendered template
-func (engine *Engine) renderTemplate(metaTemplatePaths fileIO.FileList, templatePath string, templateContent string, partialFiles map[string]string) ([]byte, error) {
+func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath string, templateContent string, partialFiles map[string]string) ([]byte, error) {
 	var (
-		err       error
-		meta      map[string]interface{} = map[string]interface{}{}
-		fileMeta  interface{}
-		childMeta map[string]interface{}
-
-		templateDir string
+		err error
 
 		outputBuffer *bytes.Buffer = new(bytes.Buffer)
 	)
-
-	// Create Values object
-	// with breadcrumbs, template name, ...
-	meta["path"] = templatePath // Path to the current file (without `src/` or `output/`)
-
-	templateDir, _ = path.Split(templatePath)
-	meta["breadcrumbs"] = strings.Split(templateDir, "/") // Breadcrumbs to the current file
-
-	if engine.Verbose {
-		log.Println("Searching metadata for", templatePath)
-	}
-
-	fileMeta, childMeta, err = engine.getMetaForTemplatePath(metaTemplatePaths, templatePath) // Contains aggregated meta yamls (up to parent dir, were children overwrite their parents values during the merge)
-	if err != nil {
-		return nil, err
-	}
-
-	meta["meta"] = fileMeta
-	meta["childMeta"] = childMeta
 
 	outputBuffer.Reset()                         // Ensure the buffer is empty
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name

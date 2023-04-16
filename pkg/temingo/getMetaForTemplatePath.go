@@ -23,10 +23,6 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 		folderName    string
 	)
 
-	if engine.Verbose {
-		log.Println("Getting metadata for", templatePath)
-	}
-
 	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta yaml in dirTree for templatePath
 		if engine.Verbose {
 			log.Println("Reading metadata from", metaFilePath)

@@ -17,11 +17,12 @@ func TestSortPathWithAll(t *testing.T) {
 			"src/index.metatemplate.html",
 			"src/partials/some.partial.css",
 			"src/meta.yaml",
+			"src/content.md",
 			"src/static.asset",
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 1 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 1, got", len(templatePaths))
@@ -41,7 +42,12 @@ func TestSortPathWithAll(t *testing.T) {
 	} else if len(metaPaths) != 1 {
 		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 1, got", len(metaPaths))
 		if metaPaths[0] != "" {
-			t.Fatal("wrong return value of sortPath metaPaths: expected src/meta.yaml, got", staticPaths[0])
+			t.Fatal("wrong return value of sortPath metaPaths: expected src/meta.yaml, got", metaPaths[0])
+		}
+	} else if len(markdownContentPaths) != 1 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 1, got", len(markdownContentPaths))
+		if markdownContentPaths[0] != "" {
+			t.Fatal("wrong return value of sortPath markdownContentPaths: expected src/content.md, got", markdownContentPaths[0])
 		}
 	} else if len(staticPaths) != 1 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 1, got", len(staticPaths))
@@ -62,7 +68,7 @@ func TestSortPathWithOnlyTemplate(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 1 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 1, got", len(templatePaths))
@@ -74,7 +80,9 @@ func TestSortPathWithOnlyTemplate(t *testing.T) {
 	} else if len(partialPaths) != 0 {
 		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
 	} else if len(metaPaths) != 0 {
-		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(partialPaths))
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}
@@ -92,7 +100,7 @@ func TestSortPathWithOnlyMetaTemplate(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -104,7 +112,9 @@ func TestSortPathWithOnlyMetaTemplate(t *testing.T) {
 	} else if len(partialPaths) != 0 {
 		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
 	} else if len(metaPaths) != 0 {
-		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(partialPaths))
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}
@@ -122,7 +132,7 @@ func TestSortPathWithOnlyPartials(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -134,7 +144,9 @@ func TestSortPathWithOnlyPartials(t *testing.T) {
 			t.Fatal("wrong return value of sortPaths: expected src/partials/some.partial.css, got", partialPaths[0])
 		}
 	} else if len(metaPaths) != 0 {
-		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(partialPaths))
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}
@@ -152,7 +164,7 @@ func TestSortPathWithOnlyMeta(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -161,9 +173,43 @@ func TestSortPathWithOnlyMeta(t *testing.T) {
 	} else if len(partialPaths) != 0 {
 		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
 	} else if len(metaPaths) != 1 {
-		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 1, got", len(partialPaths))
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 1, got", len(metaPaths))
 		if metaPaths[0] != "src/meta.yaml" {
 			t.Fatal("wrong return value of sortPaths: expected src/meta.yaml, got", metaPaths[0])
+		}
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
+	} else if len(staticPaths) != 0 {
+		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
+	}
+
+}
+
+// Check if sorting works if only one type of path is passed - markdown
+func TestSortPathWithOnlyMarkdown(t *testing.T) {
+
+	engine := DefaultEngine()
+
+	fileList := fileIO.FileList{
+		Files: []string{
+			"src/content.md",
+		},
+	}
+
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
+
+	if len(templatePaths) != 0 {
+		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
+	} else if len(metaTemplatePaths) != 0 {
+		t.Fatal("wrong amount of metaTemplatePaths returned from sortPaths: expected 0, got", len(metaTemplatePaths))
+	} else if len(partialPaths) != 0 {
+		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
+	} else if len(metaPaths) != 0 {
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 1 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 1, got", len(markdownContentPaths))
+		if markdownContentPaths[0] != "src/content.md" {
+			t.Fatal("wrong return value of sortPaths: expected src/markdown.md, got", metaPaths[0])
 		}
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
@@ -182,7 +228,7 @@ func TestSortPathWithOnlyStatic(t *testing.T) {
 		},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -191,7 +237,9 @@ func TestSortPathWithOnlyStatic(t *testing.T) {
 	} else if len(partialPaths) != 0 {
 		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
 	} else if len(metaPaths) != 0 {
-		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(partialPaths))
+		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
 	} else if len(staticPaths) != 1 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 1, got", len(staticPaths))
 		if staticPaths[0] != "src/static.asset" {
@@ -210,7 +258,7 @@ func TestSortPathWithEmpty(t *testing.T) {
 		Files: []string{},
 	}
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths := engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, markdownContentPaths, staticPaths := engine.sortPaths(fileList)
 
 	if len(templatePaths) != 0 {
 		t.Fatal("wrong amount of templatePaths returned from sortPaths: expected 0, got", len(templatePaths))
@@ -220,6 +268,8 @@ func TestSortPathWithEmpty(t *testing.T) {
 		t.Fatal("wrong amount of partialPaths returned from sortPaths: expected 0, got", len(partialPaths))
 	} else if len(metaPaths) != 0 {
 		t.Fatal("wrong amount of metaPaths returned from sortPaths: expected 0, got", len(metaPaths))
+	} else if len(markdownContentPaths) != 0 {
+		t.Fatal("wrong amount of markdownContentPaths returned from sortPaths: expected 0, got", len(markdownContentPaths))
 	} else if len(staticPaths) != 0 {
 		t.Fatal("wrong amount of staticPaths returned from sortPaths: expected 0, got", len(staticPaths))
 	}

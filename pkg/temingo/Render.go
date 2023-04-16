@@ -57,7 +57,7 @@ func (engine *Engine) Render() error {
 
 	// Sort retrieved filepaths
 
-	templatePaths, metaTemplatePaths, partialPaths, metaPaths, staticPaths = engine.sortPaths(fileList)
+	templatePaths, metaTemplatePaths, partialPaths, metaPaths, _, staticPaths = engine.sortPaths(fileList) // markdown content files are picked up later anyway
 
 	// Read partial files
 
@@ -84,20 +84,25 @@ func (engine *Engine) Render() error {
 			return err
 		}
 
+		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
+
 		// TODO move getMetaForDir here (currently in renderTemplate())
 		// it should return two maps; meta and childMeta
 		// OR it should return one map, where map["meta"] and map["childMeta"] are already set
 
-		// TODO renderTemplate should get the full meta/values object passed, without having to access the filesystem
+		// Create meta values object
+		meta, err := engine.generateMetaObjectForTemplatePath(templatePath, renderedTemplatePath, fileList, metaPaths)
+		if err != nil {
+			return err
+		}
 
-		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
-		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, templatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(meta, templatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
 			return err
 		}
 	}
 
-	// Read metatemplate files, check metadata and execute them
+	// Read metatemplate files, check metadata & markdown content files and execute them
 
 	for _, metaTemplatePath := range metaTemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta yaml
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaTemplatePath))
@@ -113,7 +118,13 @@ func (engine *Engine) Render() error {
 			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaTemplatePath))             // == Location of meta yaml, minus meta yaml, plus filename of metatemplate
 			renderedTemplatePath = strings.ReplaceAll(renderedTemplatePath, engine.MetaTemplateExtension, "") // Remove template extension from filename
 
-			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(fileIO.FileList{Files: metaPaths}, renderedTemplatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
+			// Create meta values object
+			meta, err := engine.generateMetaObjectForTemplatePath(metaTemplatePath, renderedTemplatePath, fileList, metaPaths)
+			if err != nil {
+				return err
+			}
+
+			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(meta, renderedTemplatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 			if err != nil {
 				return err
 			}

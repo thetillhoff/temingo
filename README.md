@@ -53,7 +53,7 @@ Metadata that is passed to the rendering will be aggregated as follows;
 - Pass the final object to the respective template rendering process
 
 ### Metadata child list
-For each `*.template*` file, temingo searches for all `./*/meta.yaml`s and adds them as `childMeta.<foldername>.<content-object>` pair to the template.
+For each `*.template*` file, temingo searches for all `./*/meta.yaml`s and adds them as `.childMeta.<foldername>.<content-object>` pair to the template.
 This means you can iterate over them and for example generate links for them.
 
 optional TODO have a path that can be set in the template, for which the files can be read
@@ -61,8 +61,11 @@ optional TODO have a path that can be set in the template, for which the files c
 ### Metatemplates
 Take all `*.metatemplate*` files and use them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
 
+### Content markdown
+If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating.
+
 ### Supports configuration file
-Read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file
+Read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file.
 
 TODO verify
 
