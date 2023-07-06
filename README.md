@@ -84,18 +84,20 @@ TODO verify
   - add table in readme on which extensions are covered
   - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
 
-temingo _can_ do (this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
-- content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- content minification, for example for html files. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- optimized media embedding, for example for images. Supported media:
-  - images
-  - svg (pregenerate different colors?)
+  temingo _can_ do (this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
+  - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
+    - `.html`
+    - `.css`
+    - `.js`
+  - content minification, for example for html files. Supported extensions:
+    - `.html`
+    - `.css`
+    - `.js`
+  - optimized media embedding, for example for images. Supported media:
+    - images
+    - svg (pregenerate different colors?)
+
+- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file
 
 #### Beautify
 TBD
@@ -158,7 +160,7 @@ temingo will by default:
 
 ## TODO
 
-Test the rendering via golang tests, not manually.
+- Test the rendering via golang tests, not manually.
 
 <!--
 html parser notes
