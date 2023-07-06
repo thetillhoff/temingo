@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/Masterminds/sprig"
 	"github.com/PuerkitoBio/purell"
-	"github.com/imdario/mergo"
 )
 
 func parseTemplateFiles(name string, baseTemplate string, partialTemplates [][]string) *template.Template {

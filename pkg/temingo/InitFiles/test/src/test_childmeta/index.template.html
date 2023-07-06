@@ -1,0 +1,16 @@
+{{ . }}
+{{ .childMeta }}
+{{ .childMeta.child1 }}
+{{ .childMeta.child1.name }}
+
+{{ range $index, $element := .childMeta }}
+{{ $index }}: {{ $element.name }}
+{{else}}
+no children
+{{end}}
+
+{{ range $index, $element := .noChildren }}
+{{ $index }}: {{ $element.name }}
+{{else}}
+no children
+{{end}}

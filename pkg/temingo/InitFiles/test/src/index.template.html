@@ -1,0 +1,15 @@
+hello world
+
+{{ template "partials/first.partial.html" }}
+
+{{ template "partials/second.partial.html" }}
+
+values: {{ . }}
+
+path: {{ .path }}
+
+breadcrumbs: {{ .breadcrumbs }}
+
+meta: {{ .meta }}
+
+childmeta: {{ .childMeta }}
