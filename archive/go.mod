@@ -10,7 +10,7 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/imdario/mergo v0.3.11
+	dario.cat/mergo v0.3.11
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/otiai10/copy v1.5.1
 	github.com/radovskyb/watcher v1.0.7

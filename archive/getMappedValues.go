@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 )
 
 func getMappedValues() map[string]interface{} {

@@ -4,7 +4,7 @@ import (
 	"log"
 	"path"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/thetillhoff/fileIO"
 	"gopkg.in/yaml.v3"
 )
