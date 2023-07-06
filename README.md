@@ -14,6 +14,14 @@ Temingo supports
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
 - a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
 
+## Installation
+```sh
+wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64
+wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64.sha256
+sha256sum -c temingo_linux_amd64.sha256
+install temingo_linux_amd64 /usr/local/bin/temingo # automatically sets rwxr-xr-x permissions
+rm temingo_linux_amd64 temingo_linux_amd64.sha256
+```
 
 ## Features
 
