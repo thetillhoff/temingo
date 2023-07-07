@@ -72,17 +72,21 @@ optional TODO have a path that can be set in the template, for which the files c
 Take all `*.metatemplate*` files and use them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
 
 ### Content markdown
-If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating.
+- [x] If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating.
+- [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet)
 
 ### Supports configuration file
 Read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file.
 
-TODO verify
+verify config file support
 
 ### Watch-mode
 - [x] add --watch / -w flag for watching for file changes in the source folder
 - [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
       fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
+- [ ] don't delete & copy when a static file hasn't changed. Maintains the necessary hashtable/s for static files in memory.
+- [ ] if output folder isn't empty, generate hashlist during first build
+- [ ] don't delete & recreate rendered files when its contents haven't changed
 
 ### Integrated simple webserver
 - [x] add --serve / -s flag for running a simple integrated webserver directly on the output folder.
@@ -169,6 +173,9 @@ temingo will by default:
 ## TODO
 
 - Test the rendering via golang tests, not manually.
+
+- TODO move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
+
 
 <!--
 html parser notes
