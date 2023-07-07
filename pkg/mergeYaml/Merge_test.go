@@ -7,6 +7,7 @@ import (
 
 func TestMerge(t *testing.T) {
 	tests := []struct {
+		testcase string
 		dst      interface{}
 		src      interface{}
 		override bool
@@ -14,6 +15,7 @@ func TestMerge(t *testing.T) {
 	}{
 		// Merging maps
 		{
+			testcase: "Merging maps",
 			dst: map[interface{}]interface{}{
 				"key1": "value1",
 				"key2": "value2",
@@ -31,6 +33,7 @@ func TestMerge(t *testing.T) {
 		},
 		// Overriding values in maps
 		{
+			testcase: "Overriding values in maps",
 			dst: map[interface{}]interface{}{
 				"key1": "value1",
 				"key2": "value2",
@@ -48,6 +51,7 @@ func TestMerge(t *testing.T) {
 		},
 		// Merging arrays
 		{
+			testcase: "Merging arrays",
 			dst:      []interface{}{"value1", "value2"},
 			src:      []interface{}{"value3", "value4"},
 			override: false,
@@ -55,6 +59,7 @@ func TestMerge(t *testing.T) {
 		},
 		// Overriding values in arrays
 		{
+			testcase: "Overriding values in arrays",
 			dst:      []interface{}{"value1", "value2"},
 			src:      []interface{}{"value3", "value4"},
 			override: true,
@@ -62,13 +67,15 @@ func TestMerge(t *testing.T) {
 		},
 		// Extending values with plain values
 		{
+			testcase: "Extending values with plain values",
 			dst:      "value1",
 			src:      "value2",
 			override: false,
-			expected: "value2",
+			expected: "value1",
 		},
 		// Overriding plain values
 		{
+			testcase: "Overriding plain values",
 			dst:      "value1",
 			src:      "value2",
 			override: true,
@@ -76,11 +83,11 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
-		result := Merge(test.dst, test.src, test.override)
+	for _, test := range tests {
+		result := Merge(test.src, test.dst, test.override)
 
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("Test case %d failed. Expected: %v, Got: %v", i+1, test.expected, result)
+			t.Errorf("Test case '%s' failed. Expected: %v, Got: %v", test.testcase, test.expected, result)
 		}
 	}
 }
@@ -102,7 +109,7 @@ func TestMergeMaps(t *testing.T) {
 		"key3": "value3",
 	}
 
-	result := mergeMaps(dst, src, false)
+	result := mergeMaps(src, dst, true)
 
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Test failed. Expected: %v, Got: %v", expected, result)
@@ -115,7 +122,7 @@ func TestMergeLists(t *testing.T) {
 
 	expected := []interface{}{"value1", "value2", "value3", "value4"}
 
-	result := mergeLists(dst, src, false)
+	result := mergeLists(src, dst, false)
 
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Test failed. Expected: %v, Got: %v", expected, result)
