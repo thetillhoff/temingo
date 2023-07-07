@@ -14,6 +14,9 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 		err error
 
 		meta map[string]interface{}
+
+		templateDir string
+		breadcrumbs []string
 	)
 
 	// Create meta values object
@@ -22,9 +25,19 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	// with .path
 	meta["path"] = renderedTemplatePath // Path to the current file (without `src/` or `output/`)
 
-	// with .breadcrumbs
-	templateDir, _ := path.Split(renderedTemplatePath)
-	meta["breadcrumbs"] = strings.Split(templateDir, "/") // Breadcrumbs to the current file
+	// example for renderedTemplatePath: a/b/c/index.html
+	// expected breadcrumbs in that case: ["a","b"]
+	// c should not be added, as the index.html is meant for that folder
+	templateDir = path.Dir(path.Dir(renderedTemplatePath)) // removing the filename and going one folder up
+	breadcrumbs = strings.Split(templateDir, "/")          // Breadcrumbs to the current file
+	if len(breadcrumbs) == 1 && breadcrumbs[0] == "." {    // If there are no breadcrumbs to be added
+		breadcrumbs = []string{} // Set breadcrumbs to empty, as there are none
+	}
+	meta["breadcrumbs"] = breadcrumbs // Breadcrumbs to the current file
+	templateDir = ""                  // contains full path
+	for _, breadcrumb := range breadcrumbs {
+		templateDir = path.Join(templateDir, breadcrumb)
+	}
 
 	// with .meta and .childMeta
 	if engine.Verbose {
@@ -36,7 +49,7 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	}
 
 	// with .content
-	markdownContentFiles := fileList.FilterByFolderPath(path.Dir(templatePath)).FilterByFilename(engine.MarkdownContentFilename).Files
+	markdownContentFiles := fileList.FilterByFolderPath(path.Dir(renderedTemplatePath)).FilterByFilename(engine.MarkdownContentFilename).Files
 	if len(markdownContentFiles) == 1 { // Can only be 1 at max
 		if engine.Verbose {
 			log.Println("Getting markdown content for", renderedTemplatePath)

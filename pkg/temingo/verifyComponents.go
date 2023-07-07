@@ -20,7 +20,13 @@ func verifyPartials(partialFiles map[string]string) error {
 	for partialPath, content := range partialFiles {
 		// Checking for duplicate partials
 		temporaryTemplateEngine = template.New(temporaryTemplateEngineName) // Create a new temporary template
-		_, err = temporaryTemplateEngine.Parse(content)                     // Parse the partial into the temporary template engine
+
+		// Defining additional template functions
+		temporaryTemplateEngine = temporaryTemplateEngine.Funcs(template.FuncMap{
+			"concat": tmpl_concat,
+		})
+
+		_, err = temporaryTemplateEngine.Parse(content) // Parse the partial into the temporary template engine
 		if err != nil {
 			return err
 		}

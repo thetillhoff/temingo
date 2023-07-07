@@ -16,16 +16,20 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 	outputBuffer.Reset()                         // Ensure the buffer is empty
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name
 
+	// Defining additional template functions
+	templateEngine = templateEngine.Funcs(template.FuncMap{
+		"concat": tmpl_concat,
+	})
+
 	for _, partialFileContent := range partialFiles { // For each partialFile
 		templateEngine.Parse(partialFileContent) // Parse the partials contained in it
 	}
 
-	// tpl.Funcs(funcMap).Parse(baseTemplate)
 	_, err = templateEngine.Parse(templateContent) // Parse the template
 	if err != nil {
 		return nil, err
 	}
-	// TODO Template functionmap is missing here
+
 	err = templateEngine.Execute(outputBuffer, meta)
 	if err != nil {
 		return nil, err
