@@ -4,43 +4,41 @@ import (
 	"log"
 	"path"
 
-	"dario.cat/mergo"
 	"github.com/thetillhoff/fileIO"
+	"github.com/thetillhoff/temingo/pkg/mergeYaml"
 	"gopkg.in/yaml.v3"
 )
 
 // Reads the meta data for the specified templatePath
 // Returns the metadata from the treePath (meta yamls of the template-dir and the direct children-dirs),
 // the childMetadata in map[folderName]metadata format
-func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (map[string]interface{}, map[string]interface{}, error) {
+func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (interface{}, map[string]interface{}, error) {
 	var (
 		err       error
-		meta      map[string]interface{} = map[string]interface{}{}
-		childMeta map[string]interface{} = map[string]interface{}{}
+		meta      interface{}                                       // meta object for templatepath -> {meta}
+		childMeta map[string]interface{} = map[string]interface{}{} // meta object for each childPath -> childMeta[childname]{meta}
 
-		content       []byte
+		metaContent   []byte
 		parsedContent interface{}
-		folderName    string
+
+		folderName string
 	)
 
-	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta yaml in dirTree for templatePath
+	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta yaml in dirTree for templatePath (top-down)
 		if engine.Verbose {
 			log.Println("Reading metadata from", metaFilePath)
 		}
 
-		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaFilePath)) // Read file contents
+		metaContent, err = fileIO.ReadFile(path.Join(engine.InputDir, metaFilePath)) // Read file contents
 		if err != nil {
 			return nil, nil, err
 		}
-		err = yaml.Unmarshal(content, &parsedContent) // Store yaml into map
+		err = yaml.Unmarshal(metaContent, &parsedContent) // Store yaml into map
 		if err != nil {
 			return nil, nil, err
 		}
 
-		err := mergo.Merge(&meta, parsedContent, mergo.WithOverride) // Merge while overriding existing values
-		if err != nil {
-			return nil, nil, err
-		}
+		meta = mergeYaml.Merge(parsedContent, meta, true)
 	}
 
 	for _, childMetaFilePath := range metaTemplatePaths.FilterByLevelAtFolderPath(path.Dir(templatePath), 1).Files { // For each direct child meta yaml
@@ -48,18 +46,18 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 			log.Println("Reading child-metadata from", childMetaFilePath)
 		}
 
-		content, err = fileIO.ReadFile(path.Join(engine.InputDir, childMetaFilePath)) // Read file contents
+		metaContent, err = fileIO.ReadFile(path.Join(engine.InputDir, childMetaFilePath)) // Read file contents
 		if err != nil {
 			return nil, nil, err
 		}
-		err = yaml.Unmarshal(content, &parsedContent) // Store yaml into map
+		err = yaml.Unmarshal(metaContent, &parsedContent) // Store yaml into map
 		if err != nil {
 			return nil, nil, err
 		}
 
 		folderName = path.Base(path.Dir(childMetaFilePath)) // Get the name of the last folder
 
-		childMeta[folderName] = parsedContent
+		childMeta[folderName] = mergeYaml.Merge(parsedContent, meta, true) // Store parent+child meta into childMeta objects per child-folder
 	}
 
 	return meta, childMeta, nil
