@@ -92,7 +92,11 @@ var rootCmd = &cobra.Command{
 				func(event watcher.Event) error {
 					log.Println("*** Rebuild triggered by a change detected in", event.Path, "***")
 					// TODO inform frontend via websocket connection
-					return temingoEngine.Render()
+					err = temingoEngine.Render()
+					if err != nil {
+						log.Println(err) // Print errors when in watch mode
+					}
+					return nil // Ignore errors on Rendering when in watch mode (apart from printing them)
 				})
 			if err != nil {
 				log.Fatalln(err)
