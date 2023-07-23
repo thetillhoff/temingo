@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v0.1.1
+- Don't fail on templating errors during watch mode.
+
 ## v0.1.0 on 2023-07-06
 Reworked whole application for this release. Battle-tested it in the last month, and added a bunch of features, for example:
 - New internal structure
