@@ -180,8 +180,8 @@ github.com/subosito/gotenv v1.4.2 h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8
 github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
 github.com/thetillhoff/fileIO v1.0.0 h1:Ua9ubdoSGUtmTuLnQZ0NnRl+RPcFCuWQxR4zglNekbg=
 github.com/thetillhoff/fileIO v1.0.0/go.mod h1:FfZf7inJxCCC6pdP2LRCV5C1qqiM/sZU3j0z2Z72y7E=
-github.com/thetillhoff/serve v1.0.1 h1:oOTBBIbst30qTlYVTjYUWFB375exCopjcJrXtzu2dDo=
-github.com/thetillhoff/serve v1.0.1/go.mod h1:CP+BwOuGM8uJDdBLg+5xFcxRZ6a933hXRlvPZ15d/48=
+github.com/thetillhoff/serve v1.0.2 h1:aCxJb8QMnKmaGwsPHXyPPIP/i2zgRGEjjm6N/dl4/6I=
+github.com/thetillhoff/serve v1.0.2/go.mod h1:OTxuLgGzGWlwd4Q95E63XCpIDKgbQGyorYhnMrrPPU0=
 github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4 h1:0sw0nJM544SpsihWx1bkXdYLQDlzRflMgFJQ4Yih9ts=
 github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4/go.mod h1:+ccdNT0xMY1dtc5XBxumbYfOUhmduiGudqaDgD2rVRE=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
