@@ -113,7 +113,7 @@ verify config file support
 
 #### Beautify
 TBD
-- is it good to do this there? Wouldn't it be better to use something else intead? Linux approach, do one thing, but do it good.
+- is it good to do this there? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
 
 This is currently enabled by default.
 
