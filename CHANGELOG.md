@@ -1,5 +1,8 @@
 # CHANGELOG
 
+##
+- Update dependencies
+
 ## v0.1.1
 - Don't fail on templating errors during watch mode.
 
