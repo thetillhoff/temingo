@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/cobra v1.7.0
-	github.com/spf13/viper v1.16.0
+	github.com/spf13/viper v1.17.0
 )
 
 require (
@@ -17,6 +17,15 @@ require (
 	github.com/thetillhoff/fileIO v1.0.0
 	github.com/yuin/goldmark v1.5.6
 	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/sagikazarmark/locafero v0.3.0 // indirect
+	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sourcegraph/conc v0.3.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 )
 
 require (
