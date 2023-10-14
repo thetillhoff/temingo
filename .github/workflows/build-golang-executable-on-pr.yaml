@@ -1,0 +1,21 @@
+name: Build golang executable on PR
+
+on:
+  pull_request_target:
+
+jobs:
+  golang-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - linux
+          - windows
+          - darwin
+        arch:
+          - amd64
+    steps:
+      - uses: thetillhoff/action-golang-build@v0.1.0
+        with:
+          OS: "${{ matrix.os }}"
+          ARCH: "${{ matrix.arch }}"
