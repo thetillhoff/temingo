@@ -12,7 +12,7 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	dario.cat/mergo v0.3.11
 	github.com/mitchellh/copystructure v1.1.1 // indirect
-	github.com/otiai10/copy v1.5.1
+	github.com/otiai10/copy v1.14.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/spf13/pflag v1.0.5
