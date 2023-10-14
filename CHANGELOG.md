@@ -1,7 +1,8 @@
 # CHANGELOG
 
-##
+## v0.2.0
 - Update dependencies
+- Add `temingo version` command to print the current build version
 
 ## v0.1.1
 - Don't fail on templating errors during watch mode.
