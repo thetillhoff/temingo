@@ -44,6 +44,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: thetillhoff/action-release-artifacts@v0.1.0
+      - uses: thetillhoff/action-release-artifacts@v0.2.0
         with:
           RELEASE_BODY: "${{needs.release-prerequisites.outputs.RELEASE_BODY}}"
