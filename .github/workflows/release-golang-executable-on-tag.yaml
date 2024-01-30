@@ -14,7 +14,7 @@ jobs:
       RELEASE_BODY: ${{ steps.release-prerequisites.outputs.RELEASE_BODY }}
     steps:
       - id: release-prerequisites
-        uses: thetillhoff/action-release-prerequisites@v0.1.0
+        uses: thetillhoff/action-release-prerequisites@v0.2.0
 
   golang-build:
     needs: release-prerequisites
