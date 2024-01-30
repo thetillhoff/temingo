@@ -30,7 +30,7 @@ jobs:
         arch:
           - amd64
     steps:
-      - uses: thetillhoff/action-golang-build@v0.1.0
+      - uses: thetillhoff/action-golang-build@v0.2.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
