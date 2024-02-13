@@ -18,10 +18,10 @@ Temingo supports
 
 If you're feeling fancy:
 ```sh
-curl -s https://raw.githubusercontent.com/thetillhofftemingo/main/install.sh | sh
+curl -s https://raw.githubusercontent.com/thetillhoff/temingo/main/install.sh | sh
 ```
 
-or manually from https://github.com/thetillhoff/webscan/releases/latest.
+or manually from https://github.com/thetillhoff/temingo/releases/latest.
 
 ## Features
 
