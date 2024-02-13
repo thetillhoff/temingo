@@ -15,13 +15,13 @@ Temingo supports
 - a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
 
 ## Installation
+
+If you're feeling fancy:
 ```sh
-wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64
-wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64.sha256
-sha256sum -c temingo_linux_amd64.sha256
-sudo install temingo_linux_amd64 /usr/local/bin/temingo # automatically sets rwxr-xr-x permissions
-rm temingo_linux_amd64 temingo_linux_amd64.sha256
+curl -s https://raw.githubusercontent.com/thetillhofftemingo/main/install.sh | sh
 ```
+
+or manually from https://github.com/thetillhoff/webscan/releases/latest.
 
 ## Features
 

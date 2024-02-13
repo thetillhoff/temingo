@@ -29,6 +29,7 @@ jobs:
           - darwin
         arch:
           - amd64
+          - arm64
     steps:
       - uses: thetillhoff/action-golang-build@v0.2.0
         with:
