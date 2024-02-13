@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v0.4.0
+- `--serve` now only listens on `127.0.0.1`
+
 ## v0.3.0
 - Update dependencies
 - Improve install instructions

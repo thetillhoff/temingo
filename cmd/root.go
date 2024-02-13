@@ -65,6 +65,7 @@ var rootCmd = &cobra.Command{
 
 		if serveFlag { // Start webserver if desired
 			serveEngine := serve.DefaultEngine()
+			serveEngine.Ipaddress = "127.0.0.1" // Only listen to local connections
 			serveEngine.Directory = outputDirFlag
 			serveEngine.Verbose = verboseFlag
 			go func() { // Start the webserver in the background
