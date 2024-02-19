@@ -174,7 +174,12 @@ temingo will by default:
 
 - Test the rendering via golang tests, not manually.
 
-- TODO move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
+- move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
+
+- automatically check all "internal" links of website for validity aka file exists
+- allow blacklisting urls/paths, including wildcards
+- add check to scan for response codes from websites that are called, also with blacklist of domains where links are not checked
+- automatically check all links that have a protocol specified to use https
 
 
 <!--
