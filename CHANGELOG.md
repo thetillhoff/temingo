@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.4.0
+- `--serve` now only listens on `127.0.0.1`
+
+## v0.3.0
+- Update dependencies
+- Improve install instructions
+- Support ARM64 architecture
+
 ## v0.2.0
 - Update dependencies
 - Add `temingo version` command to print the current build version

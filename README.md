@@ -15,13 +15,13 @@ Temingo supports
 - a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
 
 ## Installation
+
+If you're feeling fancy:
 ```sh
-wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64
-wget https://github.com/thetillhoff/temingo/releases/download/v0.1.0/temingo_linux_amd64.sha256
-sha256sum -c temingo_linux_amd64.sha256
-sudo install temingo_linux_amd64 /usr/local/bin/temingo # automatically sets rwxr-xr-x permissions
-rm temingo_linux_amd64 temingo_linux_amd64.sha256
+curl -s https://raw.githubusercontent.com/thetillhoff/temingo/main/install.sh | sh
 ```
+
+or manually from https://github.com/thetillhoff/temingo/releases/latest.
 
 ## Features
 
@@ -174,7 +174,12 @@ temingo will by default:
 
 - Test the rendering via golang tests, not manually.
 
-- TODO move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
+- move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
+
+- automatically check all "internal" links of website for validity aka file exists
+- allow blacklisting urls/paths, including wildcards
+- add check to scan for response codes from websites that are called, also with blacklist of domains where links are not checked
+- automatically check all links that have a protocol specified to use https
 
 
 <!--
