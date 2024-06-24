@@ -15,7 +15,7 @@ require (
 
 require (
 	github.com/thetillhoff/fileIO v1.0.0
-	github.com/yuin/goldmark v1.7.2
+	github.com/yuin/goldmark v1.7.3
 	gopkg.in/yaml.v3 v3.0.1
 )
 
