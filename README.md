@@ -6,13 +6,13 @@ The original idea was to create a simple static site generator, which is not as 
 The result, though, should not specifically be bound to website contents, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/thetillhoff/temingo/issues/9) is resolved.
 
 Temingo supports
-- normal-type templates (== single-output templates) that will render to exactly one output file,
-- partial-type templates (== partial templates) that can be included in other templates,
-(- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...)
-- meta-type templates (== multi-output templates) that will render to multiple output files,
-- static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files),
+- normal-type templates (== single-file-output templates) that will render to exactly one output file,
+- partial-type templates (== partial templates) that can be included in other templates, also in other partials,
+<!-- (- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...) -->
+- meta-type templates (== multi-file-output templates) that can be used to render multiple output files,
+- static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files which are used for meta-type templates),
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
-- a watch mechanism, that continously checks if there are filechanges in the input directory or the `.temingoignore` - and trigger a rebuild if necessary.
+- a watch mechanism to trigger a rebuild of the output directory if necessary, which continously checks if there are filechanges in the input directory or the `.temingoignore`/
 
 ## Installation
 
@@ -26,65 +26,66 @@ or manually from https://github.com/thetillhoff/temingo/releases/latest.
 ## Features
 
 ### Templating engine
-Temingo will by default:
-- take all `*.template*` files from the source folder `./src`.
-- write the rendered files into folder `./output`.
+Temingo by default:
+- takes all `*.template*` files from the source folder `./src`.
+- writes the rendered files into the destination folder `./output`.
 
 ### Ignoring source files
-Consider the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
+Temingo by default considers the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
 
 ### Support for static files / assets
-Take all other files (static) and copy them into the output folder as-is. Except `meta.yaml`s.
+Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s.
 
 ### Partial templates
-Take all `*.partial*` files as intermediate templates / snippets
+Temingo by default takes all `*.partial*` files as intermediate templates / snippets
 - [x] the defined intermediate template names must be globally unique so they can be imported properly later. Temingo verifies the uniqueness.
 - [x] partials are added automatically with path, `partial/page.partial.html` is the automatic default name for that partial.
 - [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
 - [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
 
-### Component template
+<!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
   - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
   - for each of those, register them as equally named functions that are then passed to the funcMap for templating
   - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
   - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
-  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead.
+  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead. -->
 
 ### Dynamic metadata
+Temingo by default passes the following metadata to the rendering:
 - [ ] pass global variables like datetime (globally equal renderTime only)
-- [x] `.meta.path` of the rendered template
+- [x] `.meta.path` contains the rendered template path
 - [x] `.meta.breadcrumbs` contains a slice of the folder hierarchy for each template
 
 ### Metadata hierarchy
-Metadata that is passed to the rendering will be aggregated as follows;
+Temingo by default aggregates the metadata that is passed to the rendering as follows;
 - Iterate through folders from inputDir `./src` down to the folder containing the template file
 - On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one (overwrite if necessary)
 - Pass the final object to the respective template rendering process
 
 ### Metadata child list
-For each `*.template*` file, temingo searches for all `./*/meta.yaml`s and adds them as `.childMeta.<foldername>.<content-object>` pair to the template.
+For each `*.template*` file, temingo by default searches for all `./*/meta.yaml`s (in all folders that are one level further down from the template file) and adds them as `.childMeta.<foldername>.<content-object>` pair to the template.
 This means you can iterate over them and for example generate links for them.
 
-optional TODO have a path that can be set in the template, for which the files can be read
+<!-- optional TODO have a path that can be set in the template, for which the files can be read -->
 
 ### Metatemplates
-Take all `*.metatemplate*` files and use them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
+Temingo by default takes all `*.metatemplate*` files and uses them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
 
 ### Content markdown
-- [x] If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating.
-- [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet)
+Temingo by default processes markdown files as follows:
+- [x] If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating process.
+<!-- - [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet) -->
 
-### Supports configuration file
-Read configuration from a `~/.temingo.yaml` file and a `./.temingo.yaml` file.
-
-verify config file support
+<!-- ### Configuration file -->
+<!-- Temingo by default reads configuration settings from a `~/.temingo.yaml` file and a `./.temingo.yaml` file. -->
+<!-- TODO verify config file support -->
 
 ### Watch-mode
 - [x] add --watch / -w flag for watching for file changes in the source folder
 - [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
       fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
-- [ ] don't delete & copy when a static file hasn't changed. Maintains the necessary hashtable/s for static files in memory.
+- [ ] don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
 - [ ] if output folder isn't empty, generate hashlist during first build
 - [ ] don't delete & recreate rendered files when its contents haven't changed
 
@@ -96,7 +97,7 @@ verify config file support
   - add table in readme on which extensions are covered
   - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
 
-  temingo _can_ do (this should be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
+  temingo _can_ do (this should probably be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
   - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
     - `.html`
     - `.css`
@@ -109,7 +110,7 @@ verify config file support
     - images
     - svg (pregenerate different colors?)
 
-- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file
+- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file, and nonces are supported.
 
 #### Beautify
 TBD
@@ -146,8 +147,8 @@ temingo
 temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `--watch`.
 ```
 
+<!-- Automate this snipped to be generated from the code at build time, or make otherwise sure this reflects the current state of the code -->
 ```
-<!-- --valuesfile, -f, default []string{"values.yaml"}:Sets the path(s) to the values-file(s). // TODO adjust docs as its already implemented via meta.yaml -->
 --inputDir, -i, default "./src": Sets the path to the template-file-directory.
 --outputDir, -o, default "./output": Sets the destination-path for the compiled templates.
 --templateExtension, -t, default ".template": Sets the extension of the template files.
@@ -160,27 +161,26 @@ temingo init // Generates a sample project in the current folder. Only starts wr
 --verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
-temingo will by default:
-- What else does this passed object contain that is passed to each template rendering process:
-  ```
-  ["path"] = string -> path to template (within `./src/`)
-  ["breadcrumbs"] = []string -> path to location of template, split by '/'
-  ["meta"] = map[string]object -> aggregated metadata for current folder
-  ["childMeta"] = map[string]object -> metadata of subfolders, key is the folder name containing the respective metadata
-  * (for example the `meta.yaml` object -> it'll start at the root folder, then start descending the folder-tree and grab all `meta.yaml`s along the way. Merged in a way that overwrites the parents' values.)
-  ```
+Here's a list of variables that are passed to each template rendering process:
+```
+["path"] = string -> path to template (within `./src/`)
+["breadcrumbs"] = []string -> path to location of template, split by '/'
+["meta"] = map[string]object -> aggregated metadata for current folder
+["childMeta"] = map[string]object -> metadata of subfolders, key is the folder name containing the respective metadata
+```
 
 ## TODO
 
 - Test the rendering via golang tests, not manually.
 
+- go through comments in README and todos in code
+
 - move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
 
 - automatically check all "internal" links of website for validity aka file exists
-- allow blacklisting urls/paths, including wildcards
-- add check to scan for response codes from websites that are called, also with blacklist of domains where links are not checked
-- automatically check all links that have a protocol specified to use https
+- automatically check all links that have a protocol specified to use https and warn in case of http
 
+- add setting to enable/disable auto-intendation of multiline partials with same whitespace as reference. Default is enabled.
 
 <!--
 html parser notes
