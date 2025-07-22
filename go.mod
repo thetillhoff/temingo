@@ -1,6 +1,6 @@
 module github.com/thetillhoff/temingo
 
-go 1.21.0
+go 1.22
 
 toolchain go1.24.3
 
@@ -17,7 +17,7 @@ require (
 
 require (
 	github.com/thetillhoff/fileIO v1.0.0
-	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark v1.7.12
 	gopkg.in/yaml.v3 v3.0.1
 )
 
