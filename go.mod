@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/radovskyb/watcher v1.0.7
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 )
 
