@@ -2,7 +2,7 @@ module github.com/thetillhoff/temingo
 
 go 1.22
 
-toolchain go1.24.5
+toolchain go1.24.6
 
 require (
 	github.com/radovskyb/watcher v1.0.7
