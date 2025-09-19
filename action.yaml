@@ -1,0 +1,27 @@
+name: Render templates
+description: Render templates with temingo
+
+inputs:
+  DIR:
+    description: "Location of the template files"
+    required: false
+    default: "./"
+  VALUES:
+    description: "Multiline string of key=value pairs to pass to the templates"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install temingo
+      shell: bash
+      run: |
+        go install github.com/thetillhoff/temingo@latest
+
+    - name: Render templates
+      shell: bash
+      run: |
+        VALUESFILE=$(mktemp)
+        echo "${{ inputs.VALUES }}" > ${VALUESFILE}
+        temingo --inputDir ${{ inputs.DIR }} --outputDir ${{ inputs.DIR }} --noDeleteOutputDir --valuesfile ${VALUESFILE}
