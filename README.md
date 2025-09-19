@@ -11,7 +11,7 @@ Temingo supports
 - partial-type templates (== partial templates) that can be included in other templates, also in other partials,
 <!-- (- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...) -->
 - meta-type templates (== multi-file-output templates) that can be used to render multiple output files,
-- static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files which are used for meta-type templates),
+- static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files which are used for meta-type templates, and values files specified via `--valuesfile`),
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
 - a watch mechanism to trigger a rebuild of the output directory if necessary, which continously checks if there are filechanges in the input directory or the `.temingoignore`/
 
@@ -40,7 +40,7 @@ Temingo by default considers the ignored paths as described in `./.temingoignore
 
 ### Support for static files / assets
 
-Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s.
+Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s and values files specified via `--valuesfile`.
 
 ### Partial templates
 
@@ -120,7 +120,9 @@ Temingo by default processes markdown files as follows:
 
 - [x] `--value key=value` flag to pass custom values to templates
 - [x] Multiple `--value` flags can be used to pass multiple key-value pairs
+- [x] `--valuesfile` flag to load values from a YAML file
 - [x] Values are accessible in templates via `.<key>`
+- [x] CLI values override values from file when both are provided
 
 ### Output directory management
 
@@ -202,6 +204,12 @@ temingo version                            # Print current version
 # Build with custom values
 temingo --value siteName="My Blog" --value author="John Doe"
 
+# Build with values from YAML file
+temingo --valuesfile values.yaml
+
+# Build with values from file and override some via CLI
+temingo --valuesfile values.yaml --value siteName="Override Name"
+
 # Build with custom directories and extensions
 temingo --inputDir ./templates --outputDir ./dist --templateExtension .tmpl
 
@@ -236,6 +244,7 @@ The `temingo init` command supports the following project types:
 --markdownFilename, default "content.md": Sets the filename for markdown content files.
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
 --value, multiple occurrences possible: Pass custom values to templates in key=value format.
+--valuesfile: Path to a YAML file containing key-value pairs for the templates.
 --noDeleteOutputDir, default false: Don't delete the output directory before building.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
 --serve, -s, default false: Serves the output directory with a simple webserver.

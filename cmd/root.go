@@ -17,14 +17,14 @@ import (
 )
 
 var (
-	cfgFile                   string
+	cfgFile string
 
 	// inputDir must end with a slash
-	inputDirFlag              string
+	inputDirFlag string
 
 	// outputDir must end with a slash
-	outputDirFlag             string
-	
+	outputDirFlag string
+
 	temingoignoreFlag         string
 	templateExtensionFlag     string
 	metaTemplateExtensionFlag string
@@ -32,12 +32,13 @@ var (
 	metaFilenameFlag          string
 	markdownFilenameFlag      string
 	valueFlags                []string
-	
-	verboseFlag bool
-	dryRunFlag  bool
-	noDeleteOutputDirFlag     bool
-	watchFlag   bool
-	serveFlag   bool
+	valuesFileFlag            string
+
+	verboseFlag           bool
+	dryRunFlag            bool
+	noDeleteOutputDirFlag bool
+	watchFlag             bool
+	serveFlag             bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,7 +47,8 @@ var rootCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var (
-			err error
+			err    error
+			values = map[string]string{}
 		)
 
 		if !strings.HasSuffix(inputDirFlag, "/") {
@@ -56,7 +58,15 @@ var rootCmd = &cobra.Command{
 			outputDirFlag += "/"
 		}
 
-		values := map[string]string{}
+		if valuesFileFlag != "" {
+			// Parse values from file first
+			values, err = parseValuesFromFile(valuesFileFlag)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+
+		// Override with CLI values
 		for _, value := range valueFlags {
 			splitString := strings.SplitN(value, "=", 2)
 			switch len(splitString) {
@@ -69,7 +79,6 @@ var rootCmd = &cobra.Command{
 			default:
 				log.Fatalln("Invalid value flag: " + value)
 			}
-			values[splitString[0]] = splitString[1]
 		}
 
 		temingoEngine := temingo.Engine{
@@ -82,6 +91,7 @@ var rootCmd = &cobra.Command{
 			MetaFilename:            metaFilenameFlag,
 			MarkdownContentFilename: markdownFilenameFlag,
 			Values:                  values,
+			ValuesFilePath:          valuesFileFlag,
 			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,
@@ -163,6 +173,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&metaFilenameFlag, "metaFilename", "meta.yaml", "the yaml files for the metadata")
 	rootCmd.PersistentFlags().StringVar(&markdownFilenameFlag, "markdownFilename", "content.md", "the markdown files for the markdown contents")
 	rootCmd.PersistentFlags().StringSliceVar(&valueFlags, "value", []string{}, "value for the templates (`key=value`), multiple occurrences are possible")
+	rootCmd.PersistentFlags().StringVar(&valuesFileFlag, "valuesfile", "", "path to a YAML file containing key-value pairs for the templates")
 
 	rootCmd.PersistentFlags().BoolVar(&noDeleteOutputDirFlag, "noDeleteOutputDir", false, "don't delete the outputDir before building")
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")

@@ -45,6 +45,14 @@ func (engine *Engine) Render() error {
 		}
 	}
 
+	// Add values file to ignore lines if specified
+	if engine.ValuesFilePath != "" {
+		ignoreLines = append(ignoreLines, engine.ValuesFilePath)
+		if engine.Verbose {
+			log.Println("Adding values file to ignore list:", engine.ValuesFilePath)
+		}
+	}
+
 	// Read filetree with ignoreLines
 
 	fileList, err = fileIO.GenerateFileListWithIgnoreLines(engine.InputDir, ignoreLines, engine.Verbose) // Get inputDir file-tree

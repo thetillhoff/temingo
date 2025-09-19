@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.6.0
+
+- Add `--valuesfile` flag to load values from a YAML file, with CLI values taking precedence over file values. It is also added to the implicit ignore list, like the `meta.yaml` files.
+
 ## v0.5.0
 
 - Add `--noDeleteOutputDir` flag to preserve existing output directory contents. This only overwrites the rendered template files and makes it possible to have inputDir==outputDir.

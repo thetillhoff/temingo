@@ -15,6 +15,10 @@ var initCmd = &cobra.Command{
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: temingo.ProjectTypes(),
 	Run: func(cmd *cobra.Command, args []string) {
+		var (
+			err    error
+			values = map[string]string{}
+		)
 
 		if !strings.HasSuffix(inputDirFlag, "/") {
 			inputDirFlag += "/"
@@ -23,7 +27,15 @@ var initCmd = &cobra.Command{
 			outputDirFlag += "/"
 		}
 
-		values := map[string]string{}
+		if valuesFileFlag != "" {
+			// Parse values from file first
+			values, err = parseValuesFromFile(valuesFileFlag)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+
+		// Override with CLI values
 		for _, value := range valueFlags {
 			splitString := strings.SplitN(value, "=", 2)
 			switch len(splitString) {
@@ -36,7 +48,6 @@ var initCmd = &cobra.Command{
 			default:
 				log.Fatalln("Invalid value flag: " + value)
 			}
-			values[splitString[0]] = splitString[1]
 		}
 
 		engine := temingo.Engine{
@@ -49,12 +60,13 @@ var initCmd = &cobra.Command{
 			MetaFilename:            metaFilenameFlag,
 			MarkdownContentFilename: markdownFilenameFlag,
 			Values:                  values,
+			ValuesFilePath:          valuesFileFlag,
 			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,
 		}
 
-		err := engine.InitProject(args[0]) // There can only be one argument, as specified by `cobra.ExactArgs(1)`
+		err = engine.InitProject(args[0]) // There can only be one argument, as specified by `cobra.ExactArgs(1)`
 		if err != nil {
 			log.Fatalln(err)
 		}
