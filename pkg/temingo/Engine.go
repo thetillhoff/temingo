@@ -9,6 +9,8 @@ type Engine struct {
 	PartialExtension        string
 	MetaFilename            string
 	MarkdownContentFilename string
+	Values                  map[string]string
+	NoDeleteOutputDir       bool
 	Verbose                 bool
 	DryRun                  bool
 	Beautify                bool
@@ -26,6 +28,8 @@ func DefaultEngine() Engine {
 		PartialExtension:        ".partial",
 		MetaFilename:            "meta.yaml",
 		MarkdownContentFilename: "content.md",
+		Values:                  map[string]string{},
+		NoDeleteOutputDir:       false,
 		Verbose:                 false,
 		DryRun:                  false,
 		Beautify:                false,

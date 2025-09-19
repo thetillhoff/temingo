@@ -149,26 +149,44 @@ func (engine *Engine) Render() error {
 
 	if !engine.DryRun { // Only if dry-run is disabled
 
-		err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
-		if err != nil {
-			return err
-		}
-		err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
-		if err != nil {
-			return err
-		}
-
-		for _, staticPath := range staticPaths {
-			err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
+		if !engine.NoDeleteOutputDir {
+			err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
+			if err != nil {
+				return err
+			}
+			err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
 			if err != nil {
 				return err
 			}
 			if engine.Verbose {
-				log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
+				log.Println("Recreating the outputDir " + engine.OutputDir)
+			}
+
+			for _, staticPath := range staticPaths {
+				err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
+				if err != nil {
+					return err
+				}
+				if engine.Verbose {
+					log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
+				}
 			}
 		}
 
 		for templatePath, renderedTemplate := range renderedTemplates { // includes both templates and metaTemplates
+
+			if engine.NoDeleteOutputDir {
+				if _, err = os.Stat(path.Join(engine.OutputDir, templatePath)); err == nil {
+					err = os.Remove(path.Join(engine.OutputDir, templatePath))
+					if err != nil {
+						return err
+					}
+					if engine.Verbose {
+						log.Println("Deleting existing rendered template at " + path.Join(engine.OutputDir, templatePath))
+					}
+				}
+			}
+
 			err = fileIO.WriteFile(path.Join(engine.OutputDir, templatePath), renderedTemplate)
 			if err != nil {
 				return err

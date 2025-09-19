@@ -65,6 +65,11 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 		meta["content"] = string(content)
 	}
 
+	// with .<values>
+	for key, value := range engine.Values {
+		meta[key] = value
+	}
+
 	return meta, nil
 
 }

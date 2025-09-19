@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/radovskyb/watcher"
@@ -17,17 +18,24 @@ import (
 
 var (
 	cfgFile                   string
+
+	// inputDir must end with a slash
 	inputDirFlag              string
+
+	// outputDir must end with a slash
 	outputDirFlag             string
+	
 	temingoignoreFlag         string
 	templateExtensionFlag     string
 	metaTemplateExtensionFlag string
 	partialExtensionFlag      string
 	metaFilenameFlag          string
 	markdownFilenameFlag      string
-
+	valueFlags                []string
+	
 	verboseFlag bool
 	dryRunFlag  bool
+	noDeleteOutputDirFlag     bool
 	watchFlag   bool
 	serveFlag   bool
 )
@@ -41,6 +49,29 @@ var rootCmd = &cobra.Command{
 			err error
 		)
 
+		if !strings.HasSuffix(inputDirFlag, "/") {
+			inputDirFlag += "/"
+		}
+		if !strings.HasSuffix(outputDirFlag, "/") {
+			outputDirFlag += "/"
+		}
+
+		values := map[string]string{}
+		for _, value := range valueFlags {
+			splitString := strings.SplitN(value, "=", 2)
+			switch len(splitString) {
+			case 0:
+				log.Fatalln("Empty value flag")
+			case 1:
+				log.Fatalln("No value set for value keypair: " + value)
+			case 2:
+				values[splitString[0]] = splitString[1]
+			default:
+				log.Fatalln("Invalid value flag: " + value)
+			}
+			values[splitString[0]] = splitString[1]
+		}
+
 		temingoEngine := temingo.Engine{
 			InputDir:                inputDirFlag,
 			OutputDir:               outputDirFlag,
@@ -50,6 +81,8 @@ var rootCmd = &cobra.Command{
 			PartialExtension:        partialExtensionFlag,
 			MetaFilename:            metaFilenameFlag,
 			MarkdownContentFilename: markdownFilenameFlag,
+			Values:                  values,
+			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,
 			Beautify:                true,
@@ -129,7 +162,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&partialExtensionFlag, "partialExtension", "c", ".partial", "partialExtension marks a file as partial template without a rendered file")
 	rootCmd.PersistentFlags().StringVar(&metaFilenameFlag, "metaFilename", "meta.yaml", "the yaml files for the metadata")
 	rootCmd.PersistentFlags().StringVar(&markdownFilenameFlag, "markdownFilename", "content.md", "the markdown files for the markdown contents")
+	rootCmd.PersistentFlags().StringSliceVar(&valueFlags, "value", []string{}, "value for the templates (`key=value`), multiple occurrences are possible")
 
+	rootCmd.PersistentFlags().BoolVar(&noDeleteOutputDirFlag, "noDeleteOutputDir", false, "don't delete the outputDir before building")
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")
 	rootCmd.PersistentFlags().BoolVar(&dryRunFlag, "dry-run", false, "don't output files")
 	rootCmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "watch makes temingo continiously watch for filesystem changes")

@@ -16,16 +16,42 @@ var initCmd = &cobra.Command{
 	ValidArgs: temingo.ProjectTypes(),
 	Run: func(cmd *cobra.Command, args []string) {
 
+		if !strings.HasSuffix(inputDirFlag, "/") {
+			inputDirFlag += "/"
+		}
+		if !strings.HasSuffix(outputDirFlag, "/") {
+			outputDirFlag += "/"
+		}
+
+		values := map[string]string{}
+		for _, value := range valueFlags {
+			splitString := strings.SplitN(value, "=", 2)
+			switch len(splitString) {
+			case 0:
+				log.Fatalln("Empty value flag")
+			case 1:
+				log.Fatalln("No value set for value keypair: " + value)
+			case 2:
+				values[splitString[0]] = splitString[1]
+			default:
+				log.Fatalln("Invalid value flag: " + value)
+			}
+			values[splitString[0]] = splitString[1]
+		}
+
 		engine := temingo.Engine{
-			InputDir:              inputDirFlag,
-			OutputDir:             outputDirFlag,
-			TemingoignorePath:     temingoignoreFlag,
-			TemplateExtension:     templateExtensionFlag,
-			MetaTemplateExtension: metaTemplateExtensionFlag,
-			PartialExtension:      partialExtensionFlag,
-			MetaFilename:          metaFilenameFlag,
-			Verbose:               verboseFlag,
-			DryRun:                dryRunFlag,
+			InputDir:                inputDirFlag,
+			OutputDir:               outputDirFlag,
+			TemingoignorePath:       temingoignoreFlag,
+			TemplateExtension:       templateExtensionFlag,
+			MetaTemplateExtension:   metaTemplateExtensionFlag,
+			PartialExtension:        partialExtensionFlag,
+			MetaFilename:            metaFilenameFlag,
+			MarkdownContentFilename: markdownFilenameFlag,
+			Values:                  values,
+			NoDeleteOutputDir:       noDeleteOutputDirFlag,
+			Verbose:                 verboseFlag,
+			DryRun:                  dryRunFlag,
 		}
 
 		err := engine.InitProject(args[0]) // There can only be one argument, as specified by `cobra.ExactArgs(1)`

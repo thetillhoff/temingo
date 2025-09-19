@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.5.0
+
+- Add `--noDeleteOutputDir` flag to preserve existing output directory contents. This only overwrites the rendered template files and makes it possible to have inputDir==outputDir.
+- Add `--value key=value` flag to pass custom values to templates, which are accessible in templates via `.<key>`
+
 ## v0.4.0
 
 - `--serve` now only listens on `127.0.0.1`

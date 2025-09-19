@@ -109,14 +109,34 @@ Temingo by default processes markdown files as follows:
 ### Integrated simple webserver
 
 - [x] add --serve / -s flag for running a simple integrated webserver directly on the output folder.
+- [x] Webserver only listens on `127.0.0.1` for security (local connections only)
+
+### Project initialization
+
+- [x] `temingo init example` command to generate sample project
+- [x] Only creates files if the input directory doesn't already exist
+
+### Custom template values
+
+- [x] `--value key=value` flag to pass custom values to templates
+- [x] Multiple `--value` flags can be used to pass multiple key-value pairs
+- [x] Values are accessible in templates via `.<key>`
+
+### Output directory management
+
+- [x] `--noDeleteOutputDir` flag to preserve existing output directory contents instead of recreating it from scratch.
+      This only overwrites the rendered template files.
+      Thus, it's possible to have inputDir==outputDir.
 
 ### Optimizations
 
 - file extension autodiscover
+
   - add table in readme on which extensions are covered
   - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
 
   temingo _can_ do (this should probably be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
+
   - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
     - `.html`
     - `.css`
@@ -167,32 +187,71 @@ TBD
 
 ## Usage
 
+### Basic Usage
+
 ```sh
-temingo
-temingo init // Generates a sample project in the current folder. Only starts writing files if the input directory doesn't exist yet. Supports all flags except `--watch`.
+temingo                                    # Build templates from ./src to ./output
+temingo init example                       # Initialize with example project
+temingo init test                          # Initialize with comprehensive test project
+temingo version                            # Print current version
 ```
 
-<!-- Automate this snipped to be generated from the code at build time, or make otherwise sure this reflects the current state of the code -->
+### Advanced Usage
+
+```sh
+# Build with custom values
+temingo --value siteName="My Blog" --value author="John Doe"
+
+# Build with custom directories and extensions
+temingo --inputDir ./templates --outputDir ./dist --templateExtension .tmpl
+
+# Watch for changes and serve locally
+temingo --watch --serve
+
+# Build without clearing output directory
+temingo --noDeleteOutputDir
+
+# Dry run to see what would be built
+temingo --dry-run --verbose
 ```
+
+### Available Project Types
+
+The `temingo init` command supports the following project types:
+
+- `example`: A basic example project with blog structure and components
+- `test`: A comprehensive test project showcasing all temingo features including partials, metadata, markdown content, and metatemplates
+
+### Command Line Options
+
+<!-- Automate this snipped to be generated from the code at build time, or make otherwise sure this reflects the current state of the code -->
+
+```text
 --inputDir, -i, default "./src": Sets the path to the template-file-directory.
 --outputDir, -o, default "./output": Sets the destination-path for the compiled templates.
 --templateExtension, -t, default ".template": Sets the extension of the template files.
 --metaTemplateExtension, -m, default ".metatemplate": Sets the extension of the metatemplate files. Automatically excluded from normally loaded templates.
 --partialExtension, -c, default ".partial": Sets the extension of the partial files.
 --metaFilename, default "meta.yaml": Sets the filename of the meta files.
+--markdownFilename, default "content.md": Sets the filename for markdown content files.
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
+--value, multiple occurrences possible: Pass custom values to templates in key=value format.
+--noDeleteOutputDir, default false: Don't delete the output directory before building.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
+--serve, -s, default false: Serves the output directory with a simple webserver.
 --dry-run, default false: If enabled, will not touch the outputDir.
 --verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
 Here's a list of variables that are passed to each template rendering process:
 
-```
+```text
 ["path"] = string -> path to template (within `./src/`)
 ["breadcrumbs"] = []string -> path to location of template, split by '/'
 ["meta"] = map[string]object -> aggregated metadata for current folder
 ["childMeta"] = map[string]object -> metadata of subfolders, key is the folder name containing the respective metadata
+["<key>"] = map[string]string -> custom values passed via --value flags
+["content"] = string -> markdown content converted to HTML (if content.md exists)
 ```
 
 ## TODO
