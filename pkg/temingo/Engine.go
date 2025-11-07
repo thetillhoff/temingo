@@ -10,7 +10,7 @@ type Engine struct {
 	MetaFilename            string
 	MarkdownContentFilename string
 	Values                  map[string]string
-	ValuesFilePath          string
+	ValuesFilePaths         []string
 	NoDeleteOutputDir       bool
 	Verbose                 bool
 	DryRun                  bool
@@ -30,7 +30,7 @@ func DefaultEngine() Engine {
 		MetaFilename:            "meta.yaml",
 		MarkdownContentFilename: "content.md",
 		Values:                  map[string]string{},
-		ValuesFilePath:          "",
+		ValuesFilePaths:         []string{},
 		NoDeleteOutputDir:       false,
 		Verbose:                 false,
 		DryRun:                  false,

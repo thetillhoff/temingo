@@ -45,11 +45,11 @@ func (engine *Engine) Render() error {
 		}
 	}
 
-	// Add values file to ignore lines if specified
-	if engine.ValuesFilePath != "" {
-		ignoreLines = append(ignoreLines, engine.ValuesFilePath)
+	// Add values files to ignore lines if specified
+	for _, valuesFilePath := range engine.ValuesFilePaths {
+		ignoreLines = append(ignoreLines, valuesFilePath)
 		if engine.Verbose {
-			log.Println("Adding values file to ignore list:", engine.ValuesFilePath)
+			log.Println("Adding values file to ignore list:", valuesFilePath)
 		}
 	}
 

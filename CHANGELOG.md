@@ -4,6 +4,7 @@
 
 - Improve install.sh, with better error handling, tempdir, autodeletion of temporary files and improved log messages.
 - Add `concat` and `includeWithIndentation` template functions.
+- Add support for multiple `--valuesfile` flags. Multiple values files are merged in order, with later files overriding earlier ones. This allows separation of concerns (e.g., base values, environment-specific values).
 
 ## v0.6.0
 

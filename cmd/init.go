@@ -27,9 +27,9 @@ var initCmd = &cobra.Command{
 			outputDirFlag += "/"
 		}
 
-		if valuesFileFlag != "" {
-			// Parse values from file first
-			values, err = parseValuesFromFile(valuesFileFlag)
+		if len(valuesFileFlags) > 0 {
+			// Parse values from files first (merge multiple files)
+			values, err = parseValuesFromFiles(valuesFileFlags)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -60,7 +60,7 @@ var initCmd = &cobra.Command{
 			MetaFilename:            metaFilenameFlag,
 			MarkdownContentFilename: markdownFilenameFlag,
 			Values:                  values,
-			ValuesFilePath:          valuesFileFlag,
+			ValuesFilePaths:         valuesFileFlags,
 			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,

@@ -32,7 +32,7 @@ var (
 	metaFilenameFlag          string
 	markdownFilenameFlag      string
 	valueFlags                []string
-	valuesFileFlag            string
+	valuesFileFlags           []string
 
 	verboseFlag           bool
 	dryRunFlag            bool
@@ -58,9 +58,9 @@ var rootCmd = &cobra.Command{
 			outputDirFlag += "/"
 		}
 
-		if valuesFileFlag != "" {
-			// Parse values from file first
-			values, err = parseValuesFromFile(valuesFileFlag)
+		if len(valuesFileFlags) > 0 {
+			// Parse values from files first (merge multiple files)
+			values, err = parseValuesFromFiles(valuesFileFlags)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -91,7 +91,7 @@ var rootCmd = &cobra.Command{
 			MetaFilename:            metaFilenameFlag,
 			MarkdownContentFilename: markdownFilenameFlag,
 			Values:                  values,
-			ValuesFilePath:          valuesFileFlag,
+			ValuesFilePaths:         valuesFileFlags,
 			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,
@@ -173,7 +173,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&metaFilenameFlag, "metaFilename", "meta.yaml", "the yaml files for the metadata")
 	rootCmd.PersistentFlags().StringVar(&markdownFilenameFlag, "markdownFilename", "content.md", "the markdown files for the markdown contents")
 	rootCmd.PersistentFlags().StringSliceVar(&valueFlags, "value", []string{}, "value for the templates (`key=value`), multiple occurrences are possible")
-	rootCmd.PersistentFlags().StringVar(&valuesFileFlag, "valuesfile", "", "path to a YAML file containing key-value pairs for the templates")
+	rootCmd.PersistentFlags().StringSliceVar(&valuesFileFlags, "valuesfile", []string{}, "path to a YAML file containing key-value pairs for the templates (can be specified multiple times, files are merged)")
 
 	rootCmd.PersistentFlags().BoolVar(&noDeleteOutputDirFlag, "noDeleteOutputDir", false, "don't delete the outputDir before building")
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "verbose increases the level of detail of the logs")

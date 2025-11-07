@@ -3,6 +3,7 @@ package temingo
 import (
 	"log"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/thetillhoff/fileIO"
@@ -46,7 +47,7 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 			if engine.Verbose {
 				log.Println("Identified as markdown content file:", filePath)
 			}
-		} else if engine.ValuesFilePath != "" && filePath == engine.ValuesFilePath { // Exclude values file from static files - it should not be copied to the outputDir
+		} else if slices.Contains(engine.ValuesFilePaths, filePath) { // Exclude values files from static files - they should not be copied to the outputDir
 			if engine.Verbose {
 				log.Println("Identified as values file:", filePath)
 			}

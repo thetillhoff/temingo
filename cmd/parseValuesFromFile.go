@@ -37,3 +37,23 @@ func parseValuesFromFile(filePath string) (map[string]string, error) {
 
 	return result, nil
 }
+
+// parseValuesFromFiles reads multiple YAML files and merges them into a single map
+// Files are merged in order, with later files overriding earlier ones
+func parseValuesFromFiles(filePaths []string) (map[string]string, error) {
+	mergedValues := make(map[string]string)
+
+	for _, filePath := range filePaths {
+		fileValues, err := parseValuesFromFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing values file %s: %w", filePath, err)
+		}
+
+		// Merge with existing values (later files override earlier ones)
+		for key, value := range fileValues {
+			mergedValues[key] = value
+		}
+	}
+
+	return mergedValues, nil
+}

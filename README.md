@@ -40,7 +40,7 @@ Temingo by default considers the ignored paths as described in `./.temingoignore
 
 ### Support for static files / assets
 
-Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s and values files specified via `--valuesfile`.
+Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s and values files specified via `--valuesfile` (can be specified multiple times).
 
 ### Partial templates
 
@@ -183,9 +183,10 @@ Temingo by default processes markdown files as follows:
 
 - [x] `--value key=value` flag to pass custom values to templates
 - [x] Multiple `--value` flags can be used to pass multiple key-value pairs
-- [x] `--valuesfile` flag to load values from a YAML file
+- [x] `--valuesfile` flag to load values from a YAML file (can be specified multiple times)
+- [x] Multiple values files are merged in order, with later files overriding earlier ones
 - [x] Values are accessible in templates via `.<key>`
-- [x] CLI values override values from file when both are provided
+- [x] CLI values override values from files when both are provided
 
 ### Output directory management
 
@@ -270,6 +271,9 @@ temingo --value siteName="My Blog" --value author="John Doe"
 # Build with values from YAML file
 temingo --valuesfile values.yaml
 
+# Build with multiple values files (merged in order, later files override earlier ones)
+temingo --valuesfile base-values.yaml --valuesfile production-values.yaml
+
 # Build with values from file and override some via CLI
 temingo --valuesfile values.yaml --value siteName="Override Name"
 
@@ -307,7 +311,7 @@ The `temingo init` command supports the following project types:
 --markdownFilename, default "content.md": Sets the filename for markdown content files.
 --temingoignore, default ".temingoignore": Sets the path to the ignore file.
 --value, multiple occurrences possible: Pass custom values to templates in key=value format.
---valuesfile: Path to a YAML file containing key-value pairs for the templates.
+--valuesfile, multiple occurrences possible: Path to a YAML file containing key-value pairs for the templates. Files are merged in order, with later files overriding earlier ones. `--value` flags take precedence over values from files.
 --noDeleteOutputDir, default false: Don't delete the output directory before building.
 --watch, -w, default false: Watches the inputDir and the temingoignore.
 --serve, -s, default false: Serves the output directory with a simple webserver.
