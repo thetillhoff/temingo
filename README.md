@@ -51,6 +51,69 @@ Temingo by default takes all `*.partial*` files as intermediate templates / snip
 - [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
 - [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
 
+### Template Functions
+
+Temingo provides built-in template functions that can be used in your templates:
+
+#### `includeWithIndentation`
+
+The `includeWithIndentation` function allows you to indent content by a specified number of spaces. This is particularly useful when including partials or other content that needs to match the indentation level of the surrounding context.
+
+**Syntax:**
+
+```go
+{{ includeWithIndentation <amount_of_indentation_spaces> <content_to_indent> }}
+```
+
+**Parameters:**
+
+- `indentation` (int): The number of spaces to indent each line
+- `content` (string): The content to indent
+
+**Example:**
+
+```html
+<div class="container">{{ includeWithIndentation 4 .content }}</div>
+```
+
+Or with a multi-line string variable:
+
+```html
+<pre>
+{{ includeWithIndentation 2 .codeBlock }}
+</pre>
+```
+
+This will indent each line of the content by the specified number of spaces, ensuring proper formatting in the output. This is particularly useful when you need to maintain indentation levels for code blocks, nested HTML structures, or when including content that should match the surrounding indentation.
+
+#### `concat`
+
+The `concat` function concatenates multiple strings together into a single string. This is useful when you need to combine multiple string values or variables.
+
+**Syntax:**
+
+```go
+{{ concat <string1> <string2> ... <stringN> }}
+```
+
+**Parameters:**
+
+- `string1`, `string2`, ... `stringN` (string): One or more strings to concatenate
+
+**Example:**
+
+```html
+<a href="{{ concat "https://example.com/" .path }}">Link</a>
+```
+
+Or with multiple variables:
+
+```html
+<div class="{{ concat "container " .theme " " .size }}">Content</div>
+```
+
+The function accepts any number of string arguments and concatenates them in order, returning a single combined string.
+
 <!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
   - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?

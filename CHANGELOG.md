@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.7.0
+
+- Improve install.sh, with better error handling, tempdir, autodeletion of temporary files and improved log messages.
+- Add `concat` and `includeWithIndentation` template functions.
+
 ## v0.6.0
 
 - Add `--valuesfile` flag to load values from a YAML file, with CLI values taking precedence over file values. It is also added to the implicit ignore list, like the `meta.yaml` files.
