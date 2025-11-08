@@ -19,13 +19,6 @@
       "matchDepNames": ["go"],
       "matchDepTypes": ["golang"],
       "rangeStrategy": "bump",
-      "automerge": false
-    },
-    {
-      "matchManagers": ["gomod"],
-      "matchDepNames": ["go"],
-      "matchDepTypes": ["toolchain"],
-      "rangeStrategy": "bump",
       "automerge": true
     }
   ]
