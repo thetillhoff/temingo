@@ -8,15 +8,12 @@ import (
 )
 
 func TestValidateDirectories(t *testing.T) {
-	// Create temporary directories for testing
-	tmpDir := t.TempDir()
-
 	tests := []struct {
 		name              string
 		inputDir          string
 		outputDir         string
 		noDeleteOutputDir bool
-		setup             func() (string, string) // Returns (inputDir, outputDir)
+		setup             func(tmpDir string) (string, string) // Returns (inputDir, outputDir)
 		cleanup           func(string, string)
 		wantErr           bool
 		errContains       string
@@ -25,7 +22,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Valid separate directories",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
 				os.MkdirAll(inputDir, 0755)
@@ -38,7 +35,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input directory does not exist",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "nonexistent")
 				outputDir := filepath.Join(tmpDir, "output")
 				os.MkdirAll(outputDir, 0755)
@@ -50,7 +47,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output directory does not exist - should be created",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
 				os.MkdirAll(inputDir, 0755)
@@ -61,7 +58,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input equals output without --noDeleteOutputDir - should fail",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "same")
 				os.MkdirAll(inputDir, 0755)
 				return inputDir, inputDir
@@ -72,7 +69,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input equals output with --noDeleteOutputDir - should succeed",
 			noDeleteOutputDir: true,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "same")
 				os.MkdirAll(inputDir, 0755)
 				return inputDir, inputDir
@@ -83,7 +80,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output inside input - should succeed (will be ignored at runtime)",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(inputDir, "output")
 				os.MkdirAll(inputDir, 0755)
@@ -96,7 +93,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input is a file, not a directory",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputFile := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
 				os.WriteFile(inputFile, []byte("test"), 0644)
@@ -109,7 +106,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output is a file, not a directory",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputFile := filepath.Join(tmpDir, "output")
 				os.MkdirAll(inputDir, 0755)
@@ -122,7 +119,7 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output outside input - should succeed",
 			noDeleteOutputDir: false,
-			setup: func() (string, string) {
+			setup: func(tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "..", "output")
 				os.MkdirAll(inputDir, 0755)
@@ -136,9 +133,11 @@ func TestValidateDirectories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a new tmpDir for each test case to ensure isolation
+			tmpDir := t.TempDir()
 			// t.TempDir() automatically cleans up all files/directories created within it
 			// when the test completes, even if the test fails or panics
-			inputDir, outputDir := tt.setup()
+			inputDir, outputDir := tt.setup(tmpDir)
 
 			// Ensure paths end with separator to match actual usage
 			if !strings.HasSuffix(inputDir, string(filepath.Separator)) {
@@ -186,8 +185,6 @@ func TestValidateDirectories(t *testing.T) {
 }
 
 func TestValidateDirectories_Permissions(t *testing.T) {
-	tmpDir := t.TempDir()
-
 	tests := []struct {
 		name         string
 		inputPerm    os.FileMode
@@ -229,6 +226,8 @@ func TestValidateDirectories_Permissions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a new tmpDir for each test case to ensure isolation
+			tmpDir := t.TempDir()
 			inputDir := filepath.Join(tmpDir, "input")
 			outputDir := filepath.Join(tmpDir, "output")
 

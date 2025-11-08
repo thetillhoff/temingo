@@ -8,19 +8,17 @@ import (
 )
 
 func TestEnsureOutputDirectory(t *testing.T) {
-	tmpDir := t.TempDir()
-
 	tests := []struct {
 		name        string
 		outputDir   string
-		setup       func() string // Returns outputDir
+		setup       func(tmpDir string) string // Returns outputDir
 		wantErr     bool
 		errContains string
 		description string
 	}{
 		{
 			name: "Output directory does not exist - should be created",
-			setup: func() string {
+			setup: func(tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "output")
 				// Don't create it - let ensureOutputDirectory create it
 				return outputDir
@@ -30,7 +28,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Output directory already exists - should succeed",
-			setup: func() string {
+			setup: func(tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "output")
 				os.MkdirAll(outputDir, 0755)
 				return outputDir
@@ -40,7 +38,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Output is a file, not a directory - should fail",
-			setup: func() string {
+			setup: func(tmpDir string) string {
 				outputFile := filepath.Join(tmpDir, "output")
 				os.WriteFile(outputFile, []byte("test"), 0644)
 				return outputFile
@@ -51,7 +49,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Nested output directory does not exist - should be created",
-			setup: func() string {
+			setup: func(tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "nested", "output", "dir")
 				// Don't create it - let ensureOutputDirectory create it
 				return outputDir
@@ -63,9 +61,11 @@ func TestEnsureOutputDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a new tmpDir for each test case to ensure isolation
+			tmpDir := t.TempDir()
 			// t.TempDir() automatically cleans up all files/directories created within it
 			// when the test completes, even if the test fails or panics
-			outputDir := tt.setup()
+			outputDir := tt.setup(tmpDir)
 
 			// Ensure path ends with separator to match actual usage
 			if !strings.HasSuffix(outputDir, string(filepath.Separator)) {
