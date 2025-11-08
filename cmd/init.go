@@ -1,23 +1,71 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/thetillhoff/temingo/pkg/temingo"
+	"github.com/urfave/cli/v3"
 )
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:       "init {" + strings.Join(temingo.ProjectTypes(), ",") + "}",
-	Short:     "Initializes the current directory with an example project. Available types are " + strings.Join(temingo.ProjectTypes(), ", ") + ".",
-	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-	ValidArgs: temingo.ProjectTypes(),
-	Run: func(cmd *cobra.Command, args []string) {
+// initCommand represents the init command
+var initCommand = &cli.Command{
+	Name:      "init",
+	Usage:     "Initializes the current directory with an example project",
+	UsageText: "temingo init {" + strings.Join(temingo.ProjectTypes(), "|") + "}",
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		args := cmd.Args()
+		if args.Len() != 1 {
+			return fmt.Errorf("init requires exactly one argument: %s", strings.Join(temingo.ProjectTypes(), ", "))
+		}
+
+		projectType := args.Get(0)
+
+		// Validate project type
+		validTypes := temingo.ProjectTypes()
+		valid := false
+		for _, t := range validTypes {
+			if t == projectType {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return fmt.Errorf("invalid project type. Available types are: %s", strings.Join(validTypes, ", "))
+		}
+
+		cfgFile := cmd.String("config")
+		inputDirFlag := cmd.String("inputDir")
+		outputDirFlag := cmd.String("outputDir")
+		temingoignoreFlag := cmd.String("temingoignore")
+		templateExtensionFlag := cmd.String("templateExtension")
+		metaTemplateExtensionFlag := cmd.String("metaTemplateExtension")
+		partialExtensionFlag := cmd.String("partialExtension")
+		metaFilenameFlag := cmd.String("metaFilename")
+		markdownFilenameFlag := cmd.String("markdownFilename")
+		valueFlags := cmd.StringSlice("value")
+		valuesFileFlags := cmd.StringSlice("valuesfile")
+		verboseFlag := cmd.Bool("verbose")
+		dryRunFlag := cmd.Bool("dry-run")
+		noDeleteOutputDirFlag := cmd.Bool("noDeleteOutputDir")
+
+		// Load config file if specified
+		config, err := loadConfig(cfgFile)
+		if err != nil {
+			slog.Error("Failed to load config", "error", err)
+			return err
+		}
+
+		// Apply config values to flags
+		applyConfigToFlags(config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
+			&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
+			&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
+			&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag)
+
 		var (
-			err    error
 			values = map[string]string{}
 		)
 
@@ -33,7 +81,7 @@ var initCmd = &cobra.Command{
 			values, err = parseValuesFromFiles(valuesFileFlags)
 			if err != nil {
 				slog.Error("Failed to parse values from files", "error", err)
-				os.Exit(1)
+				return fmt.Errorf("failed to parse values from files: %w", err)
 			}
 		}
 
@@ -43,15 +91,15 @@ var initCmd = &cobra.Command{
 			switch len(splitString) {
 			case 0:
 				slog.Error("Empty value flag")
-				os.Exit(1)
+				return fmt.Errorf("empty value flag")
 			case 1:
 				slog.Error("No value set for value keypair", "value", value)
-				os.Exit(1)
+				return fmt.Errorf("no value set for value keypair: %s", value)
 			case 2:
 				values[splitString[0]] = splitString[1]
 			default:
 				slog.Error("Invalid value flag", "value", value)
-				os.Exit(1)
+				return fmt.Errorf("invalid value flag: %s", value)
 			}
 		}
 
@@ -84,15 +132,12 @@ var initCmd = &cobra.Command{
 			Logger:                  temingoLogger,
 		}
 
-		err = engine.InitProject(args[0]) // There can only be one argument, as specified by `cobra.ExactArgs(1)`
+		err = engine.InitProject(projectType)
 		if err != nil {
 			slog.Error("Failed to initialize project", "error", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to initialize project: %w", err)
 		}
 
+		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(initCmd)
 }

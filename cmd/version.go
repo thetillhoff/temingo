@@ -4,22 +4,20 @@ Copyright © 2023 Till Hoffmann <till@thetillhoff.de>
 package cmd
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v3"
 )
 
 var version = "dev" // This is just the default. The actual value is injected at compiletime
 
-// versionCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Prints the version of temingo",
-	Run: func(cmd *cobra.Command, args []string) {
+// versionCommand represents the version command
+var versionCommand = &cli.Command{
+	Name:  "version",
+	Usage: "Prints the version of temingo",
+	Action: func(ctx context.Context, cmd *cli.Command) error {
 		fmt.Println(version)
+		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(versionCmd)
 }
