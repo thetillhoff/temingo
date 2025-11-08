@@ -13,7 +13,6 @@ import (
 // If inputDir == outputDir and noDeleteOutputDir is false, returns an error since this would delete the input directory.
 // If outputDir is inside inputDir (but not equal), it will be added to the ignore list at runtime to prevent loops.
 // Returns the ignore path (or empty string if output is outside input) and any error.
-// This function is used by Render() which needs the input/output comparison logic.
 func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bool, logger *slog.Logger) (string, error) {
 	// Initialize logger if not provided (use default logger as fallback)
 	if logger == nil {
@@ -26,6 +25,7 @@ func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bo
 	if inputDirToCheck == "" {
 		inputDirToCheck = inputDir
 	}
+
 	// Normalize the path to ensure consistent handling
 	inputDirToCheck = filepath.Clean(inputDirToCheck)
 	info, err := os.Stat(inputDirToCheck)
@@ -45,6 +45,7 @@ func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bo
 	if outputDirToCheck == "" {
 		outputDirToCheck = outputDir
 	}
+
 	// Normalize the path to ensure consistent handling
 	outputDirToCheck = filepath.Clean(outputDirToCheck)
 	info, err = os.Stat(outputDirToCheck)
@@ -55,12 +56,14 @@ func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bo
 			if err != nil {
 				return "", fmt.Errorf("error getting input directory info: %w", err)
 			}
+
 			// Create output directory with same permissions as input directory
 			// Use the cleaned path without separator for MkdirAll
 			err = os.MkdirAll(outputDirToCheck, inputInfo.Mode().Perm())
 			if err != nil {
 				return "", fmt.Errorf("error creating output directory %s: %w", outputDir, err)
 			}
+
 			// Use Chmod to ensure exact permissions (MkdirAll may be affected by umask)
 			err = os.Chmod(outputDirToCheck, inputInfo.Mode().Perm())
 			if err != nil {
@@ -76,12 +79,12 @@ func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bo
 
 	// Check if inputDir == outputDir using the helper function
 	// We use getAbsolutePathsAndRel to avoid redundant filepath.Abs calls
-	_, absOutputDir, rel, err := getAbsolutePathsAndRel(inputDir, outputDir)
+	_, absOutputDir, rel, err := getAbsolutePathsAndRelativePath(inputDir, outputDir)
 	if err != nil {
 		return "", err
 	}
 
-	// Calculate the ignore path (same logic as GetOutputIgnorePath)
+	// Calculate the ignore path
 	var outputIgnorePath string
 	if rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		// If outputDir equals inputDir (rel == "."), use the directory name instead

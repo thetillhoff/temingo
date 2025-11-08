@@ -33,7 +33,6 @@ func (engine *Engine) Render() error {
 	)
 
 	// Parse temingoignore if exists
-
 	if _, err = os.Stat(engine.TemingoignorePath); os.IsNotExist(err) {
 		// No ignore file
 	} else if err != nil {
@@ -67,8 +66,7 @@ func (engine *Engine) Render() error {
 	}
 
 	// Read filetree with ignoreLines
-
-	fileList, err = fileIO.GenerateFileListWithIgnoreLines(engine.InputDir, ignoreLines, engine.Verbose) // Get inputDir file-tree
+	fileList, err = fileIO.GenerateFileListWithIgnoreLines(engine.InputDir, ignoreLines, engine.Verbose)
 	if err != nil {
 		return err
 	}
@@ -80,9 +78,8 @@ func (engine *Engine) Render() error {
 	templatePaths, metaTemplatePaths, partialPaths, metaPaths, _, staticPaths = engine.sortPaths(fileList) // markdown content files are picked up later anyway
 
 	// Read partial files
-
-	for _, partialPath := range partialPaths { // Read contents of each partial file
-		content, err = fileIO.ReadFile(path.Join(engine.InputDir, partialPath)) // Read file contents
+	for _, partialPath := range partialPaths {
+		content, err = fileIO.ReadFile(path.Join(engine.InputDir, partialPath))
 		if err != nil {
 			return err
 		}
@@ -90,14 +87,12 @@ func (engine *Engine) Render() error {
 	}
 
 	// Verify partials
-
 	err = verifyPartials(partialFiles) // Check if the partials are unique
 	if err != nil {
 		return err
 	}
 
 	// Read template files and execute them
-
 	for _, templatePath := range templatePaths {
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, templatePath))
 		if err != nil {
@@ -123,7 +118,6 @@ func (engine *Engine) Render() error {
 	}
 
 	// Read metatemplate files, check metadata & markdown content files and execute them
-
 	for _, metaTemplatePath := range metaTemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta yaml
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaTemplatePath))
 		if err != nil {
@@ -164,9 +158,7 @@ func (engine *Engine) Render() error {
 	}
 
 	// Update output
-
 	if !engine.DryRun { // Only if dry-run is disabled
-
 		if !engine.NoDeleteOutputDir {
 			err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
 			if err != nil {
@@ -176,6 +168,7 @@ func (engine *Engine) Render() error {
 			if err != nil {
 				return err
 			}
+
 			// Ensure output directory permissions match input directory (fileIO.CopyFile may not preserve them)
 			inputDirInfo, err := os.Stat(engine.InputDir)
 			if err != nil {
@@ -225,6 +218,7 @@ func (engine *Engine) Render() error {
 			if err := os.MkdirAll(outputDirPath, fileMode); err != nil {
 				return fmt.Errorf("error creating output directory %s: %w", outputDirPath, err)
 			}
+
 			// Use Chmod to ensure exact permissions (MkdirAll may be affected by umask)
 			if err := os.Chmod(outputDirPath, fileMode); err != nil {
 				return fmt.Errorf("error setting output directory permissions %s: %w", outputDirPath, err)

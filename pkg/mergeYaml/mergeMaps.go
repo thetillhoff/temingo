@@ -1,14 +1,13 @@
 package mergeYaml
 
-import "fmt"
+import "log/slog"
 
-// Merge two maps recursively with option for overriding or merging/extending
+// mergeMaps merges two maps recursively with option for overriding or merging/extending
 func mergeMaps(src, dst map[interface{}]interface{}, override bool) map[interface{}]interface{} {
-	fmt.Println("src:", src)
-	fmt.Println("dst:", dst)
 	for k, v := range src { // For each key-value pair in src
 		if override { // If overriding
-			fmt.Println("setting dst[", k, "] to", v)
+			// Log at debug/verbose level that we're setting dst[k]
+			slog.Debug("Overriding merged map value", "key", k, "value", v)
 			dst[k] = v // Override dst[key] with value from src
 		} else { // If not overriding
 			if dstVal, ok := dst[k]; ok { // Retrieve dst[key] if exists

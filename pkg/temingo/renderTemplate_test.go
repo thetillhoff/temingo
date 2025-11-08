@@ -193,10 +193,10 @@ childmeta: {{ .childMeta }}`
 	}
 
 	meta := map[string]interface{}{
-		"path":       "index.html",
+		"path":        "index.html",
 		"breadcrumbs": []Breadcrumb{},
-		"meta":       nil,
-		"childMeta":  map[string]interface{}{},
+		"meta":        nil,
+		"childMeta":   map[string]interface{}{},
 	}
 
 	renderedTemplate, err := engine.renderTemplate(meta, "index.template.html", templateContent, partialFiles)

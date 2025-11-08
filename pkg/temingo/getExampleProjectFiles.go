@@ -24,9 +24,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
-		treepath            string
 		modifiedTreepath    string
-		content             []byte
 	)
 
 	// Check if passed projectType (passed as string) is valid
@@ -60,7 +58,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 		return exampleProjectFiles, err
 	}
 
-	for treepath, content = range exampleProjectFiles { // For each file of the exampleProject (but without the path prefix)
+	for treepath, fileContent := range exampleProjectFiles { // For each file of the exampleProject (but without the path prefix)
 		modifiedTreepath = treepath
 		if strings.HasPrefix(modifiedTreepath, "src/") { // Needs to be done for all the files except the ones in the root dir like the .temingoignore
 			modifiedTreepath = strings.TrimPrefix(modifiedTreepath, "src/")
@@ -82,7 +80,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 		logger.Debug("Will write embedded file", "from", treepath, "to", modifiedTreepath)
 
 		delete(exampleProjectFiles, treepath) // needs to happen before the creation of the new key-entry, else it's somehow immediately deleted
-		exampleProjectFiles[modifiedTreepath] = content
+		exampleProjectFiles[modifiedTreepath] = fileContent
 	}
 
 	return exampleProjectFiles, nil

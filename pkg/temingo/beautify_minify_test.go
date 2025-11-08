@@ -9,38 +9,38 @@ import (
 
 func TestBeautify(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  []byte
-		ext      string
-		expected string
+		name        string
+		content     []byte
+		ext         string
+		expected    string
 		description string
 	}{
 		{
-			name:     "HTML beautification",
-			content:  []byte("<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>"),
-			ext:      ".html",
-			expected: "<html>",
+			name:        "HTML beautification",
+			content:     []byte("<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>"),
+			ext:         ".html",
+			expected:    "<html>",
 			description: "HTML content should be beautified",
 		},
 		{
-			name:     "Non-HTML file - should return unchanged",
-			content:  []byte("plain text content"),
-			ext:      ".txt",
-			expected: "plain text content",
+			name:        "Non-HTML file - should return unchanged",
+			content:     []byte("plain text content"),
+			ext:         ".txt",
+			expected:    "plain text content",
 			description: "Non-HTML files should be returned unchanged",
 		},
 		{
-			name:     "Empty content",
-			content:  []byte(""),
-			ext:      ".html",
-			expected: "",
+			name:        "Empty content",
+			content:     []byte(""),
+			ext:         ".html",
+			expected:    "",
 			description: "Empty content should return empty string",
 		},
 		{
-			name:     "CSS file - should return unchanged",
-			content:  []byte("body { color: red; }"),
-			ext:      ".css",
-			expected: "body { color: red; }",
+			name:        "CSS file - should return unchanged",
+			content:     []byte("body { color: red; }"),
+			ext:         ".css",
+			expected:    "body { color: red; }",
 			description: "CSS files should be returned unchanged (not yet implemented)",
 		},
 	}
@@ -196,4 +196,3 @@ func TestRender_WithMinify(t *testing.T) {
 		t.Errorf("Render() with Minify should still produce valid HTML, got: %q", contentStr)
 	}
 }
-

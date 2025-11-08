@@ -21,6 +21,7 @@ func ensureOutputDirectory(outputDir string, logger *slog.Logger) error {
 	if outputDirToCheck == "" {
 		outputDirToCheck = outputDir
 	}
+
 	// Normalize the path to ensure consistent handling
 	outputDirToCheck = filepath.Clean(outputDirToCheck)
 	info, err := os.Stat(outputDirToCheck)
@@ -32,6 +33,7 @@ func ensureOutputDirectory(outputDir string, logger *slog.Logger) error {
 			if err != nil {
 				return fmt.Errorf("error creating output directory %s: %w", outputDir, err)
 			}
+
 			// Use Chmod to ensure exact permissions (MkdirAll may be affected by umask)
 			err = os.Chmod(outputDirToCheck, 0755)
 			if err != nil {

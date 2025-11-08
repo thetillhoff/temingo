@@ -41,6 +41,6 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 		return nil, err
 	}
 
-	// return template
+	// Return rendered template
 	return outputBuffer.Bytes(), nil
 }

@@ -103,4 +103,3 @@ func TestSetupTestProjectFromInitFilesWithEngine(t *testing.T) {
 		t.Errorf("setupTestProjectFromInitFilesWithEngine() should have created outputDir")
 	}
 }
-

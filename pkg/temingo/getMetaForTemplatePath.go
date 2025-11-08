@@ -8,9 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Reads the meta data for the specified templatePath
+// getMetaForTemplatePath reads the metadata for the specified templatePath.
 // Returns the metadata from the treePath (meta yamls of the template-dir and the direct children-dirs),
-// the childMetadata in map[folderName]metadata format
+// and the childMetadata in map[folderName]metadata format.
 func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (interface{}, map[string]interface{}, error) {
 	logger := engine.Logger
 

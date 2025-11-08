@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-// Returns the available ProjectTypes for the Init() function
-func ProjectTypes() []string { // "static" slice
+// ProjectTypes returns the available project types for the Init() function
+func ProjectTypes() []string {
 	var typeList []string
 
 	dirEntries, err := embeddedExampleProjectFilesWithPrefix.ReadDir("InitFiles")

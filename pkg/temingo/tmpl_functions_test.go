@@ -191,4 +191,3 @@ func TestTmplCapitalize(t *testing.T) {
 		})
 	}
 }
-

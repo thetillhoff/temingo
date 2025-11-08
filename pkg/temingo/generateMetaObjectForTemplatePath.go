@@ -65,8 +65,8 @@ func (engine Engine) generateMetaObjectForTemplatePath(renderedTemplatePath stri
 	return meta, nil
 }
 
-// createBreadcrumbs creates breadcrumb structs from a rendered template path
-// Breadcrumbs represent parent directories, excluding the directory containing the index.html
+// createBreadcrumbs creates breadcrumb structs from a rendered template path.
+// Breadcrumbs represent parent directories, excluding the directory containing the index.html.
 // Examples:
 //   - "index.html" -> [] (empty)
 //   - "a/index.html" -> [] (empty, no parent)

@@ -29,13 +29,13 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 				// No files needed for basic test
 				return fileIO.FileList{Files: []string{}}, []string{}, nil
 			},
-			engineValues:    map[string]string{},
-			wantPath:        "index.html",
-			wantBreadcrumbs: []Breadcrumb{},
-			wantHasContent:  false,
-			wantHasMeta:     false,
+			engineValues:     map[string]string{},
+			wantPath:         "index.html",
+			wantBreadcrumbs:  []Breadcrumb{},
+			wantHasContent:   false,
+			wantHasMeta:      false,
 			wantHasChildMeta: false,
-			description:     "Basic template should have path and empty breadcrumbs",
+			description:      "Basic template should have path and empty breadcrumbs",
 		},
 		{
 			name:                 "Template with breadcrumbs",
@@ -48,10 +48,10 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 			wantBreadcrumbs: []Breadcrumb{
 				{Name: "blog", Path: "/blog"},
 			},
-			wantHasContent:  false,
-			wantHasMeta:     false,
+			wantHasContent:   false,
+			wantHasMeta:      false,
 			wantHasChildMeta: false,
-			description:     "Template in nested directory should have breadcrumbs",
+			description:      "Template in nested directory should have breadcrumbs",
 		},
 		{
 			name:                 "Template with markdown content",
@@ -60,7 +60,7 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 				inputDir := filepath.Join(tmpDir, "input")
 				os.MkdirAll(inputDir, 0755)
 				os.MkdirAll(filepath.Join(inputDir, "about"), 0755)
-				
+
 				// Create markdown content file
 				contentFile := filepath.Join(inputDir, "about", "content.md")
 				err := os.WriteFile(contentFile, []byte("# About\n\nThis is about content."), 0644)
@@ -73,13 +73,13 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 					Path:  inputDir,
 				}, []string{}, nil
 			},
-			engineValues:    map[string]string{},
-			wantPath:        "about/index.html",
-			wantBreadcrumbs: []Breadcrumb{},
-			wantHasContent:  true,
-			wantHasMeta:     false,
+			engineValues:     map[string]string{},
+			wantPath:         "about/index.html",
+			wantBreadcrumbs:  []Breadcrumb{},
+			wantHasContent:   true,
+			wantHasMeta:      false,
 			wantHasChildMeta: false,
-			description:     "Template with markdown content should have content field",
+			description:      "Template with markdown content should have content field",
 		},
 		{
 			name:                 "Template with meta.yaml",
@@ -88,7 +88,7 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 				inputDir := filepath.Join(tmpDir, "input")
 				os.MkdirAll(inputDir, 0755)
 				os.MkdirAll(filepath.Join(inputDir, "blog"), 0755)
-				
+
 				// Create meta.yaml file
 				metaFile := filepath.Join(inputDir, "blog", "meta.yaml")
 				err := os.WriteFile(metaFile, []byte("title: Blog\nauthor: John"), 0644)
@@ -101,13 +101,13 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 					Path:  inputDir,
 				}, []string{"blog/meta.yaml"}, nil
 			},
-			engineValues:    map[string]string{},
-			wantPath:        "blog/index.html",
-			wantBreadcrumbs: []Breadcrumb{},
-			wantHasContent:  false,
-			wantHasMeta:     true,
+			engineValues:     map[string]string{},
+			wantPath:         "blog/index.html",
+			wantBreadcrumbs:  []Breadcrumb{},
+			wantHasContent:   false,
+			wantHasMeta:      true,
 			wantHasChildMeta: false,
-			description:     "Template with meta.yaml should have meta field",
+			description:      "Template with meta.yaml should have meta field",
 		},
 		{
 			name:                 "Template with values",
@@ -119,12 +119,12 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 				"siteName": "My Site",
 				"version":  "1.0.0",
 			},
-			wantPath:        "index.html",
-			wantBreadcrumbs: []Breadcrumb{},
-			wantHasContent:  false,
-			wantHasMeta:     false,
+			wantPath:         "index.html",
+			wantBreadcrumbs:  []Breadcrumb{},
+			wantHasContent:   false,
+			wantHasMeta:      false,
 			wantHasChildMeta: false,
-			description:     "Template with engine values should include them in meta",
+			description:      "Template with engine values should include them in meta",
 		},
 	}
 
@@ -194,4 +194,3 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 		})
 	}
 }
-

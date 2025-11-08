@@ -1,13 +1,10 @@
 package temingo
 
 func (engine Engine) minify(content []byte, ext string) []byte {
-
 	switch ext {
 	// TODO
 	default:
-		// if engine.Verbose{
-		// 	log.Println("beautified",ext)
-		// }
+		engine.Logger.Warn("Minification not implemented for extension", "extension", ext)
 		return content
 	}
 }

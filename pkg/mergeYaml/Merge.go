@@ -1,8 +1,8 @@
 package mergeYaml
 
-// Takes two unmarshalled yaml files, and merges src into dst while overriding existing values
-// Enabling override mode will override existing keys in dst
-// Disabling override mode will merge existing maps recursively & append to existing lists in dst
+// Merge takes two unmarshalled yaml files, and merges src into dst while overriding existing values.
+// Enabling override mode will override existing keys in dst.
+// Disabling override mode will merge existing maps recursively & append to existing lists in dst.
 func Merge(src, dst interface{}, override bool) interface{} {
 	switch dst := dst.(type) {
 	case map[interface{}]interface{}: // If dst is map
