@@ -58,12 +58,6 @@ var rootCmd = &cobra.Command{
 			outputDirFlag += "/"
 		}
 
-		// Validate directories early
-		err = ValidateDirectories(inputDirFlag, outputDirFlag)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
 		if len(valuesFileFlags) > 0 {
 			// Parse values from files first (merge multiple files)
 			values, err = parseValuesFromFiles(valuesFileFlags)

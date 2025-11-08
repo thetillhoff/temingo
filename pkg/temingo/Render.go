@@ -1,6 +1,7 @@
 package temingo
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -50,6 +51,20 @@ func (engine *Engine) Render() error {
 		ignoreLines = append(ignoreLines, valuesFilePath)
 		if engine.Verbose {
 			log.Println("Adding values file to ignore list:", valuesFilePath)
+		}
+	}
+
+	// Validate directories and get ignore path in one call
+	// This validates directories exist, creates outputDir if needed, and calculates the ignore path
+	outputIgnorePath, err := validateDirectories(engine.InputDir, engine.OutputDir, engine.NoDeleteOutputDir)
+	if err != nil {
+		return err
+	}
+	if outputIgnorePath != "" {
+		log.Printf("Warning: Output directory is inside input directory. Adding '%s' to ignore list for this run to prevent processing loops.", outputIgnorePath)
+		ignoreLines = append(ignoreLines, outputIgnorePath)
+		if engine.Verbose {
+			log.Println("Adding output directory to ignore list:", outputIgnorePath)
 		}
 	}
 
@@ -195,12 +210,33 @@ func (engine *Engine) Render() error {
 				}
 			}
 
-			err = fileIO.WriteFile(path.Join(engine.OutputDir, templatePath), renderedTemplate)
+			// Get permissions from input directory (used for both files and parent directories)
+			// For template files, we use input directory permissions as the source of truth
+			inputDirInfo, err := os.Stat(engine.InputDir)
+			if err != nil {
+				return fmt.Errorf("error getting input directory info: %w", err)
+			}
+			fileMode := inputDirInfo.Mode().Perm()
+
+			// Ensure parent directory exists with same permissions as input directory
+			outputFilePath := path.Join(engine.OutputDir, templatePath)
+			outputDirPath := path.Dir(outputFilePath)
+			if err := os.MkdirAll(outputDirPath, fileMode); err != nil {
+				return fmt.Errorf("error creating output directory %s: %w", outputDirPath, err)
+			}
+
+			err = fileIO.WriteFile(outputFilePath, renderedTemplate)
 			if err != nil {
 				return err
 			}
+
+			// Set file permissions to match input directory permissions
+			if err := os.Chmod(outputFilePath, fileMode); err != nil {
+				return fmt.Errorf("error setting permissions for %s: %w", outputFilePath, err)
+			}
+
 			if engine.Verbose {
-				log.Println("Writing rendered template to " + path.Join(engine.OutputDir, templatePath))
+				log.Println("Writing rendered template to " + outputFilePath)
 			}
 		}
 	} else { // DryRun, so provide information about what would be done instead of doing it

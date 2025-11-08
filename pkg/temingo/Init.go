@@ -16,6 +16,12 @@ func (engine *Engine) InitProject(projectType string) error {
 		files map[string][]byte
 	)
 
+	// Ensure output directory exists
+	err = ensureOutputDirectory(engine.OutputDir)
+	if err != nil {
+		return err
+	}
+
 	if _, err := os.Stat(engine.InputDir); !os.IsNotExist(err) { // Check if the inputDir already exists
 		return errors.New("the folder '" + engine.InputDir + "' already exists") // Fail if the inputdir already exists
 	}

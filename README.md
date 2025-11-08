@@ -30,175 +30,194 @@ curl -s https://raw.githubusercontent.com/thetillhoff/temingo/main/install.sh | 
 
 or manually from <https://github.com/thetillhoff/temingo/releases/latest>.
 
-## Features
+## Quick Start
 
-### Templating engine
+```sh
+# Initialize a new project
+temingo init example
 
-Temingo by default:
+# Build templates from ./src to ./output
+temingo
 
-- takes all `*.template*` files from the source folder `./src`.
-- writes the rendered files into the destination folder `./output`.
-
-### Ignoring source files
-
-Temingo by default considers the ignored paths as described in `./.temingoignore` which has a similar syntax as a `.gitignore`.
-
-### Support for static files / assets
-
-Temingo by default takes all other files (static) and copies them into the output folder as-is. Except `meta.yaml`s and values files specified via `--valuesfile` (can be specified multiple times).
-
-### Partial templates
-
-Temingo by default takes all `*.partial*` files as intermediate templates / snippets
-
-- [x] the defined intermediate template names must be globally unique so they can be imported properly later. Temingo verifies the uniqueness.
-- [x] partials are added automatically with path, `partials/page.partial.html` is the automatic default name for that partial.
-- [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
-- [x] partials can be included using the built-in `template` action: `{{ template "partials/header.partial.html" . }}`
-- [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
-
-### Template Functions
-
-Temingo provides built-in template functions that can be used in your templates:
-
-#### `includeWithIndentation`
-
-The `includeWithIndentation` function allows you to indent content by a specified number of spaces. This is particularly useful when including partials or other content that needs to match the indentation level of the surrounding context.
-
-**Syntax:**
-
-```go
-{{ includeWithIndentation <amount_of_indentation_spaces> <content_to_indent> }}
+# Watch for changes and serve locally
+temingo --watch --serve
 ```
 
-**Parameters:**
+## Core Concepts
 
-- `indentation` (int): The number of spaces to indent each line
-- `content` (string): The content to indent
+### Templates
+
+Temingo processes three types of template files:
+
+#### Normal Templates
+
+Normal templates (`*.template*`) are single-file-output templates that render to exactly one output file. The `.template` extension is removed from the output filename.
 
 **Example:**
 
-```html
-<div class="container">{{ includeWithIndentation 4 .content }}</div>
-```
-
-Or with a multi-line string variable:
+File: `src/index.template.html`
 
 ```html
-<pre>
-{{ includeWithIndentation 2 .codeBlock }}
-</pre>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome</title>
+  </head>
+  <body>
+    <h1>Welcome</h1>
+    <p>Path: {{ .path }}</p>
+  </body>
+</html>
 ```
 
-This will indent each line of the content by the specified number of spaces, ensuring proper formatting in the output. This is particularly useful when you need to maintain indentation levels for code blocks, nested HTML structures, or when including content that should match the surrounding indentation.
+**Output:** `output/index.html` (the `.template` extension is removed)
 
-#### `concat`
-
-The `concat` function concatenates multiple strings together into a single string. This is useful when you need to combine multiple string values or variables.
-
-**Syntax:**
-
-```go
-{{ concat <string1> <string2> ... <stringN> }}
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome</title>
+  </head>
+  <body>
+    <h1>Welcome</h1>
+    <p>Path: index.html</p>
+  </body>
+</html>
 ```
 
-**Parameters:**
+#### Partial Templates
 
-- `string1`, `string2`, ... `stringN` (string): One or more strings to concatenate
+Partial templates (`*.partial*`) are reusable template snippets that can be included in other templates. Partials are automatically wrapped with `{{ define ... }}` blocks using their file path as the name. Include them using the `template` action.
 
 **Example:**
 
-```html
-<a href="{{ concat "https://example.com/" .path }}">Link</a>
-```
-
-Or with multiple variables:
+File: `src/partials/header.partial.html`
 
 ```html
-<div class="{{ concat "container " .theme " " .size }}">Content</div>
+<header>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+  </nav>
+</header>
 ```
 
-The function accepts any number of string arguments and concatenates them in order, returning a single combined string.
+File: `src/index.template.html`
 
-#### `capitalize`
-
-The `capitalize` function capitalizes the first letter of each word in a string.
-
-**Syntax:**
-
-```go
-{{ capitalize <string> }}
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    {{ template "partials/header.partial.html" . }}
+    <main>
+      <h1>Content</h1>
+    </main>
+  </body>
+</html>
 ```
 
-**Parameters:**
+**Output:** `output/index.html`
 
-- `string` (string): The string to capitalize
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Content</h1>
+    </main>
+  </body>
+</html>
+```
+
+The partial is automatically available as `"partials/header.partial.html"` and can be included in any template.
+
+#### Metatemplates
+
+Metatemplates (`*.metatemplate*`) are multi-file-output templates that generate multiple output files, one for each sibling subfolder containing a `meta.yaml` file.
 
 **Example:**
 
-```html
-{{ capitalize "hello world" }}
-<!-- Output: "Hello World" -->
-
-{{ capitalize .title }}
-<!-- Output: "My Blog Post" if .title is "my blog post" -->
-```
-
-<!-- ### Component template
-- [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
-  - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
-  - for each of those, register them as equally named functions that are then passed to the funcMap for templating
-  - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
-  - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
-  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead. -->
-
-### Dynamic metadata
-
-Temingo by default passes the following metadata to the rendering:
-
-- [ ] pass global variables like datetime (globally equal renderTime only)
-- [x] `.path` contains the rendered template path
-- [x] `.breadcrumbs` contains a slice of breadcrumb objects with `Name` and `Path` fields representing the folder hierarchy
-
-#### Breadcrumbs
-
-Breadcrumbs represent the parent directory structure, excluding the directory containing the current `index.html` file. Each breadcrumb has:
-
-- `Name`: The directory name
-- `Path`: The full path to that directory (e.g., `/blog` or `/blog/posts`)
-
-**Examples:**
-
-- `index.html` → `[]` (empty)
-- `blog/index.html` → `[]` (empty, no parent)
-- `blog/posts/index.html` → `[{Name: "blog", Path: "/blog"}]`
-- `blog/posts/2024/index.html` → `[{Name: "blog", Path: "/blog"}, {Name: "posts", Path: "/blog/posts"}]`
-
-**Template usage:**
+File: `src/blog/index.metatemplate.html`
 
 ```html
-<nav aria-label="Breadcrumb">
-  <a href="/">Home</a>
-  {{ range .breadcrumbs }}
-  <span>/</span>
-  <a href="{{ .Path }}">{{ .Name }}</a>
-  {{ end }}
-</nav>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ .meta.name }} - Blog</title>
+  </head>
+  <body>
+    <h1>{{ .meta.name }}</h1>
+    <p>Content for {{ .meta.name }}</p>
+  </body>
+</html>
 ```
 
-### Metadata hierarchy
+Directory structure:
 
-Temingo by default aggregates the metadata that is passed to the rendering as follows;
+```text
+src/blog/
+  index.metatemplate.html
+  post1/
+    meta.yaml  # name: "First Post"
+  post2/
+    meta.yaml  # name: "Second Post"
+```
 
-- Iterate through folders from inputDir `./src` down to the folder containing the template file
-- On that way, always merge the lowerlevel `meta.yaml` (if it exists) into the parent one (overwrite if necessary)
-- Pass the final object to the respective template rendering process
+**Output:** This generates two files:
 
-### Metadata child list
+- `output/blog/post1/index.html`
 
-For each `*.template*` file, temingo by default searches for all `./*/meta.yaml`s (in all folders that are one level further down from the template file) and adds them as `.childMeta.<foldername>.<content-object>` pair to the template.
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>First Post - Blog</title>
+  </head>
+  <body>
+    <h1>First Post</h1>
+    <p>Content for First Post</p>
+  </body>
+</html>
+```
 
-This enables you to dynamically generate navigation menus, listing pages, or iterate over child items. Each child's metadata is automatically merged with the parent's metadata, so parent values are inherited.
+- `output/blog/post2/index.html`
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Second Post - Blog</title>
+  </head>
+  <body>
+    <h1>Second Post</h1>
+    <p>Content for Second Post</p>
+  </body>
+</html>
+```
+
+### Static Files
+
+All files that are not templates, partials, metatemplates, `meta.yaml` files, or values files (specified via `--valuesfile`) are copied to the output directory as-is, preserving their location in the directory structure.
+
+### Metadata System
+
+Temingo provides a hierarchical metadata system using `meta.yaml` files:
+
+#### Metadata Hierarchy
+
+Metadata is aggregated by iterating through folders from the input directory down to the folder containing the template file. Lower-level `meta.yaml` files are merged into parent ones, with child values overriding parent values.
+
+#### Child Metadata
+
+For each template file, temingo searches for all `meta.yaml` files in direct child subfolders (one level down) and makes them available as `.childMeta.<foldername>`. The key in the map is the folder name only (the last component of the path), not the full path. This enables dynamic navigation menus, listing pages, or iterating over child items.
+
+**Important:** The key in the `childMeta` map is the folder name only (e.g., `post1`), not the full path. Since only direct children (one level down) are included, nested subfolders (e.g., `blog/posts/post1/meta.yaml`) are not included when processing `blog/index.template.html`. However, if you have multiple direct child folders with the same name (which would require different parent paths), the later one processed will overwrite the earlier one in the map. To avoid conflicts, ensure direct child folder names are unique.
 
 **Example structure:**
 
@@ -237,143 +256,160 @@ src/
 
 **Note:** This feature loads metadata from direct child directories only (one level down). Each child's metadata is merged with the parent metadata, so you can access both child-specific and inherited values.
 
-### Metatemplates
+### Markdown Content
 
-Temingo by default takes all `*.metatemplate*` files and uses them as template in all of the sibling subfolders that contain a `meta.yaml` file. The object in those files are passed for each rendering.
+If a template path (either as sibling or as child for metatemplates) contains a `content.md` file, it is automatically converted to HTML and made available as `.content` during the templating process.
 
-### Content markdown
+### Breadcrumbs
 
-Temingo by default processes markdown files as follows:
+Breadcrumbs represent the parent directory structure, excluding the directory containing the current `index.html` file. Each breadcrumb has:
 
-- [x] If a template path (either as sibling or as child for the metatemplates) contains a `content.md` it is converted to html and made available as `.content` during the templating process.
-<!-- - [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet) -->
+- `Name`: The directory name
+- `Path`: The full path to that directory (e.g., `/blog` or `/blog/posts`)
 
-<!-- ### Configuration file -->
-<!-- Temingo by default reads configuration settings from a `~/.temingo.yaml` file and a `./.temingo.yaml` file. -->
-<!-- TODO verify config file support -->
+**Examples:**
 
-### Watch mode
+- `index.html` → `[]` (empty)
+- `blog/index.html` → `[]` (empty, no parent)
+- `blog/posts/index.html` → `[{Name: "blog", Path: "/blog"}]`
+- `blog/posts/2024/index.html` → `[{Name: "blog", Path: "/blog"}, {Name: "posts", Path: "/blog/posts"}]`
 
-- [x] `--watch` / `-w` flag for watching for file changes in the source folder
-  - [x] Automatically rebuilds output when files change
-  - [x] Watches input directory, `.temingoignore` file, and values files
-- [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
-      fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
-- [ ] don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
-- [ ] if output folder isn't empty, generate hashlist during first build
-- [ ] don't delete & recreate rendered files when its contents haven't changed
+**Template usage:**
 
-### Integrated simple webserver
-
-- [x] `--serve` / `-s` flag for running a simple integrated webserver directly on the output folder
-  - [x] Webserver only listens on `127.0.0.1` for security (local connections only)
-  - [x] Can be combined with `--watch` for automatic rebuilds on file changes
-
-### Project initialization
-
-- [x] `temingo init example` command to generate sample project
-- [x] Only creates files if the input directory doesn't already exist
-
-### Version information
-
-- [x] `temingo version` command to print the current build version
-
-### Custom template values
-
-- [x] `--value key=value` flag to pass custom values to templates
-- [x] Multiple `--value` flags can be used to pass multiple key-value pairs
-- [x] `--valuesfile` flag to load values from a YAML file (can be specified multiple times)
-- [x] Multiple values files are merged in order, with later files overriding earlier ones
-- [x] Values are accessible in templates via `.<key>`
-- [x] CLI values override values from files when both are provided
-
-### Dry-run mode
-
-- [x] `--dry-run` flag to preview what would be built without actually writing files
-
-### Verbose mode
-
-- [x] `--verbose` / `-v` flag to enable detailed logging
-- [x] Provides additional information about the rendering process
-- [x] Useful for debugging and understanding what temingo is doing
-
-### Output directory management
-
-- [x] `--noDeleteOutputDir` flag to preserve existing output directory contents instead of recreating it from scratch.
-      This only overwrites the rendered template files.
-      Thus, it's possible to have inputDir==outputDir.
-
-### Directory validation
-
-- [x] Early validation of input and output directories before processing
-- [x] Verifies that input directory exists and is a directory
-- [x] Verifies that output directory exists and is a directory (or creates it if it doesn't exist)
-- [x] Prevents output directory from being inside or equal to input directory
-
-### Optimizations
-
-- file extension autodiscover
-
-  - add table in readme on which extensions are covered
-  - minimum are html, css and js. nice would be are svg and somehow image integration in webpages (webp conversion, auto replace in all src)
-
-  temingo _can_ do (this should probably be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettityHtml, prettifyJs):
-
-  - content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
-    - `.html`
-    - `.css`
-    - `.js`
-  - content minification, for example for html files. Supported extensions:
-    - `.html`
-    - `.css`
-    - `.js`
-  - optimized media embedding, for example for images. Supported media:
-    - images
-    - svg (pregenerate different colors?)
-
-- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file, and nonces are supported.
-
-#### Beautify
-
-- [x] HTML beautification is enabled by default
-- [x] Automatically formats HTML output for better readability
-- [x] Supports `.html` files
-- [ ] Supports `.css` files
-- [ ] Supports `.js` files
-
-#### Minify
-
-TBD
-
-- is it good to do this here? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
-
-- [ ] add flag / setting
-- [ ] minify html, warn user if there are undefined css classes used
-- [ ] minify css, warn user if there are unused css classes
-- [ ] minify js
-
-#### Media & Media references
-
-TBD
-
-- is it good to do this here? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
-
-- [ ] add flag / setting
-- [ ] file extension autodiscover (html files only, which image format is used, depending on setting media format can be transformed as well)
-- [ ] optimize media embedding automatically, but warn the user
-
-## Usage
-
-### Basic Usage
-
-```sh
-temingo                                    # Build templates from ./src to ./output
-temingo init example                       # Initialize with example project
-temingo init test                          # Initialize with comprehensive test project
-temingo version                            # Print current version
+```html
+<nav aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  {{ range .breadcrumbs }}
+  <span>/</span>
+  <a href="{{ .Path }}">{{ .Name }}</a>
+  {{ end }}
+</nav>
 ```
 
-### Advanced Usage
+### Template Variables
+
+The following variables are available in all templates:
+
+```text
+.path          -> string: path to template (within input directory)
+.breadcrumbs   -> []Breadcrumb: breadcrumb objects with Name and Path fields
+.meta          -> map[string]interface{}: aggregated metadata for current folder (merged from parent directories)
+.childMeta     -> map[string]interface{}: metadata of direct child subfolders, key is the folder name
+.<key>         -> string: custom values passed via --value flags or --valuesfile
+.content       -> string: markdown content converted to HTML (if content.md exists)
+```
+
+## Template Functions
+
+Temingo provides built-in template functions that can be used in your templates:
+
+### `includeWithIndentation`
+
+The `includeWithIndentation` function allows you to indent content by a specified number of spaces. This is particularly useful when including partials or other content that needs to match the indentation level of the surrounding context.
+
+**Syntax:**
+
+```go
+{{ includeWithIndentation <amount_of_indentation_spaces> <content_to_indent> }}
+```
+
+**Parameters:**
+
+- `indentation` (int): The number of spaces to indent each line
+- `content` (string): The content to indent
+
+**Example:**
+
+```html
+<div class="container">{{ includeWithIndentation 4 .content }}</div>
+```
+
+Or with a multi-line string variable:
+
+```html
+<pre>
+{{ includeWithIndentation 2 .codeBlock }}
+</pre>
+```
+
+This will indent each line of the content by the specified number of spaces, ensuring proper formatting in the output. This is particularly useful when you need to maintain indentation levels for code blocks, nested HTML structures, or when including content that should match the surrounding indentation.
+
+### `concat`
+
+The `concat` function concatenates multiple strings together into a single string. This is useful when you need to combine multiple string values or variables.
+
+**Syntax:**
+
+```go
+{{ concat <string1> <string2> ... <stringN> }}
+```
+
+**Parameters:**
+
+- `string1`, `string2`, ... `stringN` (string): One or more strings to concatenate
+
+**Example:**
+
+```html
+<a href="{{ concat "https://example.com/" .path }}">Link</a>
+```
+
+Or with multiple variables:
+
+```html
+<div class="{{ concat "container " .theme " " .size }}">Content</div>
+```
+
+The function accepts any number of string arguments and concatenates them in order, returning a single combined string.
+
+### `capitalize`
+
+The `capitalize` function capitalizes the first letter of each word in a string.
+
+**Syntax:**
+
+```go
+{{ capitalize <string> }}
+```
+
+**Parameters:**
+
+- `string` (string): The string to capitalize
+
+**Example:**
+
+```html
+{{ capitalize "hello world" }}
+<!-- Output: "Hello World" -->
+
+{{ capitalize .title }}
+<!-- Output: "My Blog Post" if .title is "my blog post" -->
+```
+
+<!-- ### Component template
+- [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
+  - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
+  - for each of those, register them as equally named functions that are then passed to the funcMap for templating
+  - They can then be called with {{ filename-without-extension arg0 arg1 ... }} where the args have to be in the format of `key=value`.
+  - The args will then be passed to the component template file (they cannot call partials, but partials can call them), where they are provided as a map[key]value.
+  - if the filename points to a file in a subfolder, f.e. `{{ icon/github }}` those files are taken instead. -->
+
+## Configuration & Options
+
+### Ignore Files
+
+Temingo respects ignored paths as described in `./.temingoignore`, which uses a similar syntax as `.gitignore`. The ignore file is automatically watched for changes when using `--watch`.
+
+### Custom Template Values
+
+You can pass custom values to templates in two ways:
+
+- **CLI flags**: `--value key=value` (can be specified multiple times)
+- **YAML files**: `--valuesfile path/to/file.yaml` (can be specified multiple times)
+
+Multiple values files are merged in order, with later files overriding earlier ones. CLI values always override values from files when both are provided. Values are accessible in templates via `.<key>`.
+
+**Example:**
 
 ```sh
 # Build with custom values
@@ -387,7 +423,87 @@ temingo --valuesfile base-values.yaml --valuesfile production-values.yaml
 
 # Build with values from file and override some via CLI
 temingo --valuesfile values.yaml --value siteName="Override Name"
+```
 
+### Directory Validation
+
+Temingo performs early validation of input and output directories before processing:
+
+- Verifies that input directory exists and is a directory
+- Verifies that output directory exists and is a directory (or creates it if it doesn't exist)
+- If output directory is inside input directory, automatically adds it to the ignore list at runtime (for that single run) to prevent processing loops and prints a warning. The ignore file itself is not modified.
+- If outputDir and inputDir are the same directory, it will check if --noDeleteOutputDir is set. If it is not set, it will return an error.
+
+### Output Directory Management
+
+The `--noDeleteOutputDir` flag preserves existing output directory contents instead of recreating it from scratch. This only overwrites the rendered template files, making it possible to have `inputDir==outputDir`.
+
+### Beautify
+
+HTML beautification is enabled by default. Automatically formats HTML output for better readability. Currently supports `.html` files.
+
+### Integrated Webserver
+
+The `--serve` / `-s` flag runs a simple integrated webserver that serves the output directory. The webserver listens only on `127.0.0.1` for security (local connections only) and can be combined with `--watch` for automatic rebuilds on file changes.
+
+**Example:**
+
+```sh
+temingo --serve --watch
+```
+
+### Watch Mode
+
+The `--watch` / `-w` flag enables automatic rebuilding when files change:
+
+- Automatically rebuilds output when files change
+- Watches input directory, `.temingoignore` file, and values files
+- Can be combined with `--serve` for automatic rebuilds and local serving
+
+**Planned improvements:**
+
+- [ ] Partial/conditional rerender for only changed files
+- [ ] Skip unchanged static files
+- [ ] Skip unchanged rendered files
+
+### Project Initialization
+
+The `temingo init` command generates sample projects:
+
+- `temingo init example`: A basic example project with blog structure and components
+- `temingo init test`: A comprehensive test project showcasing all temingo features including partials, metadata, markdown content, and metatemplates
+
+Only creates files if the input directory doesn't already exist.
+
+### Version Information
+
+The `temingo version` command prints the current build version.
+
+### Dry-run Mode
+
+The `--dry-run` flag previews what would be built without actually writing files. Useful for testing and validation.
+
+### Verbose Mode
+
+The `--verbose` / `-v` flag enables detailed logging:
+
+- Provides additional information about the rendering process
+- Useful for debugging and understanding what temingo is doing
+
+## Usage Examples
+
+### Basic Usage
+
+```sh
+temingo                                    # Build templates from ./src to ./output
+temingo init example                       # Initialize with example project
+temingo init test                          # Initialize with comprehensive test project
+temingo version                            # Print current version
+```
+
+### Advanced Usage
+
+```sh
 # Build with custom directories and extensions
 temingo --inputDir ./templates --outputDir ./dist --templateExtension .tmpl
 
@@ -400,13 +516,6 @@ temingo --noDeleteOutputDir
 # Dry run to see what would be built
 temingo --dry-run --verbose
 ```
-
-### Available Project Types
-
-The `temingo init` command supports the following project types:
-
-- `example`: A basic example project with blog structure and components
-- `test`: A comprehensive test project showcasing all temingo features including partials, metadata, markdown content, and metatemplates
 
 ### Command Line Options
 
@@ -430,16 +539,96 @@ The `temingo init` command supports the following project types:
 --verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
-Here's a list of variables that are passed to each template rendering process:
+## Future Optimizations
 
-```text
-["path"] = string -> path to template (within `./src/`)
-["breadcrumbs"] = []Breadcrumb -> breadcrumb objects with Name and Path fields (see Breadcrumbs section above for details)
-["meta"] = map[string]object -> aggregated metadata for current folder (merged from parent directories)
-["childMeta"] = map[string]object -> metadata of direct child subfolders, key is the folder name. Each child's metadata is merged with parent metadata. Use this to generate navigation menus or listing pages.
-["<key>"] = map[string]string -> custom values passed via --value flags or --valuesfile
-["content"] = string -> markdown content converted to HTML (if content.md exists)
-```
+The following optimizations are planned or under consideration:
+
+- File extension autodiscover
+  - Add table in readme on which extensions are covered
+  - Minimum are html, css and js. Nice would be svg and somehow image integration in webpages (webp conversion, auto replace in all src)
+
+Temingo _can_ do (this should probably be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettifyHtml, prettifyJs):
+
+- Content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
+  - `.html`
+  - `.css`
+  - `.js`
+- Content minification, for example for html files. Supported extensions:
+  - `.html`
+  - `.css`
+  - `.js`
+- Optimized media embedding, for example for images. Supported media:
+
+  - images
+  - svg (pregenerate different colors?)
+
+- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file, and nonces are supported.
+- [ ] CSS beautification support
+- [ ] JS beautification support
+- [ ] Minify flag/setting
+- [ ] Minify html, warn user if there are undefined css classes used
+- [ ] Minify css, warn user if there are unused css classes
+- [ ] Minify js
+- [ ] Media & Media references optimization
+
+## Ideas & Future Enhancements
+
+This section contains ideas, TODOs, and potential future enhancements that are not yet implemented.
+
+### Dynamic Metadata
+
+- [ ] Pass global variables like datetime (globally equal renderTime only)
+
+### Content Markdown
+
+- [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet)
+
+### Watch Mode Improvements
+
+- [ ] Partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
+  - fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
+- [ ] Don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
+- [ ] If output folder isn't empty, generate hashlist during first build
+- [ ] Don't delete & recreate rendered files when its contents haven't changed
+
+### Configuration File
+
+- [ ] Temingo by default reads configuration settings from a `~/.temingo.yaml` file and a `./.temingo.yaml` file.
+- [ ] Verify config file
+
+### HTML Parser & Validation
+
+- [ ] HTML parser notes:
+  - parent -> Node / node-ref
+  - siblings -> []Node
+  - attributes (contains, not equals) -> map[string]string
+  - content -> string/[]Node
+- [ ] PrettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, put them in dedicated repos.
+- [ ] Fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
+- [ ] Templating engine should save a mapping of (inserted) line-numbers. That way, when the contents are verified (aka html/css/js is invalid for example), it can point to the correct file and line.
+
+### Component Libraries
+
+- [ ] Components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
+  - References are to git repos and tags therein.
+  - Alternatively introduce a global registry for components, like godocs
+  - Either helm-repo approach, or apt/godocs-approach
+  - Local overrides should still be possible / components need to be able to be adjusted per project still
+  - Maybe a `values.yaml` (optional) that can add additional properties/variables or overriding default ones for the whole lib
+- [ ] Make it possible to print all css dependencies & overriding tree -> per component
+
+### Minification & Optimization
+
+- [ ] (div-merge on minifyHtml) // might clash with css rules...
+- [ ] Automatically prettify generated files by default - or minify, depending on configuration
+
+### Development Server
+
+- [ ] Inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
+
+### Other Ideas
+
+- [ ] Use html meta tag for listview attributes
 
 ## TODO
 
@@ -454,34 +643,7 @@ Here's a list of variables that are passed to each template rendering process:
 
 - add setting to enable/disable auto-intendation of multiline partials with same whitespace as reference. Default is enabled.
 
-<!--
-html parser notes
-- parent -> Node / node-ref
-- siblings -> []Node
-- attributes (contains, not equals) -> map[string]string
-- content -> string/[]Node
-
-- prettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, put them in dedicated repos.
-- fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
-- components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
-  - references are to git repos and tags therein.
-  - alternatively introduce a global registry for components, like godocs
-  - either helm-repo approach, or apt/godocs-approach
-  - local overrides should still be possible / components need to be able to be adjusted per project still
-  - maybe a `values.yaml` (optional) that can add additional properties/variables or overriding default ones for the whole lib
-- make it possible to print all css dependencies & overriding tree -> per component
-- use html <meta> tag for listview attributes
-- (div-merge on minifyHtml) // might clash with css rules...
-- templating engine should save a mapping of (inserted) line-numbers. That way, when the contents are verified (aka html/css/js is invalid for example), it can point to the corrent file and line.
-- automatically prettify generated files by default - or minify, depending on configuration
-- inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
--->
-
 ## Development
-
-### Adding commands / subcommands
-
-`cobra-cli add <command>`
 
 ### How to test
 
