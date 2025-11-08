@@ -1,12 +1,22 @@
 # CHANGELOG
 
-## v0.7.0
+## v1.0.0
+
+### Breaking Changes
+
+- Now that the project has proper tests, it is time to release it's first stable version.
+- Migrate from cobra/viper to urfave/cli v3.
+- Removed the integration of a global ~/.temingo.yaml. Instead, `./.temingo.yaml` is read by default. That path can be adjusted with the `--config` flag.
+- Add breadcrumbs with `Name` and `Path` fields. Breadcrumbs are now `[]Breadcrumb` structs instead of `[]string`. Each breadcrumb has both a name and a full path, enabling `{{ range .breadcrumbs }}<a href="{{ .Path }}">{{ .Name }}</a>{{ end }}` usage.
+
+### Improvements
 
 - Improve install.sh, with better error handling, tempdir, autodeletion of temporary files and improved log messages.
 - Add `concat`, `includeWithIndentation`, and `capitalize` template functions.
 - Add support for multiple `--valuesfile` flags. Multiple values files are merged in order, with later files overriding earlier ones. This allows separation of concerns (e.g., base values, environment-specific values).
-- Add breadcrumbs with `Name` and `Path` fields. Breadcrumbs are now `[]Breadcrumb` structs instead of `[]string`. Each breadcrumb has both a name and a full path, enabling `{{ range .breadcrumbs }}<a href="{{ .Path }}">{{ .Name }}</a>{{ end }}` usage.
 - Add directory validation: checks ensure input/output directories are valid, create the output directory if missing, and automatically ignore the output directory at runtime if it's inside the input directory to prevent processing loops (with a warning shown). The ignore file itself remains unchanged.
+- Added tests. Lots of tests.
+- Update dependencies
 
 ## v0.6.0
 

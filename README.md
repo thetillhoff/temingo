@@ -400,6 +400,39 @@ The `capitalize` function capitalizes the first letter of each word in a string.
 
 Temingo respects ignored paths as described in `./.temingoignore`, which uses a similar syntax as `.gitignore`. The ignore file is automatically watched for changes when using `--watch`.
 
+### Configuration File
+
+Temingo supports a per-project configuration file (`.temingo.yaml` in the current working directory) to set default values for command-line flags. This allows you to configure project-specific settings without passing flags every time.
+
+**Default location:** `./.temingo.yaml` (in the current working directory)
+
+**Custom location:** Use the `--config` flag to specify a different path
+
+**Configuration format:** YAML file with flag names as keys
+
+**Example `.temingo.yaml`:**
+
+```yaml
+inputDir: 'src/'
+outputDir: 'dist/'
+templateExtension: '.tmpl'
+verbose: true
+value:
+  - 'siteName=My Blog'
+  - 'author=John Doe'
+valuesfile:
+  - 'base-values.yaml'
+  - 'production-values.yaml'
+```
+
+**Priority order:**
+
+1. Command-line flags (highest priority)
+2. Configuration file values
+3. Default values (lowest priority)
+
+CLI flags always override configuration file values when both are provided. The configuration file is useful for setting project-specific defaults that can still be overridden on the command line.
+
 ### Custom Template Values
 
 You can pass custom values to templates in two ways:
@@ -507,6 +540,9 @@ temingo version                            # Print current version
 # Build with custom directories and extensions
 temingo --inputDir ./templates --outputDir ./dist --templateExtension .tmpl
 
+# Use custom configuration file
+temingo --config ./custom-config.yaml
+
 # Watch for changes and serve locally
 temingo --watch --serve
 
@@ -522,6 +558,7 @@ temingo --dry-run --verbose
 <!-- Automate this snipped to be generated from the code at build time, or make otherwise sure this reflects the current state of the code -->
 
 ```text
+--config: Path to configuration file (default: ./.temingo.yaml in current directory).
 --inputDir, -i, default "./src": Sets the path to the template-file-directory.
 --outputDir, -o, default "./output": Sets the destination-path for the compiled templates.
 --templateExtension, -t, default ".template": Sets the extension of the template files.
@@ -590,11 +627,6 @@ This section contains ideas, TODOs, and potential future enhancements that are n
 - [ ] Don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
 - [ ] If output folder isn't empty, generate hashlist during first build
 - [ ] Don't delete & recreate rendered files when its contents haven't changed
-
-### Configuration File
-
-- [ ] Temingo by default reads configuration settings from a `~/.temingo.yaml` file and a `./.temingo.yaml` file.
-- [ ] Verify config file
 
 ### HTML Parser & Validation
 
