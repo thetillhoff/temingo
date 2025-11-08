@@ -1,5 +1,10 @@
 package temingo
 
+import (
+	"log/slog"
+	"os"
+)
+
 type Engine struct {
 	InputDir                string
 	OutputDir               string
@@ -16,10 +21,17 @@ type Engine struct {
 	DryRun                  bool
 	Beautify                bool
 	Minify                  bool
+	Logger                  *slog.Logger
 }
 
 // Returns an engine with default values
 func DefaultEngine() Engine {
+	var level slog.Level = slog.LevelInfo
+	opts := &slog.HandlerOptions{
+		Level: level,
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+
 	return Engine{
 		InputDir:                "src/",
 		OutputDir:               "output/",
@@ -36,5 +48,6 @@ func DefaultEngine() Engine {
 		DryRun:                  false,
 		Beautify:                false,
 		Minify:                  false,
+		Logger:                  logger,
 	}
 }

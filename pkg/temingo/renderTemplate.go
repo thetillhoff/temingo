@@ -2,21 +2,20 @@ package temingo
 
 import (
 	"bytes"
-	"log"
 	"text/template"
 )
 
 // Returns the rendered template
 func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath string, templateContent string, partialFiles map[string]string) ([]byte, error) {
+	logger := engine.Logger
+
 	var (
 		err error
 
 		outputBuffer *bytes.Buffer = new(bytes.Buffer)
 	)
 
-	if engine.Verbose {
-		log.Println("meta object for template", templatePath, meta)
-	}
+	logger.Debug("Meta object for template", "path", templatePath, "meta", meta)
 
 	outputBuffer.Reset()                         // Ensure the buffer is empty
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name

@@ -1,7 +1,6 @@
 package temingo
 
 import (
-	"log"
 	"path"
 
 	"github.com/thetillhoff/fileIO"
@@ -13,6 +12,8 @@ import (
 // Returns the metadata from the treePath (meta yamls of the template-dir and the direct children-dirs),
 // the childMetadata in map[folderName]metadata format
 func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, templatePath string) (interface{}, map[string]interface{}, error) {
+	logger := engine.Logger
+
 	var (
 		err       error
 		meta      interface{}                                       // meta object for templatepath -> {meta}
@@ -25,9 +26,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 	)
 
 	for _, metaFilePath := range metaTemplatePaths.FilterByTreePath(templatePath).Files { // For each meta yaml in dirTree for templatePath (top-down)
-		if engine.Verbose {
-			log.Println("Reading metadata from", metaFilePath)
-		}
+		logger.Debug("Reading metadata", "path", metaFilePath)
 
 		metaContent, err = fileIO.ReadFile(path.Join(engine.InputDir, metaFilePath)) // Read file contents
 		if err != nil {
@@ -42,9 +41,7 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 	}
 
 	for _, childMetaFilePath := range metaTemplatePaths.FilterByLevelAtFolderPath(path.Dir(templatePath), 1).Files { // For each direct child meta yaml
-		if engine.Verbose {
-			log.Println("Reading child-metadata from", childMetaFilePath)
-		}
+		logger.Debug("Reading child-metadata", "path", childMetaFilePath)
 
 		metaContent, err = fileIO.ReadFile(path.Join(engine.InputDir, childMetaFilePath)) // Read file contents
 		if err != nil {

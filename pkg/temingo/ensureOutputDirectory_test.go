@@ -63,6 +63,8 @@ func TestEnsureOutputDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// t.TempDir() automatically cleans up all files/directories created within it
+			// when the test completes, even if the test fails or panics
 			outputDir := tt.setup()
 
 			// Ensure path ends with separator to match actual usage
@@ -70,7 +72,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 				outputDir = outputDir + string(filepath.Separator)
 			}
 
-			err := ensureOutputDirectory(outputDir)
+			err := ensureOutputDirectory(outputDir, nil)
 
 			if tt.wantErr {
 				if err == nil {
@@ -101,7 +103,7 @@ func TestEnsureOutputDirectory_Permissions(t *testing.T) {
 	t.Run("Created directory should have default permissions (0755)", func(t *testing.T) {
 		outputDir := filepath.Join(tmpDir, "output")
 
-		err := ensureOutputDirectory(outputDir + string(filepath.Separator))
+		err := ensureOutputDirectory(outputDir+string(filepath.Separator), nil)
 		if err != nil {
 			t.Fatalf("ensureOutputDirectory() unexpected error: %v", err)
 		}

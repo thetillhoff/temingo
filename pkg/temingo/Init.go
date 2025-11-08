@@ -2,7 +2,6 @@ package temingo
 
 import (
 	"errors"
-	"log"
 	"os"
 
 	"github.com/thetillhoff/fileIO"
@@ -11,13 +10,15 @@ import (
 // Initializes the current directory with an example project
 // It checks beforehand if the files / folders that will be written already exist and not do a thing if they do.
 func (engine *Engine) InitProject(projectType string) error {
+	logger := engine.Logger
+
 	var (
 		err   error
 		files map[string][]byte
 	)
 
 	// Ensure output directory exists
-	err = ensureOutputDirectory(engine.OutputDir)
+	err = ensureOutputDirectory(engine.OutputDir, logger)
 	if err != nil {
 		return err
 	}
@@ -40,11 +41,9 @@ func (engine *Engine) InitProject(projectType string) error {
 		if err != nil {
 			return err
 		}
-		if engine.Verbose {
-			log.Println("File created:", path)
-		}
+		logger.Debug("File created", "path", path)
 	}
-	log.Println(projectType, "project initialized.")
+	logger.Info("Project initialized", "type", projectType)
 
 	return nil
 }

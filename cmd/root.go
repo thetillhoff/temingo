@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -62,7 +62,8 @@ var rootCmd = &cobra.Command{
 			// Parse values from files first (merge multiple files)
 			values, err = parseValuesFromFiles(valuesFileFlags)
 			if err != nil {
-				log.Fatalln(err)
+				slog.Error("Failed to parse values from files", "error", err)
+				os.Exit(1)
 			}
 		}
 
@@ -71,15 +72,30 @@ var rootCmd = &cobra.Command{
 			splitString := strings.SplitN(value, "=", 2)
 			switch len(splitString) {
 			case 0:
-				log.Fatalln("Empty value flag")
+				slog.Error("Empty value flag")
+				os.Exit(1)
 			case 1:
-				log.Fatalln("No value set for value keypair: " + value)
+				slog.Error("No value set for value keypair", "value", value)
+				os.Exit(1)
 			case 2:
 				values[splitString[0]] = splitString[1]
 			default:
-				log.Fatalln("Invalid value flag: " + value)
+				slog.Error("Invalid value flag", "value", value)
+				os.Exit(1)
 			}
 		}
+
+		// Create logger based on verbose flag
+		var loggerLevel slog.Level
+		if verboseFlag {
+			loggerLevel = slog.LevelDebug
+		} else {
+			loggerLevel = slog.LevelInfo
+		}
+		loggerOpts := &slog.HandlerOptions{
+			Level: loggerLevel,
+		}
+		temingoLogger := slog.New(slog.NewTextHandler(os.Stdout, loggerOpts))
 
 		temingoEngine := temingo.Engine{
 			InputDir:                inputDirFlag,
@@ -97,14 +113,16 @@ var rootCmd = &cobra.Command{
 			DryRun:                  dryRunFlag,
 			Beautify:                true,
 			Minify:                  false,
+			Logger:                  temingoLogger,
 		}
 
 		// Build once
 		err = temingoEngine.Render()
 		if err != nil {
-			log.Fatalln(err)
+			slog.Error("Build failed", "error", err)
+			os.Exit(1)
 		}
-		log.Println("Build complete.")
+		slog.Info("Build complete")
 
 		if serveFlag { // Start webserver if desired
 			serveEngine := serve.DefaultEngine()
@@ -114,13 +132,14 @@ var rootCmd = &cobra.Command{
 			go func() { // Start the webserver in the background
 				err = serveEngine.Serve()
 				if err != nil {
-					log.Fatalln(err)
+					slog.Error("Failed to start webserver", "error", err)
+					os.Exit(1)
 				}
 			}()
 		}
 
 		if watchFlag { // Start watching if desired
-			log.Println("*** Started to watch for file changes ***")
+			slog.Info("Started to watch for file changes")
 
 			err = fileIO.Watch(
 				[]string{
@@ -134,16 +153,17 @@ var rootCmd = &cobra.Command{
 				temingoEngine.Verbose,
 				100*time.Millisecond,
 				func(event watcher.Event) error {
-					log.Println("*** Rebuild triggered by a change detected in", event.Path, "***")
+					slog.Info("Rebuild triggered by file change", "path", event.Path)
 					// TODO inform frontend via websocket connection
 					err = temingoEngine.Render()
 					if err != nil {
-						log.Println(err) // Print errors when in watch mode
+						slog.Error("Rebuild failed", "error", err) // Print errors when in watch mode
 					}
 					return nil // Ignore errors on Rendering when in watch mode (apart from printing them)
 				})
 			if err != nil {
-				log.Fatalln(err)
+				slog.Error("Failed to start file watcher", "error", err)
+				os.Exit(1)
 			}
 		}
 	},

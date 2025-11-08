@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"log"
+	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -31,7 +32,8 @@ var initCmd = &cobra.Command{
 			// Parse values from files first (merge multiple files)
 			values, err = parseValuesFromFiles(valuesFileFlags)
 			if err != nil {
-				log.Fatalln(err)
+				slog.Error("Failed to parse values from files", "error", err)
+				os.Exit(1)
 			}
 		}
 
@@ -40,15 +42,30 @@ var initCmd = &cobra.Command{
 			splitString := strings.SplitN(value, "=", 2)
 			switch len(splitString) {
 			case 0:
-				log.Fatalln("Empty value flag")
+				slog.Error("Empty value flag")
+				os.Exit(1)
 			case 1:
-				log.Fatalln("No value set for value keypair: " + value)
+				slog.Error("No value set for value keypair", "value", value)
+				os.Exit(1)
 			case 2:
 				values[splitString[0]] = splitString[1]
 			default:
-				log.Fatalln("Invalid value flag: " + value)
+				slog.Error("Invalid value flag", "value", value)
+				os.Exit(1)
 			}
 		}
+
+		// Create logger based on verbose flag
+		var loggerLevel slog.Level
+		if verboseFlag {
+			loggerLevel = slog.LevelDebug
+		} else {
+			loggerLevel = slog.LevelInfo
+		}
+		loggerOpts := &slog.HandlerOptions{
+			Level: loggerLevel,
+		}
+		temingoLogger := slog.New(slog.NewTextHandler(os.Stdout, loggerOpts))
 
 		engine := temingo.Engine{
 			InputDir:                inputDirFlag,
@@ -64,11 +81,13 @@ var initCmd = &cobra.Command{
 			NoDeleteOutputDir:       noDeleteOutputDirFlag,
 			Verbose:                 verboseFlag,
 			DryRun:                  dryRunFlag,
+			Logger:                  temingoLogger,
 		}
 
 		err = engine.InitProject(args[0]) // There can only be one argument, as specified by `cobra.ExactArgs(1)`
 		if err != nil {
-			log.Fatalln(err)
+			slog.Error("Failed to initialize project", "error", err)
+			os.Exit(1)
 		}
 
 	},

@@ -4,7 +4,6 @@ import (
 	"embed"
 	"errors"
 	"io/fs"
-	"log"
 	"path"
 	"strings"
 )
@@ -20,6 +19,8 @@ var (
 // Meant to initialize the current folder by creating some initial template files - depending on the chosen projectType (options can be retrieved by calling ProjectTypes())
 // Will not write anything to disk, but returns the files as map[path]content
 func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]byte, error) {
+	logger := engine.Logger
+
 	var (
 		err                 error
 		exampleProjectFiles map[string][]byte = map[string][]byte{}
@@ -39,9 +40,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 		return exampleProjectFiles, errors.New("not a valid project type")
 	}
 
-	if engine.Verbose {
-		log.Println("Loading files from", "InitFiles/"+projectType)
-	}
+	logger.Debug("Loading files from embedded project", "path", "InitFiles/"+projectType)
 
 	err = fs.WalkDir(embeddedExampleProjectFilesWithPrefix, "InitFiles/"+projectType, func(filepath string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -80,9 +79,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 			modifiedTreepath = path.Join(path.Dir(modifiedTreepath), engine.MetaFilename)
 		}
 
-		if engine.Verbose {
-			log.Println("Will write embedded file", treepath, "to", modifiedTreepath)
-		}
+		logger.Debug("Will write embedded file", "from", treepath, "to", modifiedTreepath)
 
 		delete(exampleProjectFiles, treepath) // needs to happen before the creation of the new key-entry, else it's somehow immediately deleted
 		exampleProjectFiles[modifiedTreepath] = content

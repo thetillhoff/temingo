@@ -2,9 +2,9 @@ package temingo
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/thetillhoff/fileIO"
@@ -12,6 +12,8 @@ import (
 
 // Renders the templates in the inputDir, writes them to the outputDir and copies the static files
 func (engine *Engine) Render() error {
+	logger := engine.Logger
+
 	var (
 		err         error
 		ignoreLines []string
@@ -49,23 +51,19 @@ func (engine *Engine) Render() error {
 	// Add values files to ignore lines if specified
 	for _, valuesFilePath := range engine.ValuesFilePaths {
 		ignoreLines = append(ignoreLines, valuesFilePath)
-		if engine.Verbose {
-			log.Println("Adding values file to ignore list:", valuesFilePath)
-		}
+		logger.Debug("Adding values file to ignore list", "path", valuesFilePath)
 	}
 
 	// Validate directories and get ignore path in one call
 	// This validates directories exist, creates outputDir if needed, and calculates the ignore path
-	outputIgnorePath, err := validateDirectories(engine.InputDir, engine.OutputDir, engine.NoDeleteOutputDir)
+	outputIgnorePath, err := validateDirectories(engine.InputDir, engine.OutputDir, engine.NoDeleteOutputDir, logger)
 	if err != nil {
 		return err
 	}
 	if outputIgnorePath != "" {
-		log.Printf("Warning: Output directory is inside input directory. Adding '%s' to ignore list for this run to prevent processing loops.", outputIgnorePath)
+		logger.Warn("Output directory is inside input directory. Adding to ignore list to prevent processing loops", "path", outputIgnorePath)
 		ignoreLines = append(ignoreLines, outputIgnorePath)
-		if engine.Verbose {
-			log.Println("Adding output directory to ignore list:", outputIgnorePath)
-		}
+		logger.Debug("Adding output directory to ignore list", "path", outputIgnorePath)
 	}
 
 	// Read filetree with ignoreLines
@@ -75,11 +73,10 @@ func (engine *Engine) Render() error {
 		return err
 	}
 	if len(fileList.Files) == 0 {
-		log.Println("There were no files found in", fileList.Path)
+		logger.Warn("No files found in input directory", "path", fileList.Path)
 	}
 
 	// Sort retrieved filepaths
-
 	templatePaths, metaTemplatePaths, partialPaths, metaPaths, _, staticPaths = engine.sortPaths(fileList) // markdown content files are picked up later anyway
 
 	// Read partial files
@@ -114,7 +111,7 @@ func (engine *Engine) Render() error {
 		// OR it should return one map, where map["meta"] and map["childMeta"] are already set
 
 		// Create meta values object
-		meta, err := engine.generateMetaObjectForTemplatePath(templatePath, renderedTemplatePath, fileList, metaPaths)
+		meta, err := engine.generateMetaObjectForTemplatePath(renderedTemplatePath, fileList, metaPaths)
 		if err != nil {
 			return err
 		}
@@ -134,15 +131,13 @@ func (engine *Engine) Render() error {
 		}
 
 		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 1).FilterByFilename(engine.MetaFilename).Files { // For each meta yaml in a direct subfolder
-			if engine.Verbose {
-				log.Println("Found metatemplate child at", metaFilePath)
-			}
+			logger.Debug("Found metatemplate child", "path", metaFilePath)
 
 			renderedTemplatePath = path.Join(path.Dir(metaFilePath), path.Base(metaTemplatePath))             // == Location of meta yaml, minus meta yaml, plus filename of metatemplate
 			renderedTemplatePath = strings.ReplaceAll(renderedTemplatePath, engine.MetaTemplateExtension, "") // Remove template extension from filename
 
 			// Create meta values object
-			meta, err := engine.generateMetaObjectForTemplatePath(metaTemplatePath, renderedTemplatePath, fileList, metaPaths)
+			meta, err := engine.generateMetaObjectForTemplatePath(renderedTemplatePath, fileList, metaPaths)
 			if err != nil {
 				return err
 			}
@@ -181,18 +176,26 @@ func (engine *Engine) Render() error {
 			if err != nil {
 				return err
 			}
-			if engine.Verbose {
-				log.Println("Recreating the outputDir " + engine.OutputDir)
+			// Ensure output directory permissions match input directory (fileIO.CopyFile may not preserve them)
+			inputDirInfo, err := os.Stat(engine.InputDir)
+			if err != nil {
+				return fmt.Errorf("error getting input directory info: %w", err)
 			}
+			outputDirToCheck := strings.TrimSuffix(engine.OutputDir, string(filepath.Separator))
+			if outputDirToCheck == "" {
+				outputDirToCheck = engine.OutputDir
+			}
+			if err := os.Chmod(outputDirToCheck, inputDirInfo.Mode().Perm()); err != nil {
+				return fmt.Errorf("error setting output directory permissions: %w", err)
+			}
+			logger.Debug("Recreating output directory", "path", engine.OutputDir)
 
 			for _, staticPath := range staticPaths {
 				err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
 				if err != nil {
 					return err
 				}
-				if engine.Verbose {
-					log.Println("Writing static file to " + path.Join(engine.OutputDir, staticPath))
-				}
+				logger.Debug("Writing static file", "path", path.Join(engine.OutputDir, staticPath))
 			}
 		}
 
@@ -204,9 +207,7 @@ func (engine *Engine) Render() error {
 					if err != nil {
 						return err
 					}
-					if engine.Verbose {
-						log.Println("Deleting existing rendered template at " + path.Join(engine.OutputDir, templatePath))
-					}
+					logger.Debug("Deleting existing rendered template", "path", path.Join(engine.OutputDir, templatePath))
 				}
 			}
 
@@ -224,6 +225,10 @@ func (engine *Engine) Render() error {
 			if err := os.MkdirAll(outputDirPath, fileMode); err != nil {
 				return fmt.Errorf("error creating output directory %s: %w", outputDirPath, err)
 			}
+			// Use Chmod to ensure exact permissions (MkdirAll may be affected by umask)
+			if err := os.Chmod(outputDirPath, fileMode); err != nil {
+				return fmt.Errorf("error setting output directory permissions %s: %w", outputDirPath, err)
+			}
 
 			err = fileIO.WriteFile(outputFilePath, renderedTemplate)
 			if err != nil {
@@ -235,19 +240,17 @@ func (engine *Engine) Render() error {
 				return fmt.Errorf("error setting permissions for %s: %w", outputFilePath, err)
 			}
 
-			if engine.Verbose {
-				log.Println("Writing rendered template to " + outputFilePath)
-			}
+			logger.Debug("Writing rendered template", "path", outputFilePath)
 		}
 	} else { // DryRun, so provide information about what would be done instead of doing it
-		log.Println("Would write the following", len(renderedTemplates), "rendered templates:")
+		logger.Info("Dry run: would write rendered templates", "count", len(renderedTemplates))
 		for templatePath := range renderedTemplates {
-			log.Println("-", templatePath)
+			logger.Debug("Would write rendered template", "path", templatePath)
 		}
 
-		log.Println("Would write the following", len(staticPaths), "static files:")
+		logger.Info("Dry run: would write static files", "count", len(staticPaths))
 		for _, staticPath := range staticPaths {
-			log.Println("-", staticPath)
+			logger.Debug("Would write static file", "path", staticPath)
 		}
 	}
 

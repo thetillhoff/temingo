@@ -1,7 +1,6 @@
 package temingo
 
 import (
-	"log"
 	"path"
 	"slices"
 	"strings"
@@ -21,41 +20,28 @@ func (engine *Engine) sortPaths(fileList fileIO.FileList) ([]string, []string, [
 		staticPaths          []string
 	)
 
+	logger := engine.Logger
 	for _, filePath := range fileList.Files { // Check what type of file we have
 		if strings.Contains(filePath, engine.PartialExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			partialPaths = append(partialPaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as partial file:", filePath)
-			}
+			logger.Debug("Identified as partial file", "path", filePath)
 		} else if strings.Contains(filePath, engine.TemplateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			templatePaths = append(templatePaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as template file:", filePath)
-			}
+			logger.Debug("Identified as template file", "path", filePath)
 		} else if strings.Contains(filePath, engine.MetaTemplateExtension) { // Multiple extensions are possible, so simply using path.Ext() is not enough (it only returns the last extension)
 			metaTemplatePaths = append(metaTemplatePaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as metatemplate file:", filePath)
-			}
+			logger.Debug("Identified as metatemplate file", "path", filePath)
 		} else if path.Base(filePath) == engine.MetaFilename { // Making it easier to filter through them later and exclude them from staticPaths - they are not static files that should be copied to the outputDir
 			metaPaths = append(metaPaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as meta file:", filePath)
-			}
+			logger.Debug("Identified as meta file", "path", filePath)
 		} else if path.Base(filePath) == engine.MarkdownContentFilename { // Making it easier to filter through them later and exclude them from staticPaths - they are not static files that should be copied to the outputDir
 			markdownContentPaths = append(markdownContentPaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as markdown content file:", filePath)
-			}
+			logger.Debug("Identified as markdown content file", "path", filePath)
 		} else if slices.Contains(engine.ValuesFilePaths, filePath) { // Exclude values files from static files - they should not be copied to the outputDir
-			if engine.Verbose {
-				log.Println("Identified as values file:", filePath)
-			}
+			logger.Debug("Identified as values file", "path", filePath)
 		} else {
 			staticPaths = append(staticPaths, filePath)
-			if engine.Verbose {
-				log.Println("Identified as static file:", filePath)
-			}
+			logger.Debug("Identified as static file", "path", filePath)
 		}
 	}
 

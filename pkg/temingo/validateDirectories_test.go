@@ -136,6 +136,8 @@ func TestValidateDirectories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// t.TempDir() automatically cleans up all files/directories created within it
+			// when the test completes, even if the test fails or panics
 			inputDir, outputDir := tt.setup()
 
 			// Ensure paths end with separator to match actual usage
@@ -146,7 +148,7 @@ func TestValidateDirectories(t *testing.T) {
 				outputDir = outputDir + string(filepath.Separator)
 			}
 
-			gotIgnorePath, err := validateDirectories(inputDir, outputDir, tt.noDeleteOutputDir)
+			gotIgnorePath, err := validateDirectories(inputDir, outputDir, tt.noDeleteOutputDir, nil)
 
 			if tt.wantErr {
 				if err == nil {
@@ -263,13 +265,19 @@ func TestValidateDirectories_Permissions(t *testing.T) {
 			}
 
 			// Run validation
-			_, err = validateDirectories(inputDir, outputDir, false)
+			_, err = validateDirectories(inputDir, outputDir, false, nil)
 			if err != nil {
 				t.Fatalf("ValidateDirectories() unexpected error: %v", err)
 			}
 
 			// Check output directory permissions
-			info, err := os.Stat(outputDir)
+			// Use cleaned path (without trailing separator) to match what we actually chmodded
+			outputDirToCheck := strings.TrimSuffix(outputDir, string(filepath.Separator))
+			if outputDirToCheck == "" {
+				outputDirToCheck = outputDir
+			}
+			outputDirToCheck = filepath.Clean(outputDirToCheck)
+			info, err := os.Stat(outputDirToCheck)
 			if err != nil {
 				t.Fatalf("Failed to stat output directory: %v", err)
 			}

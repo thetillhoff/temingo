@@ -33,6 +33,8 @@ func TestRender_PreservesPermissions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// t.TempDir() automatically cleans up all files/directories created within it
+			// when the test completes, even if the test fails or panics
 			inputDir := filepath.Join(tmpDir, "input")
 			outputDir := filepath.Join(tmpDir, "output")
 

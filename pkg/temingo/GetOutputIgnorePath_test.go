@@ -126,6 +126,8 @@ func TestGetOutputIgnorePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// t.TempDir() automatically cleans up all files/directories created within it
+			// when the test completes, even if the test fails or panics
 			inputDir, outputDir := tt.setup()
 
 			// Ensure paths end with separator to match actual usage
@@ -202,6 +204,8 @@ func TestGetOutputIgnorePath_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Same directory with different representations", func(t *testing.T) {
+		// t.TempDir() automatically cleans up all files/directories created within it
+		// when the test completes, even if the test fails or panics
 		inputDir := filepath.Join(tmpDir, "testdir")
 		os.MkdirAll(inputDir, 0755)
 
@@ -233,6 +237,8 @@ func TestGetOutputIgnorePath_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Deeply nested output directory", func(t *testing.T) {
+		// t.TempDir() automatically cleans up all files/directories created within it
+		// when the test completes, even if the test fails or panics
 		inputDir := filepath.Join(tmpDir, "input")
 		outputDir := filepath.Join(inputDir, "level1", "level2", "level3", "output")
 		os.MkdirAll(inputDir, 0755)

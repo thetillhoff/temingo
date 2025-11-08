@@ -2,7 +2,7 @@ package temingo
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,9 +14,21 @@ import (
 // If outputDir is inside inputDir (but not equal), it will be added to the ignore list at runtime to prevent loops.
 // Returns the ignore path (or empty string if output is outside input) and any error.
 // This function is used by Render() which needs the input/output comparison logic.
-func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bool) (string, error) {
+func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bool, logger *slog.Logger) (string, error) {
+	// Initialize logger if not provided (use default logger as fallback)
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	// Validate inputDir
-	info, err := os.Stat(inputDir)
+	// Handle trailing separator - if path ends with separator, try without it first
+	inputDirToCheck := strings.TrimSuffix(inputDir, string(filepath.Separator))
+	if inputDirToCheck == "" {
+		inputDirToCheck = inputDir
+	}
+	// Normalize the path to ensure consistent handling
+	inputDirToCheck = filepath.Clean(inputDirToCheck)
+	info, err := os.Stat(inputDirToCheck)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", fmt.Errorf("input directory does not exist: %s", inputDir)
@@ -28,20 +40,33 @@ func validateDirectories(inputDir string, outputDir string, noDeleteOutputDir bo
 	}
 
 	// Validate or create outputDir
-	info, err = os.Stat(outputDir)
+	// Handle trailing separator - if path ends with separator, try without it first
+	outputDirToCheck := strings.TrimSuffix(outputDir, string(filepath.Separator))
+	if outputDirToCheck == "" {
+		outputDirToCheck = outputDir
+	}
+	// Normalize the path to ensure consistent handling
+	outputDirToCheck = filepath.Clean(outputDirToCheck)
+	info, err = os.Stat(outputDirToCheck)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Get permissions from input directory to preserve them
-			inputInfo, err := os.Stat(inputDir)
+			inputInfo, err := os.Stat(inputDirToCheck)
 			if err != nil {
 				return "", fmt.Errorf("error getting input directory info: %w", err)
 			}
 			// Create output directory with same permissions as input directory
-			err = os.MkdirAll(outputDir, inputInfo.Mode().Perm())
+			// Use the cleaned path without separator for MkdirAll
+			err = os.MkdirAll(outputDirToCheck, inputInfo.Mode().Perm())
 			if err != nil {
 				return "", fmt.Errorf("error creating output directory %s: %w", outputDir, err)
 			}
-			log.Printf("Created output directory: %s", outputDir)
+			// Use Chmod to ensure exact permissions (MkdirAll may be affected by umask)
+			err = os.Chmod(outputDirToCheck, inputInfo.Mode().Perm())
+			if err != nil {
+				return "", fmt.Errorf("error setting output directory permissions %s: %w", outputDir, err)
+			}
+			logger.Info("Created output directory", "path", outputDir)
 		} else {
 			return "", fmt.Errorf("error accessing output directory %s: %w", outputDir, err)
 		}

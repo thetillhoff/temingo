@@ -1,7 +1,6 @@
 package temingo
 
 import (
-	"log"
 	"path"
 	"strings"
 
@@ -15,7 +14,9 @@ type Breadcrumb struct {
 	Path string
 }
 
-func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, renderedTemplatePath string, fileList fileIO.FileList, metaPaths []string) (map[string]interface{}, error) {
+func (engine Engine) generateMetaObjectForTemplatePath(renderedTemplatePath string, fileList fileIO.FileList, metaPaths []string) (map[string]interface{}, error) {
+	logger := engine.Logger
+
 	var (
 		err error
 
@@ -35,9 +36,7 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	meta["breadcrumbs"] = createBreadcrumbs(renderedTemplatePath)
 
 	// with .meta and .childMeta
-	if engine.Verbose {
-		log.Println("Searching metadata for", renderedTemplatePath)
-	}
+	logger.Debug("Searching metadata", "path", renderedTemplatePath)
 	meta["meta"], meta["childMeta"], err = engine.getMetaForTemplatePath(fileIO.FileList{Files: metaPaths}, renderedTemplatePath) // Contains aggregated meta yamls (up to parent dir, were children overwrite their parents values during the merge)
 	if err != nil {
 		return meta, err
@@ -46,9 +45,7 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	// with .content
 	markdownContentFiles := fileList.FilterByFolderPath(path.Dir(renderedTemplatePath)).FilterByFilename(engine.MarkdownContentFilename).Files
 	if len(markdownContentFiles) == 1 { // Can only be 1 at max
-		if engine.Verbose {
-			log.Println("Getting markdown content for", renderedTemplatePath)
-		}
+		logger.Debug("Getting markdown content", "path", renderedTemplatePath)
 		markdownContent, err := fileIO.ReadFile(path.Join(engine.InputDir, markdownContentFiles[0])) // Read file contents
 		if err != nil {
 			return meta, err
