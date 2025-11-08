@@ -115,6 +115,30 @@ Or with multiple variables:
 
 The function accepts any number of string arguments and concatenates them in order, returning a single combined string.
 
+#### `capitalize`
+
+The `capitalize` function capitalizes the first letter of each word in a string.
+
+**Syntax:**
+
+```go
+{{ capitalize <string> }}
+```
+
+**Parameters:**
+
+- `string` (string): The string to capitalize
+
+**Example:**
+
+```html
+{{ capitalize "hello world" }}
+<!-- Output: "Hello World" -->
+
+{{ capitalize .title }}
+<!-- Output: "My Blog Post" if .title is "my blog post" -->
+```
+
 <!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
   - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?

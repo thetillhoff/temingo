@@ -25,6 +25,7 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 	templateEngine = templateEngine.Funcs(template.FuncMap{
 		"concat":                 tmpl_concat,
 		"includeWithIndentation": tmpl_indent,
+		"capitalize":             tmpl_capitalize,
 	})
 
 	for _, partialFileContent := range partialFiles { // For each partialFile
