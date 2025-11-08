@@ -47,8 +47,9 @@ Temingo by default takes all other files (static) and copies them into the outpu
 Temingo by default takes all `*.partial*` files as intermediate templates / snippets
 
 - [x] the defined intermediate template names must be globally unique so they can be imported properly later. Temingo verifies the uniqueness.
-- [x] partials are added automatically with path, `partial/page.partial.html` is the automatic default name for that partial.
+- [x] partials are added automatically with path, `partials/page.partial.html` is the automatic default name for that partial.
 - [x] it's not needed to add the `{{define ...}} ... {{ end }}` part to partials, it's added automatically.
+- [x] partials can be included using the built-in `template` action: `{{ template "partials/header.partial.html" . }}`
 - [ ] allow globs for including templates, for example `{{ template "*.partial.css" . }}`, also for subfolders
 
 ### Template Functions
