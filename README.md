@@ -127,8 +127,34 @@ The function accepts any number of string arguments and concatenates them in ord
 Temingo by default passes the following metadata to the rendering:
 
 - [ ] pass global variables like datetime (globally equal renderTime only)
-- [x] `.meta.path` contains the rendered template path
-- [x] `.meta.breadcrumbs` contains a slice of the folder hierarchy for each template
+- [x] `.path` contains the rendered template path
+- [x] `.breadcrumbs` contains a slice of breadcrumb objects with `Name` and `Path` fields representing the folder hierarchy
+
+#### Breadcrumbs
+
+Breadcrumbs represent the parent directory structure, excluding the directory containing the current `index.html` file. Each breadcrumb has:
+
+- `Name`: The directory name
+- `Path`: The full path to that directory (e.g., `/blog` or `/blog/posts`)
+
+**Examples:**
+
+- `index.html` → `[]` (empty)
+- `blog/index.html` → `[]` (empty, no parent)
+- `blog/posts/index.html` → `[{Name: "blog", Path: "/blog"}]`
+- `blog/posts/2024/index.html` → `[{Name: "blog", Path: "/blog"}, {Name: "posts", Path: "/blog/posts"}]`
+
+**Template usage:**
+
+```html
+<nav aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  {{ range .breadcrumbs }}
+  <span>/</span>
+  <a href="{{ .Path }}">{{ .Name }}</a>
+  {{ end }}
+</nav>
+```
 
 ### Metadata hierarchy
 
@@ -141,9 +167,45 @@ Temingo by default aggregates the metadata that is passed to the rendering as fo
 ### Metadata child list
 
 For each `*.template*` file, temingo by default searches for all `./*/meta.yaml`s (in all folders that are one level further down from the template file) and adds them as `.childMeta.<foldername>.<content-object>` pair to the template.
-This means you can iterate over them and for example generate links for them.
 
-<!-- optional TODO have a path that can be set in the template, for which the files can be read -->
+This enables you to dynamically generate navigation menus, listing pages, or iterate over child items. Each child's metadata is automatically merged with the parent's metadata, so parent values are inherited.
+
+**Example structure:**
+
+```text
+src/
+  blog/
+    index.template.html
+    post1/
+      meta.yaml  # { title: "First Post", date: "2024-01-01" }
+    post2/
+      meta.yaml  # { title: "Second Post", date: "2024-01-02" }
+```
+
+**In `blog/index.template.html`:**
+
+```html
+<ul>
+  {{ range $folderName, $meta := .childMeta }}
+  <li>
+    <a href="/blog/{{ $folderName }}">{{ $meta.title }}</a>
+    <span>{{ $meta.date }}</span>
+  </li>
+  {{ else }}
+  <li>No posts yet</li>
+  {{ end }}
+</ul>
+```
+
+**Accessing individual children:**
+
+```html
+{{ if .childMeta.post1 }}
+<p>Latest post: {{ .childMeta.post1.title }}</p>
+{{ end }}
+```
+
+**Note:** This feature loads metadata from direct child directories only (one level down). Each child's metadata is merged with the parent metadata, so you can access both child-specific and inherited values.
 
 ### Metatemplates
 
@@ -323,10 +385,10 @@ Here's a list of variables that are passed to each template rendering process:
 
 ```text
 ["path"] = string -> path to template (within `./src/`)
-["breadcrumbs"] = []string -> path to location of template, split by '/'
-["meta"] = map[string]object -> aggregated metadata for current folder
-["childMeta"] = map[string]object -> metadata of subfolders, key is the folder name containing the respective metadata
-["<key>"] = map[string]string -> custom values passed via --value flags
+["breadcrumbs"] = []Breadcrumb -> breadcrumb objects with Name and Path fields (see Breadcrumbs section above for details)
+["meta"] = map[string]object -> aggregated metadata for current folder (merged from parent directories)
+["childMeta"] = map[string]object -> metadata of direct child subfolders, key is the folder name. Each child's metadata is merged with parent metadata. Use this to generate navigation menus or listing pages.
+["<key>"] = map[string]string -> custom values passed via --value flags or --valuesfile
 ["content"] = string -> markdown content converted to HTML (if content.md exists)
 ```
 

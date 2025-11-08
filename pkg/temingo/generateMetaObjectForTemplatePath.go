@@ -9,14 +9,17 @@ import (
 	"github.com/thetillhoff/temingo/pkg/markdown2html"
 )
 
+// Breadcrumb represents a single breadcrumb with its name and path
+type Breadcrumb struct {
+	Name string
+	Path string
+}
+
 func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, renderedTemplatePath string, fileList fileIO.FileList, metaPaths []string) (map[string]interface{}, error) {
 	var (
 		err error
 
 		meta map[string]interface{}
-
-		templateDir string
-		breadcrumbs []string
 	)
 
 	// Create meta values object
@@ -25,19 +28,11 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	// with .path
 	meta["path"] = renderedTemplatePath // Path to the current file (without `src/` or `output/`)
 
+	// with .breadcrumbs
 	// example for renderedTemplatePath: a/b/c/index.html
-	// expected breadcrumbs in that case: ["a","b"]
+	// expected breadcrumbs in that case: [{Name: "a", Path: "/a"}, {Name: "b", Path: "/a/b"}]
 	// c should not be added, as the index.html is meant for that folder
-	templateDir = path.Dir(path.Dir(renderedTemplatePath)) // removing the filename and going one folder up
-	breadcrumbs = strings.Split(templateDir, "/")          // Breadcrumbs to the current file
-	if len(breadcrumbs) == 1 && breadcrumbs[0] == "." {    // If there are no breadcrumbs to be added
-		breadcrumbs = []string{} // Set breadcrumbs to empty, as there are none
-	}
-	meta["breadcrumbs"] = breadcrumbs // Breadcrumbs to the current file
-	templateDir = ""                  // contains full path
-	for _, breadcrumb := range breadcrumbs {
-		templateDir = path.Join(templateDir, breadcrumb)
-	}
+	meta["breadcrumbs"] = createBreadcrumbs(renderedTemplatePath)
 
 	// with .meta and .childMeta
 	if engine.Verbose {
@@ -71,5 +66,62 @@ func (engine Engine) generateMetaObjectForTemplatePath(templatePath string, rend
 	}
 
 	return meta, nil
+}
 
+// createBreadcrumbs creates breadcrumb structs from a rendered template path
+// Breadcrumbs represent parent directories, excluding the directory containing the index.html
+// Examples:
+//   - "index.html" -> [] (empty)
+//   - "a/index.html" -> [] (empty, no parent)
+//   - "a/b/index.html" -> [{Name: "a", Path: "/a"}]
+//   - "a/b/c/index.html" -> [{Name: "a", Path: "/a"}, {Name: "b", Path: "/a/b"}]
+func createBreadcrumbs(renderedTemplatePath string) []Breadcrumb {
+	// Remove filename: "a/b/c/index.html" -> "a/b/c"
+	templateDir := path.Dir(renderedTemplatePath)
+
+	// Go one folder up to get parent directory: "a/b/c" -> "a/b"
+	parentDir := path.Dir(templateDir)
+
+	// If parentDir is "." (root), return empty breadcrumbs
+	// This handles cases like "index.html" and "a/index.html"
+	if parentDir == "." {
+		return []Breadcrumb{}
+	}
+
+	// Split into directory names
+	dirNames := strings.Split(parentDir, "/")
+
+	// Filter out empty strings and "." (root)
+	var cleanDirNames []string
+	for _, name := range dirNames {
+		if name != "" && name != "." {
+			cleanDirNames = append(cleanDirNames, name)
+		}
+	}
+
+	// If no breadcrumbs, return empty slice
+	if len(cleanDirNames) == 0 {
+		return []Breadcrumb{}
+	}
+
+	// Build breadcrumbs with accumulated paths
+	breadcrumbs := []Breadcrumb{}
+	currentPath := ""
+
+	for _, dirName := range cleanDirNames {
+		// Build path incrementally
+		if currentPath == "" {
+			currentPath = "/" + dirName
+		} else {
+			currentPath = currentPath + "/" + dirName
+		}
+
+		breadcrumb := Breadcrumb{
+			Name: dirName,
+			Path: currentPath,
+		}
+		breadcrumbs = append(breadcrumbs, breadcrumb)
+	}
+
+	return breadcrumbs
 }
