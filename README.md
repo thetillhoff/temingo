@@ -12,8 +12,13 @@ Temingo supports
 <!-- (- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...) -->
 - meta-type templates (== multi-file-output templates) that can be used to render multiple output files,
 - static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files which are used for meta-type templates, and values files specified via `--valuesfile`),
-- an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process.
-- a watch mechanism to trigger a rebuild of the output directory if necessary, which continously checks if there are filechanges in the input directory or the `.temingoignore`/
+- an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process,
+- a watch mechanism to trigger a rebuild of the output directory if necessary, which continuously checks if there are file changes in the input directory or the `.temingoignore`,
+- an integrated webserver for local development,
+- custom template values via CLI flags or YAML files,
+- markdown content support with automatic HTML conversion,
+- breadcrumb navigation support,
+<!-- - HTML beautification for readable output. -->
 
 ## Installation
 
@@ -247,9 +252,11 @@ Temingo by default processes markdown files as follows:
 <!-- Temingo by default reads configuration settings from a `~/.temingo.yaml` file and a `./.temingo.yaml` file. -->
 <!-- TODO verify config file support -->
 
-### Watch-mode
+### Watch mode
 
-- [x] add --watch / -w flag for watching for file changes in the source folder
+- [x] `--watch` / `-w` flag for watching for file changes in the source folder
+  - [x] Automatically rebuilds output when files change
+  - [x] Watches input directory, `.temingoignore` file, and values files
 - [ ] partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
       fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
 - [ ] don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
@@ -258,13 +265,18 @@ Temingo by default processes markdown files as follows:
 
 ### Integrated simple webserver
 
-- [x] add --serve / -s flag for running a simple integrated webserver directly on the output folder.
-- [x] Webserver only listens on `127.0.0.1` for security (local connections only)
+- [x] `--serve` / `-s` flag for running a simple integrated webserver directly on the output folder
+  - [x] Webserver only listens on `127.0.0.1` for security (local connections only)
+  - [x] Can be combined with `--watch` for automatic rebuilds on file changes
 
 ### Project initialization
 
 - [x] `temingo init example` command to generate sample project
 - [x] Only creates files if the input directory doesn't already exist
+
+### Version information
+
+- [x] `temingo version` command to print the current build version
 
 ### Custom template values
 
@@ -275,11 +287,28 @@ Temingo by default processes markdown files as follows:
 - [x] Values are accessible in templates via `.<key>`
 - [x] CLI values override values from files when both are provided
 
+### Dry-run mode
+
+- [x] `--dry-run` flag to preview what would be built without actually writing files
+
+### Verbose mode
+
+- [x] `--verbose` / `-v` flag to enable detailed logging
+- [x] Provides additional information about the rendering process
+- [x] Useful for debugging and understanding what temingo is doing
+
 ### Output directory management
 
 - [x] `--noDeleteOutputDir` flag to preserve existing output directory contents instead of recreating it from scratch.
       This only overwrites the rendered template files.
       Thus, it's possible to have inputDir==outputDir.
+
+### Directory validation
+
+- [x] Early validation of input and output directories before processing
+- [x] Verifies that input directory exists and is a directory
+- [x] Verifies that output directory exists and is a directory (or creates it if it doesn't exist)
+- [x] Prevents output directory from being inside or equal to input directory
 
 ### Optimizations
 
@@ -306,16 +335,11 @@ Temingo by default processes markdown files as follows:
 
 #### Beautify
 
-TBD
-
-- is it good to do this there? Wouldn't it be better to use something else instead? Linux approach, do one thing, but do it good.
-
-This is currently enabled by default.
-
-- [ ] add flag / setting
-- [x] beautify html
-- [ ] beautify css
-- [ ] beautify js
+- [x] HTML beautification is enabled by default
+- [x] Automatically formats HTML output for better readability
+- [x] Supports `.html` files
+- [ ] Supports `.css` files
+- [ ] Supports `.js` files
 
 #### Minify
 
