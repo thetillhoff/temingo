@@ -7,8 +7,6 @@ import (
 )
 
 func TestRender_PreservesPermissions(t *testing.T) {
-	tmpDir := t.TempDir()
-
 	tests := []struct {
 		name        string
 		inputPerm   os.FileMode
@@ -33,6 +31,8 @@ func TestRender_PreservesPermissions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a new tmpDir for each test case to ensure isolation
+			tmpDir := t.TempDir()
 			// t.TempDir() automatically cleans up all files/directories created within it
 			// when the test completes, even if the test fails or panics
 			inputDir := filepath.Join(tmpDir, "input")
