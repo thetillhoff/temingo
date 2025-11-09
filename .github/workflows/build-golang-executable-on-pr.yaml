@@ -20,3 +20,4 @@ jobs:
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
+          BUILDARGS: -ldflags="-X main.version=${{ github.ref_name }}"

@@ -1,5 +1,7 @@
 # temingo
 
+[![Go Report Card](https://goreportcard.com/badge/thetillhoff/temingo)](https://goreportcard.com/report/thetillhoff/temingo)
+
 This software aims to provide a simple but powerful templating mechanism.
 
 The original idea was to create a simple static site generator, which is not as overloaded with "unnecessary functionality" as f.e. hugo.

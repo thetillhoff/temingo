@@ -35,7 +35,7 @@ jobs:
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
-          BUILDARGS: -ldflags="-X 'github.com/thetillhoff/temingo/cmd.version=${{ github.ref_name }}'"
+          BUILDARGS: -ldflags="-X main.version=${{ github.ref_name }}"
 
   release-artifacts:
     needs:
@@ -48,3 +48,4 @@ jobs:
       - uses: thetillhoff/action-release-artifacts@v0.3.0
         with:
           RELEASE_BODY: "${{needs.release-prerequisites.outputs.RELEASE_BODY}}"
+      - uses: thetillhoff/action-goreportcard-refresh@v1.0.2
