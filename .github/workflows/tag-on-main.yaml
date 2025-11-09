@@ -1,0 +1,83 @@
+name: Automatically create patch releases when renovate merges a PR to main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  verify-commit-author:
+    runs-on: ubuntu-latest
+    outputs:
+      SHOULD_RELEASE: ${{ steps.check.outputs.SHOULD_RELEASE }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: check
+        run: |
+          COMMIT_AUTHOR=$(git -c core.pager=cat log -1 --pretty=format:"%ae")
+          echo "Commit author: $COMMIT_AUTHOR"
+
+          if ! echo "$COMMIT_AUTHOR" | grep -i 'renovate[bot]@users.noreply.github.com' > /dev/null; then
+            echo "Commit author is not renovate bot. Skipping patch version creation."
+            echo "SHOULD_RELEASE=false" >> $GITHUB_OUTPUT
+          else
+            echo "SHOULD_RELEASE=true" >> $GITHUB_OUTPUT
+          fi
+
+  determine-version:
+    needs: verify-commit-author
+    runs-on: ubuntu-latest
+    if: needs.verify-commit-author.outputs.SHOULD_RELEASE == 'true'
+    outputs:
+      CURRENT_VERSION: ${{ steps.versions.outputs.CURRENT_VERSION }}
+      NEW_VERSION: ${{ steps.versions.outputs.NEW_VERSION }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: versions
+        run: |
+          CURRENT_VERSION=$(git describe --tags --abbrev=0)
+          NEW_VERSION=v$(npx semver "$CURRENT_VERSION" -i patch)
+
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  update-changelog:
+    needs: determine-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Update CHANGELOG
+        run: |
+          NEW_VERSION="${{ needs.determine-version.outputs.NEW_VERSION }}"
+
+          # Find the line number of the first version entry
+          grep '^## v' CHANGELOG.md # Verify that there is at least one version entry
+          FIRST_VERSION_LINE=$(grep -n '^## v' CHANGELOG.md | head -1 | cut -d: -f1)
+
+          sed -i "${FIRST_VERSION_LINE}i## ${NEW_VERSION}\n\nUpdated dependencies.\n" CHANGELOG.md
+
+      - name: Commit and push CHANGELOG
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Add CHANGELOG entry for ${NEW_VERSION}"
+          git push
+
+  git-tag:
+    needs:
+      - determine-version
+      - update-changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          git tag "${{ needs.determine-version.outputs.NEW_VERSION }}"
+          git push origin "${{ needs.determine-version.outputs.NEW_VERSION }}"
