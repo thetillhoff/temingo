@@ -24,7 +24,9 @@ func TestGetMetaForTemplatePath(t *testing.T) {
 			templatePath: "index.html",
 			setup: func(tmpDir string) (fileIO.FileList, []string, error) {
 				inputDir := filepath.Join(tmpDir, "input")
-				os.MkdirAll(inputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					return fileIO.FileList{}, []string{}, err
+				}
 				return fileIO.FileList{
 					Files: []string{},
 					Path:  inputDir,

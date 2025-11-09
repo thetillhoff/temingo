@@ -58,8 +58,12 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 			renderedTemplatePath: "about/index.html",
 			setup: func(tmpDir string) (fileIO.FileList, []string, error) {
 				inputDir := filepath.Join(tmpDir, "input")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(filepath.Join(inputDir, "about"), 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					return fileIO.FileList{}, []string{}, err
+				}
+				if err := os.MkdirAll(filepath.Join(inputDir, "about"), 0755); err != nil {
+					return fileIO.FileList{}, []string{}, err
+				}
 
 				// Create markdown content file
 				contentFile := filepath.Join(inputDir, "about", "content.md")
@@ -86,8 +90,12 @@ func TestGenerateMetaObjectForTemplatePath(t *testing.T) {
 			renderedTemplatePath: "blog/index.html",
 			setup: func(tmpDir string) (fileIO.FileList, []string, error) {
 				inputDir := filepath.Join(tmpDir, "input")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(filepath.Join(inputDir, "blog"), 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					return fileIO.FileList{}, []string{}, err
+				}
+				if err := os.MkdirAll(filepath.Join(inputDir, "blog"), 0755); err != nil {
+					return fileIO.FileList{}, []string{}, err
+				}
 
 				// Create meta.yaml file
 				metaFile := filepath.Join(inputDir, "blog", "meta.yaml")

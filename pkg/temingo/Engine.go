@@ -26,7 +26,7 @@ type Engine struct {
 
 // DefaultEngine returns an engine with default values
 func DefaultEngine() Engine {
-	var level slog.Level = slog.LevelInfo
+	level := slog.LevelInfo
 	opts := &slog.HandlerOptions{
 		Level: level,
 	}

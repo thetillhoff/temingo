@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 'v4.5.0'
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
+      - id: destroyed-symlinks
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: 'v0.5.1'
+    hooks:
+      - id: go-fmt
+      - id: go-vet # >1s
+      # - id: go-critic # >1s
+      # - id: go-cyclo
+      #   args: [-over=15]
+      - id: go-unit-tests
+      - id: go-mod-tidy
+      - id: golangci-lint
+      - id: go-unit-tests

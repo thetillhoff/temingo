@@ -12,8 +12,8 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		name           string
 		inputDir       string
 		outputDir      string
-		setup          func(tmpDir string) (string, string) // Returns (inputDir, outputDir)
-		wantRel        string                               // Expected relative path
+		setup          func(t *testing.T, tmpDir string) (string, string) // Returns (inputDir, outputDir)
+		wantRel        string                                             // Expected relative path
 		wantErr        bool
 		errContains    string
 		description    string
@@ -22,11 +22,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 	}{
 		{
 			name: "outputDir inside inputDir",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(inputDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        "output",
@@ -37,9 +41,11 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "outputDir equals inputDir",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "same")
-				os.MkdirAll(inputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
 				return inputDir, inputDir
 			},
 			wantRel:        ".",
@@ -50,11 +56,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "outputDir outside inputDir",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        "../output",
@@ -65,11 +75,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "Nested outputDir",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(inputDir, "nested", "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        filepath.Join("nested", "output"),
@@ -80,11 +94,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "outputDir in sibling directory",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "sibling", "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        filepath.Join("..", "sibling", "output"),
@@ -95,11 +113,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "Paths with trailing slashes",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input") + string(filepath.Separator)
 				outputDir := filepath.Join(tmpDir, "input", "output") + string(filepath.Separator)
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        "output",
@@ -110,11 +132,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "Output in parent directory",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "nested", "input")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        filepath.Join("..", "..", "output"),
@@ -125,11 +151,15 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 		},
 		{
 			name: "outputDir in subdirectory of inputDir",
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(inputDir, "subdir", "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantRel:        filepath.Join("subdir", "output"),
@@ -143,7 +173,7 @@ func TestGetAbsolutePathsAndRelativePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			inputDir, outputDir := tt.setup(tmpDir)
+			inputDir, outputDir := tt.setup(t, tmpDir)
 
 			gotAbsInput, gotAbsOutput, gotRel, err := getAbsolutePathsAndRelativePath(inputDir, outputDir)
 
@@ -185,8 +215,12 @@ func TestGetAbsolutePathsAndRelativePath_EdgeCases(t *testing.T) {
 		tmpDir := t.TempDir()
 		inputDir := filepath.Join(tmpDir, "input")
 		outputDir := filepath.Join(inputDir, "output")
-		os.MkdirAll(inputDir, 0755)
-		os.MkdirAll(outputDir, 0755)
+		if err := os.MkdirAll(inputDir, 0755); err != nil {
+			t.Fatalf("Failed to create input directory: %v", err)
+		}
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			t.Fatalf("Failed to create output directory: %v", err)
+		}
 
 		gotAbsInput, gotAbsOutput, gotRel, err := getAbsolutePathsAndRelativePath(inputDir, outputDir)
 		if err != nil {
@@ -209,7 +243,9 @@ func TestGetAbsolutePathsAndRelativePath_EdgeCases(t *testing.T) {
 	t.Run("Same directory with different representations", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		inputDir := filepath.Join(tmpDir, "testdir")
-		os.MkdirAll(inputDir, 0755)
+		if err := os.MkdirAll(inputDir, 0755); err != nil {
+			t.Fatalf("Failed to create input directory: %v", err)
+		}
 
 		testCases := []struct {
 			input  string
@@ -246,8 +282,12 @@ func TestGetAbsolutePathsAndRelativePath_EdgeCases(t *testing.T) {
 		tmpDir := t.TempDir()
 		inputDir := filepath.Join(tmpDir, "input")
 		outputDir := filepath.Join(inputDir, "level1", "level2", "level3", "output")
-		os.MkdirAll(inputDir, 0755)
-		os.MkdirAll(outputDir, 0755)
+		if err := os.MkdirAll(inputDir, 0755); err != nil {
+			t.Fatalf("Failed to create input directory: %v", err)
+		}
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			t.Fatalf("Failed to create output directory: %v", err)
+		}
 
 		gotAbsInput, gotAbsOutput, gotRel, err := getAbsolutePathsAndRelativePath(inputDir, outputDir)
 		if err != nil {

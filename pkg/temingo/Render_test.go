@@ -15,7 +15,9 @@ func TestRender_BasicTemplate(t *testing.T) {
 	outputDir := filepath.Join(tmpDir, "output")
 
 	// Create input directory structure
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create a simple template
 	templateFile := filepath.Join(inputDir, "index.template.html")
@@ -24,7 +26,9 @@ func TestRender_BasicTemplate(t *testing.T) {
 <head><title>{{ .path }}</title></head>
 <body><h1>Hello {{ .path }}</h1></body>
 </html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	// Create engine and render
 	engine := DefaultEngine()
@@ -66,18 +70,24 @@ func TestRender_WithPartials(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create partial
 	partialFile := filepath.Join(inputDir, "header.partial.html")
 	partialContent := `<header>Header Content</header>`
-	os.WriteFile(partialFile, []byte(partialContent), 0644)
+	if err := os.WriteFile(partialFile, []byte(partialContent), 0644); err != nil {
+		t.Fatalf("Failed to write partial file: %v", err)
+	}
 
 	// Create template using partial
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `{{ template "header.partial.html" }}
 <main>Main Content</main>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -111,18 +121,26 @@ func TestRender_WithStaticFiles(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
-	os.MkdirAll(filepath.Join(inputDir, "static"), 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(inputDir, "static"), 0755); err != nil {
+		t.Fatalf("Failed to create static directory: %v", err)
+	}
 
 	// Create static file
 	staticFile := filepath.Join(inputDir, "static", "style.css")
 	staticContent := `body { color: red; }`
-	os.WriteFile(staticFile, []byte(staticContent), 0644)
+	if err := os.WriteFile(staticFile, []byte(staticContent), 0644); err != nil {
+		t.Fatalf("Failed to write static file: %v", err)
+	}
 
 	// Create template
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><head><link rel="stylesheet" href="/static/style.css"></head></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -157,12 +175,16 @@ func TestRender_WithValues(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create template using values
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><head><title>{{ .siteName }}</title></head><body>Version: {{ .version }}</body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -200,12 +222,16 @@ func TestRender_DryRun(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create template
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><body>Test</body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -232,20 +258,28 @@ func TestRender_WithTemingoignore(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create template
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><body>Test</body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	// Create file that should be ignored
 	ignoredFile := filepath.Join(inputDir, "ignored.template.html")
-	os.WriteFile(ignoredFile, []byte("ignored"), 0644)
+	if err := os.WriteFile(ignoredFile, []byte("ignored"), 0644); err != nil {
+		t.Fatalf("Failed to write ignored file: %v", err)
+	}
 
 	// Create .temingoignore file
 	ignoreFile := filepath.Join(tmpDir, ".temingoignore")
-	os.WriteFile(ignoreFile, []byte("ignored.template.html"), 0644)
+	if err := os.WriteFile(ignoreFile, []byte("ignored.template.html"), 0644); err != nil {
+		t.Fatalf("Failed to write ignore file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -278,17 +312,25 @@ func TestRender_NoDeleteOutputDir(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
-	os.MkdirAll(outputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
 
 	// Create existing file in output directory
 	existingFile := filepath.Join(outputDir, "existing.txt")
-	os.WriteFile(existingFile, []byte("existing"), 0644)
+	if err := os.WriteFile(existingFile, []byte("existing"), 0644); err != nil {
+		t.Fatalf("Failed to write existing file: %v", err)
+	}
 
 	// Create template
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><body>Test</body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -320,7 +362,9 @@ func TestRender_TemplateHelperFunctions(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create template using helper functions
 	templateFile := filepath.Join(inputDir, "index.template.html")
@@ -331,7 +375,9 @@ func TestRender_TemplateHelperFunctions(t *testing.T) {
 <pre>{{ includeWithIndentation 2 "line1\nline2" }}</pre>
 </body>
 </html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -372,7 +418,9 @@ func TestRender_EmptyInputDirectory(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -392,12 +440,16 @@ func TestRender_InvalidTemplate(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create template with invalid syntax
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><body>{{ .invalid.syntax }}</body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)

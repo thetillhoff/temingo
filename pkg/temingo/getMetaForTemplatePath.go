@@ -16,8 +16,8 @@ func (engine *Engine) getMetaForTemplatePath(metaTemplatePaths fileIO.FileList, 
 
 	var (
 		err       error
-		meta      interface{}                                       // meta object for templatepath -> {meta}
-		childMeta map[string]interface{} = map[string]interface{}{} // meta object for each childPath -> childMeta[childname]{meta}
+		meta      interface{}                // meta object for templatepath -> {meta}
+		childMeta = map[string]interface{}{} // meta object for each childPath -> childMeta[childname]{meta}
 
 		metaContent   []byte
 		parsedContent interface{}

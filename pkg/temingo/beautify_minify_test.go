@@ -118,12 +118,16 @@ func TestRender_WithBeautify(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create a template with unformatted HTML
 	templateFile := filepath.Join(inputDir, "index.template.html")
 	templateContent := `<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)
@@ -157,7 +161,9 @@ func TestRender_WithMinify(t *testing.T) {
 	inputDir := filepath.Join(tmpDir, "input")
 	outputDir := filepath.Join(tmpDir, "output")
 
-	os.MkdirAll(inputDir, 0755)
+	if err := os.MkdirAll(inputDir, 0755); err != nil {
+		t.Fatalf("Failed to create input directory: %v", err)
+	}
 
 	// Create a template with formatted HTML
 	templateFile := filepath.Join(inputDir, "index.template.html")
@@ -169,7 +175,9 @@ func TestRender_WithMinify(t *testing.T) {
 	<h1>Hello</h1>
 </body>
 </html>`
-	os.WriteFile(templateFile, []byte(templateContent), 0644)
+	if err := os.WriteFile(templateFile, []byte(templateContent), 0644); err != nil {
+		t.Fatalf("Failed to write template file: %v", err)
+	}
 
 	engine := DefaultEngine()
 	engine.InputDir = inputDir + string(filepath.Separator)

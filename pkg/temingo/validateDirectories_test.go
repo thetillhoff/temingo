@@ -13,7 +13,7 @@ func TestValidateDirectories(t *testing.T) {
 		inputDir          string
 		outputDir         string
 		noDeleteOutputDir bool
-		setup             func(tmpDir string) (string, string) // Returns (inputDir, outputDir)
+		setup             func(t *testing.T, tmpDir string) (string, string) // Returns (inputDir, outputDir)
 		cleanup           func(string, string)
 		wantErr           bool
 		errContains       string
@@ -22,11 +22,15 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Valid separate directories",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantErr:        false,
@@ -35,10 +39,12 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input directory does not exist",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "nonexistent")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantErr:     true,
@@ -47,10 +53,12 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output directory does not exist - should be created",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(inputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantErr: false,
@@ -58,9 +66,11 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input equals output without --noDeleteOutputDir - should fail",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "same")
-				os.MkdirAll(inputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
 				return inputDir, inputDir
 			},
 			wantErr:     true,
@@ -69,9 +79,11 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input equals output with --noDeleteOutputDir - should succeed",
 			noDeleteOutputDir: true,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "same")
-				os.MkdirAll(inputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
 				return inputDir, inputDir
 			},
 			wantErr:        false,
@@ -80,11 +92,15 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output inside input - should succeed (will be ignored at runtime)",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(inputDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantErr:        false,
@@ -93,11 +109,15 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Input is a file, not a directory",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputFile := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "output")
-				os.WriteFile(inputFile, []byte("test"), 0644)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.WriteFile(inputFile, []byte("test"), 0644); err != nil {
+					t.Fatalf("Failed to write input file: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputFile, outputDir
 			},
 			wantErr:     true,
@@ -106,11 +126,15 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output is a file, not a directory",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputFile := filepath.Join(tmpDir, "output")
-				os.MkdirAll(inputDir, 0755)
-				os.WriteFile(outputFile, []byte("test"), 0644)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.WriteFile(outputFile, []byte("test"), 0644); err != nil {
+					t.Fatalf("Failed to write output file: %v", err)
+				}
 				return inputDir, outputFile
 			},
 			wantErr:     true,
@@ -119,11 +143,15 @@ func TestValidateDirectories(t *testing.T) {
 		{
 			name:              "Output outside input - should succeed",
 			noDeleteOutputDir: false,
-			setup: func(tmpDir string) (string, string) {
+			setup: func(t *testing.T, tmpDir string) (string, string) {
 				inputDir := filepath.Join(tmpDir, "input")
 				outputDir := filepath.Join(tmpDir, "..", "output")
-				os.MkdirAll(inputDir, 0755)
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(inputDir, 0755); err != nil {
+					t.Fatalf("Failed to create input directory: %v", err)
+				}
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return inputDir, outputDir
 			},
 			wantErr:        false,
@@ -137,7 +165,7 @@ func TestValidateDirectories(t *testing.T) {
 			tmpDir := t.TempDir()
 			// t.TempDir() automatically cleans up all files/directories created within it
 			// when the test completes, even if the test fails or panics
-			inputDir, outputDir := tt.setup(tmpDir)
+			inputDir, outputDir := tt.setup(t, tmpDir)
 
 			// Ensure paths end with separator to match actual usage
 			if !strings.HasSuffix(inputDir, string(filepath.Separator)) {

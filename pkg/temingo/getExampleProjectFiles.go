@@ -23,7 +23,7 @@ func (engine *Engine) getExampleProjectFiles(projectType string) (map[string][]b
 
 	var (
 		err                 error
-		exampleProjectFiles map[string][]byte = map[string][]byte{}
+		exampleProjectFiles = map[string][]byte{}
 		modifiedTreepath    string
 	)
 

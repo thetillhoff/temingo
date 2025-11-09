@@ -11,14 +11,14 @@ func TestEnsureOutputDirectory(t *testing.T) {
 	tests := []struct {
 		name        string
 		outputDir   string
-		setup       func(tmpDir string) string // Returns outputDir
+		setup       func(t *testing.T, tmpDir string) string // Returns outputDir
 		wantErr     bool
 		errContains string
 		description string
 	}{
 		{
 			name: "Output directory does not exist - should be created",
-			setup: func(tmpDir string) string {
+			setup: func(t *testing.T, tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "output")
 				// Don't create it - let ensureOutputDirectory create it
 				return outputDir
@@ -28,9 +28,11 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Output directory already exists - should succeed",
-			setup: func(tmpDir string) string {
+			setup: func(t *testing.T, tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "output")
-				os.MkdirAll(outputDir, 0755)
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("Failed to create output directory: %v", err)
+				}
 				return outputDir
 			},
 			wantErr:     false,
@@ -38,9 +40,11 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Output is a file, not a directory - should fail",
-			setup: func(tmpDir string) string {
+			setup: func(t *testing.T, tmpDir string) string {
 				outputFile := filepath.Join(tmpDir, "output")
-				os.WriteFile(outputFile, []byte("test"), 0644)
+				if err := os.WriteFile(outputFile, []byte("test"), 0644); err != nil {
+					t.Fatalf("Failed to write output file: %v", err)
+				}
 				return outputFile
 			},
 			wantErr:     true,
@@ -49,7 +53,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 		},
 		{
 			name: "Nested output directory does not exist - should be created",
-			setup: func(tmpDir string) string {
+			setup: func(t *testing.T, tmpDir string) string {
 				outputDir := filepath.Join(tmpDir, "nested", "output", "dir")
 				// Don't create it - let ensureOutputDirectory create it
 				return outputDir
@@ -65,7 +69,7 @@ func TestEnsureOutputDirectory(t *testing.T) {
 			tmpDir := t.TempDir()
 			// t.TempDir() automatically cleans up all files/directories created within it
 			// when the test completes, even if the test fails or panics
-			outputDir := tt.setup(tmpDir)
+			outputDir := tt.setup(t, tmpDir)
 
 			// Ensure path ends with separator to match actual usage
 			if !strings.HasSuffix(outputDir, string(filepath.Separator)) {

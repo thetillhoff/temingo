@@ -12,7 +12,7 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 	var (
 		err error
 
-		outputBuffer *bytes.Buffer = new(bytes.Buffer)
+		outputBuffer = new(bytes.Buffer)
 	)
 
 	logger.Debug("Meta object for template", "path", templatePath, "meta", meta)
@@ -28,7 +28,9 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 	})
 
 	for _, partialFileContent := range partialFiles { // For each partialFile
-		templateEngine.Parse(partialFileContent) // Parse the partials contained in it
+		if _, err = templateEngine.Parse(partialFileContent); err != nil { // Parse the partials contained in it
+			return nil, err
+		}
 	}
 
 	_, err = templateEngine.Parse(templateContent) // Parse the template
