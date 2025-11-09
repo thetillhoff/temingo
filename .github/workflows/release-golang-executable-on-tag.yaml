@@ -14,7 +14,7 @@ jobs:
       RELEASE_BODY: ${{ steps.release-prerequisites.outputs.RELEASE_BODY }}
     steps:
       - id: release-prerequisites
-        uses: thetillhoff/action-release-prerequisites@v0.2.0
+        uses: thetillhoff/action-release-prerequisites@2798dc58246a51ae1e38f8ecc114d4048e37b0fb # v0.2.0
 
   golang-build:
     needs: release-prerequisites
@@ -31,7 +31,7 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: thetillhoff/action-golang-build@v0.2.0
+      - uses: thetillhoff/action-golang-build@cb6b769961c656030876b3a7aef26daac6f695a4 # v0.2.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
@@ -45,7 +45,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: thetillhoff/action-release-artifacts@v0.3.0
+      - uses: thetillhoff/action-release-artifacts@3f6c6d7d194966344351e8efac5d14f12a283100 # v0.3.0
         with:
           RELEASE_BODY: "${{needs.release-prerequisites.outputs.RELEASE_BODY}}"
-      - uses: thetillhoff/action-goreportcard-refresh@v1.0.2
+      - uses: thetillhoff/action-goreportcard-refresh@65a4101f740741a11fe0d1e254f7fc84b491879a # v1.0.2
