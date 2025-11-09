@@ -16,7 +16,7 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: thetillhoff/action-golang-build@v0.2.0
+      - uses: thetillhoff/action-golang-build@cb6b769961c656030876b3a7aef26daac6f695a4 # v0.2.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
