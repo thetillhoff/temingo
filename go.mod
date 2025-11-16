@@ -21,5 +21,5 @@ require (
 require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
 	github.com/thetillhoff/serve v1.1.0
-	golang.org/x/text v0.30.0
+	golang.org/x/text v0.31.0
 )
