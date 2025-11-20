@@ -127,43 +127,13 @@ func TestInitProject(t *testing.T) {
 				}
 			}
 
-			// Create engine with absolute paths to avoid needing to change working directory
 			engine := DefaultEngine()
-			engine.InputDir = filepath.Join(tmpDir, "src") + string(filepath.Separator)
-			engine.OutputDir = filepath.Join(tmpDir, "output") + string(filepath.Separator)
-			engine.TemingoignorePath = filepath.Join(tmpDir, ".temingoignore")
-
-			// Temporarily change to tmpDir for InitProject (it checks current working directory)
-			// We need to do this because InitProject uses os.Getwd() to check if directory is empty
-			originalCwd, err := os.Getwd()
-			if err != nil {
-				t.Fatalf("Failed to get current working directory: %v", err)
-			}
-			defer func() {
-				// Restore original directory in defer to ensure it happens even on panic
-				if err := os.Chdir(originalCwd); err != nil {
-					t.Logf("Warning: Failed to restore original working directory: %v", err)
-				}
-			}()
-
-			// Use a mutex-like approach: change directory only for this test
-			// Since Go tests run in parallel by default, we need to ensure this is safe
-			// However, os.Chdir is process-wide, so we need to be careful
-			// The best approach is to make InitProject accept a base directory parameter
-			// For now, we'll change directory but this test should not run in parallel
-			// We'll add t.Parallel() = false implicitly by not calling it
-			err = os.Chdir(tmpDir)
-			if err != nil {
-				t.Fatalf("Failed to change to temp directory: %v", err)
-			}
-
-			// Update engine paths to be relative to tmpDir (since we changed to it)
 			engine.InputDir = "src" + string(filepath.Separator)
 			engine.OutputDir = "output" + string(filepath.Separator)
 			engine.TemingoignorePath = ".temingoignore"
 
-			// Run InitProject
-			err = engine.InitProject(tt.projectType)
+			// Run InitProject with tmpDir as targetDir
+			err := engine.InitProject(tt.projectType, tmpDir)
 
 			if tt.wantErr {
 				if err == nil {
@@ -177,11 +147,13 @@ func TestInitProject(t *testing.T) {
 				} else {
 					// Verify that files were created
 					// Check if inputDir was created
-					if _, err := os.Stat("src"); os.IsNotExist(err) {
+					srcPath := filepath.Join(tmpDir, "src")
+					if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 						t.Errorf("InitProject() should have created inputDir but it doesn't exist (%s)", tt.description)
 					}
 					// Check if .temingoignore was created
-					if _, err := os.Stat(".temingoignore"); os.IsNotExist(err) {
+					ignorePath := filepath.Join(tmpDir, ".temingoignore")
+					if _, err := os.Stat(ignorePath); os.IsNotExist(err) {
 						t.Errorf("InitProject() should have created .temingoignore but it doesn't exist (%s)", tt.description)
 					}
 				}
@@ -202,35 +174,19 @@ func TestInitProject_AllProjectTypes(t *testing.T) {
 			// Create a new tmpDir for each test case to ensure isolation
 			tmpDir := t.TempDir()
 
-			// Temporarily change to tmpDir for InitProject (it checks current working directory)
-			originalCwd, err := os.Getwd()
-			if err != nil {
-				t.Fatalf("Failed to get current working directory: %v", err)
-			}
-			defer func() {
-				// Restore original directory in defer to ensure it happens even on panic
-				if err := os.Chdir(originalCwd); err != nil {
-					t.Logf("Warning: Failed to restore original working directory: %v", err)
-				}
-			}()
-
-			err = os.Chdir(tmpDir)
-			if err != nil {
-				t.Fatalf("Failed to change to temp directory: %v", err)
-			}
-
 			engine := DefaultEngine()
 			engine.InputDir = "src/"
 			engine.OutputDir = "output/"
 			engine.TemingoignorePath = ".temingoignore"
 
-			err = engine.InitProject(projectType)
+			err := engine.InitProject(projectType, tmpDir)
 			if err != nil {
 				t.Errorf("InitProject() failed for project type %q: %v", projectType, err)
 			}
 
 			// Verify that files were created
-			if _, err := os.Stat("src"); os.IsNotExist(err) {
+			srcPath := filepath.Join(tmpDir, "src")
+			if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 				t.Errorf("InitProject() should have created inputDir for project type %q", projectType)
 			}
 		})

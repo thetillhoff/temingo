@@ -132,7 +132,14 @@ var initCommand = &cli.Command{
 			Logger:                  temingoLogger,
 		}
 
-		err = engine.InitProject(projectType)
+		// Get current directory to pass as targetDir
+		cwd, err := os.Getwd()
+		if err != nil {
+			slog.Error("Failed to get current directory", "error", err)
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
+
+		err = engine.InitProject(projectType, cwd)
 		if err != nil {
 			slog.Error("Failed to initialize project", "error", err)
 			return fmt.Errorf("failed to initialize project: %w", err)

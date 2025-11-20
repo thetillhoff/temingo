@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.1.0
+
+- Add `Makefile` to sample project.
+- Add `reverse` template function.
+- Breadcrumb links now end with a slash if they don't point to a file (based on whether there's a file extension).
+
 ## v1.0.0
 
 ### Breaking Changes

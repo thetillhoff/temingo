@@ -135,11 +135,11 @@ func TestRenderTemplate_WithInvalidTemplate(t *testing.T) {
 	}
 }
 
-func TestRenderTemplate_WithTemplateHelperFunctions(t *testing.T) {
+func TestRenderTemplate_WithCapitalizeFunction(t *testing.T) {
 	engine := DefaultEngine()
 
 	templatePath := "test.template.html"
-	templateContent := `{{ capitalize "hello world" }} | {{ concat "a" "b" "c" }} | {{ includeWithIndentation 2 "line1\nline2" }}`
+	templateContent := `{{ capitalize "hello world" }}`
 	partialFiles := map[string]string{}
 
 	meta := map[string]interface{}{
@@ -155,11 +155,76 @@ func TestRenderTemplate_WithTemplateHelperFunctions(t *testing.T) {
 	if !strings.Contains(renderedStr, "Hello World") {
 		t.Errorf("renderTemplate() output should contain capitalized text, got: %q", renderedStr)
 	}
+}
+
+func TestRenderTemplate_WithConcatFunction(t *testing.T) {
+	engine := DefaultEngine()
+
+	templatePath := "test.template.html"
+	templateContent := `{{ concat "a" "b" "c" }}`
+	partialFiles := map[string]string{}
+
+	meta := map[string]interface{}{
+		"path": "test.html",
+	}
+
+	renderedTemplate, err := engine.renderTemplate(meta, templatePath, templateContent, partialFiles)
+	if err != nil {
+		t.Fatalf("renderTemplate() unexpected error: %v", err)
+	}
+
+	renderedStr := string(renderedTemplate)
 	if !strings.Contains(renderedStr, "abc") {
 		t.Errorf("renderTemplate() output should contain concatenated text, got: %q", renderedStr)
 	}
-	if !strings.Contains(renderedStr, "  line1") {
+}
+
+func TestRenderTemplate_WithIncludeWithIndentationFunction(t *testing.T) {
+	engine := DefaultEngine()
+
+	templatePath := "test.template.html"
+	templateContent := `{{ includeWithIndentation 2 "line1\nline2" }}`
+	partialFiles := map[string]string{}
+
+	meta := map[string]interface{}{
+		"path": "test.html",
+	}
+
+	renderedTemplate, err := engine.renderTemplate(meta, templatePath, templateContent, partialFiles)
+	if err != nil {
+		t.Fatalf("renderTemplate() unexpected error: %v", err)
+	}
+
+	renderedStr := string(renderedTemplate)
+	if !strings.Contains(renderedStr, "  line1") || !strings.Contains(renderedStr, "  line2") {
 		t.Errorf("renderTemplate() output should contain indented content, got: %q", renderedStr)
+	}
+}
+
+func TestRenderTemplate_WithReverseFunction(t *testing.T) {
+	engine := DefaultEngine()
+
+	templatePath := "test.template.html"
+	templateContent := `{{ range reverse .items }}{{ . }}{{ end }}`
+	partialFiles := map[string]string{}
+
+	meta := map[string]interface{}{
+		"path":  "test.html",
+		"items": []interface{}{"a", "b", "c"},
+	}
+
+	renderedTemplate, err := engine.renderTemplate(meta, templatePath, templateContent, partialFiles)
+	if err != nil {
+		t.Fatalf("renderTemplate() unexpected error: %v", err)
+	}
+
+	renderedStr := string(renderedTemplate)
+	// The reverse should give us "cba" instead of "abc"
+	if !strings.Contains(renderedStr, "cba") {
+		t.Errorf("renderTemplate() output should contain reversed items 'cba', got: %q", renderedStr)
+	}
+	if strings.Contains(renderedStr, "abc") && !strings.Contains(renderedStr, "cba") {
+		t.Errorf("renderTemplate() output should contain reversed items, but found original order 'abc', got: %q", renderedStr)
 	}
 }
 

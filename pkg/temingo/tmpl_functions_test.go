@@ -1,6 +1,7 @@
 package temingo
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -187,6 +188,62 @@ func TestTmplCapitalize(t *testing.T) {
 			result := tmpl_capitalize(tt.input)
 			if result != tt.expected {
 				t.Errorf("tmpl_capitalize(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTmplReverse(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []interface{}
+		expected []interface{}
+	}{
+		{
+			name:     "Empty slice",
+			input:    []interface{}{},
+			expected: []interface{}{},
+		},
+		{
+			name:     "Single element",
+			input:    []interface{}{"hello"},
+			expected: []interface{}{"hello"},
+		},
+		{
+			name:     "Two elements",
+			input:    []interface{}{"hello", "world"},
+			expected: []interface{}{"world", "hello"},
+		},
+		{
+			name:     "Multiple elements",
+			input:    []interface{}{"a", "b", "c", "d"},
+			expected: []interface{}{"d", "c", "b", "a"},
+		},
+		{
+			name:     "Nil input",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "Mixed types",
+			input:    []interface{}{"a", 1, "b", 2},
+			expected: []interface{}{2, "b", 1, "a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tmpl_reverse(tt.input)
+
+			if tt.input == nil {
+				if result != nil {
+					t.Errorf("tmpl_reverse(nil) = %v, want nil", result)
+				}
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("tmpl_reverse(%v) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
 	}

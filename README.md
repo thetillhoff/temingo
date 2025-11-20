@@ -267,14 +267,14 @@ If a template path (either as sibling or as child for metatemplates) contains a 
 Breadcrumbs represent the parent directory structure, excluding the directory containing the current `index.html` file. Each breadcrumb has:
 
 - `Name`: The directory name
-- `Path`: The full path to that directory (e.g., `/blog` or `/blog/posts`)
+- `Path`: The full path to that directory (e.g., `/blog/` or `/blog/posts/`)
 
 **Examples:**
 
 - `index.html` → `[]` (empty)
 - `blog/index.html` → `[]` (empty, no parent)
-- `blog/posts/index.html` → `[{Name: "blog", Path: "/blog"}]`
-- `blog/posts/2024/index.html` → `[{Name: "blog", Path: "/blog"}, {Name: "posts", Path: "/blog/posts"}]`
+- `blog/posts/index.html` → `[{Name: "blog", Path: "/blog/"}]`
+- `blog/posts/2024/index.html` → `[{Name: "blog", Path: "/blog/"}, {Name: "posts", Path: "/blog/posts/"}]`
 
 **Template usage:**
 
@@ -387,6 +387,38 @@ The `capitalize` function capitalizes the first letter of each word in a string.
 {{ capitalize .title }}
 <!-- Output: "My Blog Post" if .title is "my blog post" -->
 ```
+
+### `reverse`
+
+The `reverse` function returns a slice in reverse order. This is useful when you need to iterate over a slice in the opposite direction or display items in reverse chronological order.
+
+**Syntax:**
+
+```go
+{{ reverse <slice> }}
+```
+
+**Parameters:**
+
+- `slice` ([]interface{}): The slice to reverse
+
+**Example:**
+
+```html
+{{ range reverse .items }}
+<div>{{ . }}</div>
+{{ end }}
+```
+
+Or with a breadcrumb navigation in reverse order:
+
+```html
+{{ range reverse .breadcrumbs }}
+<a href="{{ .Path }}">{{ .Name }}</a>
+{{ end }}
+```
+
+The function returns a new slice with elements in reverse order. If the input is `nil`, it returns `nil`. If the input is an empty slice, it returns an empty slice.
 
 <!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)

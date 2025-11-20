@@ -31,7 +31,7 @@ func (engine Engine) generateMetaObjectForTemplatePath(renderedTemplatePath stri
 
 	// with .breadcrumbs
 	// example for renderedTemplatePath: a/b/c/index.html
-	// expected breadcrumbs in that case: [{Name: "a", Path: "/a"}, {Name: "b", Path: "/a/b"}]
+	// expected breadcrumbs in that case: [{Name: "a", Path: "/a/"}, {Name: "b", Path: "/a/b/"}]
 	// c should not be added, as the index.html is meant for that folder
 	meta["breadcrumbs"] = createBreadcrumbs(renderedTemplatePath)
 
@@ -70,8 +70,8 @@ func (engine Engine) generateMetaObjectForTemplatePath(renderedTemplatePath stri
 // Examples:
 //   - "index.html" -> [] (empty)
 //   - "a/index.html" -> [] (empty, no parent)
-//   - "a/b/index.html" -> [{Name: "a", Path: "/a"}]
-//   - "a/b/c/index.html" -> [{Name: "a", Path: "/a"}, {Name: "b", Path: "/a/b"}]
+//   - "a/b/index.html" -> [{Name: "a", Path: "/a/"}]
+//   - "a/b/c/index.html" -> [{Name: "a", Path: "/a/"}, {Name: "b", Path: "/a/b/"}]
 func createBreadcrumbs(renderedTemplatePath string) []Breadcrumb {
 	// Remove filename: "a/b/c/index.html" -> "a/b/c"
 	templateDir := path.Dir(renderedTemplatePath)
@@ -113,9 +113,10 @@ func createBreadcrumbs(renderedTemplatePath string) []Breadcrumb {
 			currentPath = currentPath + "/" + dirName
 		}
 
+		// Append trailing slash since breadcrumbs represent directories
 		breadcrumb := Breadcrumb{
 			Name: dirName,
-			Path: currentPath,
+			Path: currentPath + "/",
 		}
 		breadcrumbs = append(breadcrumbs, breadcrumb)
 	}

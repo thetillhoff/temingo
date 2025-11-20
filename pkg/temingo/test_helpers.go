@@ -33,17 +33,36 @@ func setupTestProjectFromInitFiles(tmpDir string, projectType string) (string, s
 		return "", "", err
 	}
 
-	// Write files to disk
-	// The paths returned by getExampleProjectFiles are already adjusted to use engine.InputDir
-	// and engine.TemingoignorePath, so we can write them directly
+	// Normalize all paths to be relative to tmpDir
+	// If a path is absolute, make it relative to tmpDir
+	// If a path is relative, keep it as-is
+	normalizedFiles := make(map[string][]byte)
 	for path, content := range files {
+		var relPath string
+		if filepath.IsAbs(path) {
+			// Path is absolute - make it relative to tmpDir
+			relPath, err = filepath.Rel(tmpDir, path)
+			if err != nil {
+				return "", "", err
+			}
+		} else {
+			// Path is already relative, use it as-is
+			relPath = path
+		}
+		normalizedFiles[relPath] = content
+	}
+	files = normalizedFiles
+
+	// Write files to disk - join relative paths with tmpDir to get absolute paths
+	for relPath, content := range files {
+		absPath := filepath.Join(tmpDir, relPath)
 		// Ensure parent directory exists
-		parentDir := filepath.Dir(path)
+		parentDir := filepath.Dir(absPath)
 		if err := os.MkdirAll(parentDir, 0755); err != nil {
 			return "", "", err
 		}
 
-		if err := fileIO.WriteFile(path, content); err != nil {
+		if err := fileIO.WriteFile(absPath, content); err != nil {
 			return "", "", err
 		}
 	}
