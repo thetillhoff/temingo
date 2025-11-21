@@ -80,3 +80,18 @@ jobs:
         with:
           RELEASE_BODY: "${{needs.release-prerequisites.outputs.RELEASE_BODY}}"
       - uses: thetillhoff/action-goreportcard-refresh@65a4101f740741a11fe0d1e254f7fc84b491879a # v1.0.2
+
+  trigger-homebrew-update:
+    needs: release-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate with GitHub CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_ACCESS_TOKEN }}
+        run: |
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
+
+      - name: Trigger homebrew tap update workflow
+        run: |
+          gh workflow run update-temingo.yml \
+            --repo thetillhoff/homebrew-tap
