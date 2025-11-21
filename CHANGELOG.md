@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v2.0.0
+
+- Remove `version` subcommand, use `--version` flag instead to print the version of temingo.
+- Add a basic test that the binary to be released executes correctly and prints the correct version.
+
 ## v1.1.0
 
 - Add `Makefile` to sample project.

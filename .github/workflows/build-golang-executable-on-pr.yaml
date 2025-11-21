@@ -20,4 +20,4 @@ jobs:
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
-          BUILDARGS: -ldflags="-X main.version=${{ github.ref_name }}"
+          BUILDARGS: -ldflags="-X github.com/thetillhoff/temingo/cmd.version=${{ github.ref_name }}"

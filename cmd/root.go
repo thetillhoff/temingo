@@ -15,11 +15,24 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var version = "dev" // This is just the default. The actual value is injected at compiletime
+
 // Execute runs the CLI application
 func Execute() {
+	// Version flag: only long form (--version) to avoid conflict with -v (verbose)
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:  "version",
+		Usage: "prints just the version of temingo",
+		// No Aliases field = only accepts --version, not -v (which is used for verbose)
+	}
+	cli.VersionPrinter = func(cmd *cli.Command) {
+		fmt.Println(cmd.Root().Version)
+	}
+
 	app := &cli.Command{
-		Name:  "temingo",
-		Usage: "A template engine for static site generation",
+		Name:    "temingo",
+		Usage:   "A template engine for static site generation",
+		Version: version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "config",
@@ -120,7 +133,6 @@ func Execute() {
 		},
 		Commands: []*cli.Command{
 			initCommand,
-			versionCommand,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfgFile := cmd.String("config")

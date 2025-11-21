@@ -3,7 +3,7 @@ name: Release Golang executable on tag
 on:
   push:
     tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   release-prerequisites:
@@ -35,11 +35,42 @@ jobs:
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
-          BUILDARGS: -ldflags="-X main.version=${{ github.ref_name }}"
+          BUILDARGS: -ldflags="-X github.com/thetillhoff/temingo/cmd.version=${{ github.ref_name }}"
+
+  verify-version:
+    needs: golang-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download linux/amd64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact_temingo_linux_amd64
+          path: .
+
+      - name: Verify version
+        shell: bash
+        run: |
+          chmod +x ./temingo_linux_amd64
+
+          # Check version using --version flag
+          VERSION_OUTPUT=$(./temingo_linux_amd64 --version 2>&1 || echo "dev")
+          VERSION_OUTPUT=$(echo "$VERSION_OUTPUT" | tr -d '\n\r' | xargs)  # Trim whitespace and newlines
+
+          echo "Version output: '$VERSION_OUTPUT'"
+
+          # Verify version matches the tag (this also catches "dev" since it won't match)
+          EXPECTED_VERSION="${{ github.ref_name }}"
+          if [[ "$VERSION_OUTPUT" != "$EXPECTED_VERSION" ]]; then
+            echo "ERROR: Version mismatch! Expected: '$EXPECTED_VERSION', Got: '$VERSION_OUTPUT'"
+            exit 1
+          fi
+
+          echo "✓ Version verification passed: $VERSION_OUTPUT"
 
   release-artifacts:
     needs:
       - golang-build
+      - verify-version
       - release-prerequisites
     runs-on: ubuntu-latest
     permissions:
