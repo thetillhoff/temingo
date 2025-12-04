@@ -3,6 +3,7 @@
 - Add from-scratch-based Docker image published to `ghcr.io/thetillhoff/temingo` for use in multi-stage Docker builds and containerized environments.
   Docker images are automatically built and published for Linux (amd64, arm64) on each release.
 - Add GitHub Action (`thetillhoff/temingo`) for use in GitHub Actions workflows.
+- Fix config file precedence: CLI/env flags now properly override config file values using `IsSet()` instead of comparing to defaults.
 
 ## v2.0.0
 

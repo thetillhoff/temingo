@@ -159,8 +159,8 @@ func Execute() {
 				return err
 			}
 
-			// Apply config values to flags (only if not set via CLI)
-			applyConfigToFlags(config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
+			// Apply config values to flags (CLI/env flags take precedence if explicitly set)
+			applyConfigToFlags(cmd, config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
 				&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
 				&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
 				&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag)

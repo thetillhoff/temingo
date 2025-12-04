@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,8 +46,9 @@ func loadConfig(cfgFile string) (map[string]interface{}, error) {
 }
 
 // applyConfigToFlags applies config values to flag variables
-// It only sets values that are not already set via command line flags (i.e., still at default values)
-func applyConfigToFlags(config map[string]interface{},
+// Precedence: CLI/env flags > config file > defaults
+// Config values are applied first, then CLI/env values override if they were explicitly set
+func applyConfigToFlags(cmd *cli.Command, config map[string]interface{},
 	inputDirFlag, outputDirFlag, temingoignoreFlag *string,
 	templateExtensionFlag, metaTemplateExtensionFlag, partialExtensionFlag *string,
 	metaFilenameFlag, markdownFilenameFlag *string,
@@ -88,66 +90,58 @@ func applyConfigToFlags(config map[string]interface{},
 		return nil
 	}
 
-	// Apply config values only if flags are still at default values
-	if *inputDirFlag == "src/" {
-		if val := getString("inputDir"); val != "" {
-			*inputDirFlag = val
+	// Helper function to check if a flag was explicitly set
+	isFlagSet := func(name string) bool {
+		for _, flag := range cmd.Flags {
+			for _, flagName := range flag.Names() {
+				if flagName == name {
+					return flag.IsSet()
+				}
+			}
 		}
-	}
-	if *outputDirFlag == "output/" {
-		if val := getString("outputDir"); val != "" {
-			*outputDirFlag = val
-		}
-	}
-	if *temingoignoreFlag == ".temingoignore" {
-		if val := getString("temingoignore"); val != "" {
-			*temingoignoreFlag = val
-		}
-	}
-	if *templateExtensionFlag == ".template" {
-		if val := getString("templateExtension"); val != "" {
-			*templateExtensionFlag = val
-		}
-	}
-	if *metaTemplateExtensionFlag == ".metatemplate" {
-		if val := getString("metaTemplateExtension"); val != "" {
-			*metaTemplateExtensionFlag = val
-		}
-	}
-	if *partialExtensionFlag == ".partial" {
-		if val := getString("partialExtension"); val != "" {
-			*partialExtensionFlag = val
-		}
-	}
-	if *metaFilenameFlag == "meta.yaml" {
-		if val := getString("metaFilename"); val != "" {
-			*metaFilenameFlag = val
-		}
-	}
-	if *markdownFilenameFlag == "content.md" {
-		if val := getString("markdownFilename"); val != "" {
-			*markdownFilenameFlag = val
-		}
-	}
-	if !*verboseFlag {
-		*verboseFlag = getBool("verbose")
-	}
-	if !*dryRunFlag {
-		*dryRunFlag = getBool("dryRun")
-	}
-	if !*noDeleteOutputDirFlag {
-		*noDeleteOutputDirFlag = getBool("noDeleteOutputDir")
+		return false
 	}
 
-	// Handle string slices - use config values if CLI values are empty
-	if len(*valueFlags) == 0 {
-		if configValues := getStringSlice("value"); len(configValues) > 0 {
-			*valueFlags = configValues
+	// Helper function to apply config and CLI/env values for a string flag
+	applyStringFlag := func(flagName, configKey string, target *string) {
+		if val := getString(configKey); val != "" {
+			*target = val
+		}
+		if isFlagSet(flagName) {
+			*target = cmd.String(flagName)
 		}
 	}
-	if len(*valuesFileFlags) == 0 {
-		if configValues := getStringSlice("valuesfile"); len(configValues) > 0 {
-			*valuesFileFlags = configValues
+
+	// Helper function to apply config and CLI/env values for a bool flag
+	applyBoolFlag := func(flagName, configKey string, target *bool) {
+		*target = getBool(configKey)
+		if isFlagSet(flagName) {
+			*target = cmd.Bool(flagName)
 		}
 	}
+
+	// Helper function to apply config and CLI/env values for a string slice flag
+	applyStringSliceFlag := func(flagName, configKey string, target *[]string) {
+		if configValues := getStringSlice(configKey); len(configValues) > 0 {
+			*target = configValues
+		}
+		if isFlagSet(flagName) {
+			*target = cmd.StringSlice(flagName)
+		}
+	}
+
+	// Apply config and CLI/env values for all flags
+	applyStringFlag("inputDir", "inputDir", inputDirFlag)
+	applyStringFlag("outputDir", "outputDir", outputDirFlag)
+	applyStringFlag("temingoignore", "temingoignore", temingoignoreFlag)
+	applyStringFlag("templateExtension", "templateExtension", templateExtensionFlag)
+	applyStringFlag("metaTemplateExtension", "metaTemplateExtension", metaTemplateExtensionFlag)
+	applyStringFlag("partialExtension", "partialExtension", partialExtensionFlag)
+	applyStringFlag("metaFilename", "metaFilename", metaFilenameFlag)
+	applyStringFlag("markdownFilename", "markdownFilename", markdownFilenameFlag)
+	applyBoolFlag("verbose", "verbose", verboseFlag)
+	applyBoolFlag("dry-run", "dryRun", dryRunFlag)
+	applyBoolFlag("noDeleteOutputDir", "noDeleteOutputDir", noDeleteOutputDirFlag)
+	applyStringSliceFlag("value", "value", valueFlags)
+	applyStringSliceFlag("valuesfile", "valuesfile", valuesFileFlags)
 }
