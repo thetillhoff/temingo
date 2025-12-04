@@ -2,26 +2,56 @@ name: Render templates
 description: Render templates with temingo
 
 inputs:
-  DIR:
-    description: "Location of the template files"
+  version:
+    description: "Version of temingo to use (e.g., 'v1.0.0' or 'latest'). Defaults to 'latest'."
     required: false
-    default: "./"
+    default: 'latest'
+  inputDir:
+    description: 'Location of the template files (defaults to "./src/")'
+    required: false
+    default: './src/'
+  outputDir:
+    description: 'Location where rendered files will be written (defaults to "./output/")'
+    required: false
+    default: './output/'
   VALUES:
-    description: "Multiline string of key=value pairs to pass to the templates"
+    description: 'Multiline string of key=value pairs to pass to the templates'
     required: false
-    default: ""
+    default: ''
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
-    - name: Install temingo
-      shell: bash
-      run: |
-        go install github.com/thetillhoff/temingo@latest
-
     - name: Render templates
       shell: bash
       run: |
-        VALUESFILE=$(mktemp)
-        echo "${{ inputs.VALUES }}" > ${VALUESFILE}
-        temingo --inputDir ${{ inputs.DIR }} --outputDir ${{ inputs.DIR }} --noDeleteOutputDir --valuesfile ${VALUESFILE}
+        set -e
+
+        # Determine image tag
+        VERSION="${{ inputs.version }}"
+        if [ -z "${VERSION}" ] ||[ "${VERSION}" = "latest" ]; then
+          IMAGE_TAG="latest"
+        else
+          IMAGE_TAG="${VERSION}"
+        fi
+
+        IMAGE="ghcr.io/thetillhoff/temingo:${IMAGE_TAG}"
+        echo "Using temingo image: ${IMAGE}"
+
+        # Create values file in workspace if VALUES input is provided
+        VALUES_ARG=""
+        if [ -n "${{ inputs.VALUES }}" ]; then
+          VALUESFILE="${GITHUB_WORKSPACE}/.temingo-values.yaml"
+          echo "${{ inputs.VALUES }}" > "${VALUESFILE}"
+          VALUES_ARG="--valuesfile .temingo-values.yaml"
+        fi
+
+        # Pull image and run
+        docker pull "${IMAGE}"
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}:/workspace" \
+          -w /workspace \
+          "${IMAGE}" \
+          --inputDir "${{ inputs.inputDir }}" \
+          --outputDir "${{ inputs.outputDir }}" \
+          ${VALUES_ARG}

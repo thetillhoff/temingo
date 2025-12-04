@@ -61,6 +61,24 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
+### GitHub Action
+
+You can use temingo as a GitHub Action in your workflows. The action uses the Docker image internally for simplicity and cross-platform compatibility:
+
+```yaml
+- name: Render templates with temingo
+  uses: thetillhoff/temingo
+  with:
+    version: 'v2.1.0' # Optional: specify version (defaults to latest)
+    inputDir: './src/' # Optional: location of template files (defaults to "./src/")
+    outputDir: './output/' # Optional: where rendered files are written (defaults to "./output/")
+    VALUES: | # Optional: key=value pairs for templates
+      siteName=My Site
+      author=John Doe
+```
+
+By default, the action reads from `./src/` and writes to `./output/`, cleaning up the output directory before rendering. You can customize the input and output directories as needed.
+
 ## Quick Start
 
 ```sh

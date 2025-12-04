@@ -2,6 +2,7 @@
 
 - Add from-scratch-based Docker image published to `ghcr.io/thetillhoff/temingo` for use in multi-stage Docker builds and containerized environments.
   Docker images are automatically built and published for Linux (amd64, arm64) on each release.
+- Add GitHub Action (`thetillhoff/temingo`) for use in GitHub Actions workflows.
 
 ## v2.0.0
 
