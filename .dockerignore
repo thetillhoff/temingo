@@ -1,0 +1,3 @@
+# Ignore everything except the artifacts directory needed for Docker build
+*
+!artifacts/

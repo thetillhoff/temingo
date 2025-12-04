@@ -32,6 +32,35 @@ curl -s https://raw.githubusercontent.com/thetillhoff/temingo/main/install.sh | 
 
 or manually from <https://github.com/thetillhoff/temingo/releases/latest>.
 
+### Docker
+
+You can use temingo as a Docker image from GitHub Container Registry:
+
+```bash
+# Pull the image
+docker pull ghcr.io/thetillhoff/temingo
+
+# Run temingo
+docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/thetillhoff/temingo
+```
+
+**Multi-stage Dockerfile example:**
+
+```dockerfile
+# Build stage - render templates with temingo
+FROM ghcr.io/thetillhoff/temingo AS temingo
+
+WORKDIR /build
+COPY src/ ./src/
+RUN temingo --inputDir ./src --outputDir ./output
+
+# Final stage - serve the rendered site
+FROM nginx:alpine
+COPY --from=temingo /build/output /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
 ## Quick Start
 
 ```sh

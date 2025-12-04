@@ -1,5 +1,8 @@
 # CHANGELOG
 
+- Add from-scratch-based Docker image published to `ghcr.io/thetillhoff/temingo` for use in multi-stage Docker builds and containerized environments.
+  Docker images are automatically built and published for Linux (amd64, arm64) on each release.
+
 ## v2.0.0
 
 - Remove `version` subcommand, use `--version` flag instead to print the version of temingo.
