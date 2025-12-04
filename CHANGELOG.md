@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.1.1
+
+- Fix Homebrew tap update workflow trigger to use the correct token.
+
 ## v2.1.0
 
 - Add from-scratch-based Docker image published to `ghcr.io/thetillhoff/temingo` for use in multi-stage Docker builds and containerized environments.

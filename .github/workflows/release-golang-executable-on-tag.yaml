@@ -135,13 +135,9 @@ jobs:
     needs: release-artifacts
     runs-on: ubuntu-latest
     steps:
-      - name: Authenticate with GitHub CLI
+      - name: Trigger homebrew tap update workflow
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_ACCESS_TOKEN }}
-        run: |
-          echo "$GITHUB_TOKEN" | gh auth login --with-token
-
-      - name: Trigger homebrew tap update workflow
         run: |
           gh workflow run update-temingo.yml \
             --repo thetillhoff/homebrew-tap
