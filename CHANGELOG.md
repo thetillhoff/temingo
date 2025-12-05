@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v2.1.4
+
+- Update GitHub Actions to use the latest action-golang-build action.
+  It has CGO_ENABLED=0 set by default, so the binary is statically linked.
+
 ## v2.1.3
 
 - Remove BUILDPLATFORM label from image references in Dockerfile.
