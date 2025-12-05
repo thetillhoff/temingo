@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} alpine:3.23.0
+FROM alpine:3.23.0
 ARG TARGETOS
 ARG TARGETARCH
 

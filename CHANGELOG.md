@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v2.1.3
+
+- Remove BUILDPLATFORM label from image references in Dockerfile.
+- Remove static version reference in README.md.
+
 ## v2.1.2
 
 - Fix Docker image build to chmod the binary to 755 and have it executable by default.

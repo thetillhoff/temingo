@@ -67,7 +67,6 @@ You can use temingo as a GitHub Action in your workflows. The action uses the Do
 - name: Render templates with temingo
   uses: thetillhoff/temingo
   with:
-    version: 'v2.1.0' # Optional: specify version (defaults to latest)
     inputDir: './src/' # Optional: location of template files (defaults to "./src/")
     outputDir: './output/' # Optional: where rendered files are written (defaults to "./output/")
     VALUES: | # Optional: key=value pairs for templates
