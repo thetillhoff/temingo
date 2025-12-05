@@ -54,7 +54,7 @@ RUN temingo
 
 # Final stage - serve the rendered site
 FROM nginx:alpine
-COPY --from=temingo /build/output /usr/share/nginx/html
+COPY --from=builder /workspace/output /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
