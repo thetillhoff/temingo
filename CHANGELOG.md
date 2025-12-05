@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- Fix Docker image build to chmod the binary to 755 and have it executable by default.
+
 ## v2.1.1
 
 - Fix Homebrew tap update workflow trigger to use the correct token.
