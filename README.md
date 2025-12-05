@@ -48,11 +48,9 @@ docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/thetillhoff/temingo
 
 ```dockerfile
 # Build stage - render templates with temingo
-FROM ghcr.io/thetillhoff/temingo AS temingo
-
-WORKDIR /build
-COPY src/ ./src/
-RUN temingo --inputDir ./src --outputDir ./output
+FROM ghcr.io/thetillhoff/temingo AS builder
+COPY src src
+RUN temingo
 
 # Final stage - serve the rendered site
 FROM nginx:alpine

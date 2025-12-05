@@ -1,6 +1,10 @@
 # CHANGELOG
 
+## v2.1.2
+
 - Fix Docker image build to chmod the binary to 755 and have it executable by default.
+- Transition from scratch-based Docker image to alpine-based Docker image.
+  Otherwise the binary has to be statically linked, and it's hard to use it as a builder image in multi-stage builds.
 
 ## v2.1.1
 
