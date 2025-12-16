@@ -1,7 +1,7 @@
 name: Build golang executable on PR
 
 on:
-  pull_request_target:
+  pull_request:
 
 jobs:
   golang-build:
@@ -15,9 +15,40 @@ jobs:
         arch:
           - amd64
           - arm64
+
     steps:
-      - uses: thetillhoff/action-golang-build@b59a74caebaf04979296ebfd7feb62b384d816c8 # v0.3.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: thetillhoff/action-golang-build@v1.0.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
           BUILDARGS: -ldflags="-X github.com/thetillhoff/temingo/cmd.version=${{ github.ref_name }}"
+
+  verify-version:
+    needs: golang-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          merge-multiple: true
+
+      - name: Verify version
+        shell: bash
+        run: |
+          # Make executable executable
+          chmod +x ./temingo_linux_amd64
+
+          # Check version using --version flag
+          VERSION_OUTPUT=$(./temingo_linux_amd64 --version 2>&1 || echo "dev")
+          VERSION_OUTPUT=$(echo "$VERSION_OUTPUT" | tr -d '\n\r' | xargs)  # Trim whitespace and newlines
+
+          echo "Version output: '$VERSION_OUTPUT'"
+
+          # Verify version matches the tag (this also catches "dev" since it won't match)
+          EXPECTED_VERSION="${{ github.ref_name }}"
+          if [[ "$VERSION_OUTPUT" != "$EXPECTED_VERSION" ]]; then
+            echo "ERROR: Version mismatch! Expected: '$EXPECTED_VERSION', Got: '$VERSION_OUTPUT'"
+            exit 1
+          fi
+
+          echo "✓ Version verification passed: $VERSION_OUTPUT"

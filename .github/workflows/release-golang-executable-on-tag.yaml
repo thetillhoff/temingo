@@ -31,7 +31,8 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: thetillhoff/action-golang-build@b59a74caebaf04979296ebfd7feb62b384d816c8 # v0.3.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: thetillhoff/action-golang-build@v1.0.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
@@ -42,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download linux/amd64 artifact
-        uses: actions/download-artifact@302aa85ad23a9947ede7375f536488f409deace3 # v4
+        uses: actions/download-artifact@v5
         with:
           name: artifact_temingo_linux_amd64
           path: .
@@ -67,6 +68,25 @@ jobs:
 
           echo "✓ Version verification passed: $VERSION_OUTPUT"
 
+  cleanup-on-failure:
+    needs:
+      - release-prerequisites
+      - golang-build
+      - verify-version
+    if: always() && (needs.release-prerequisites.result == 'failure' || needs.golang-build.result == 'failure' || needs.verify-version.result == 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - name: Delete tag on failure
+        shell: bash
+        run: |
+          git config --global user.name 'GithubActions'
+          git config --global user.email 'githubactions@users.noreply.github.com'
+          git push --delete origin "${{ github.ref_name }}"
+          echo "Deleted tag: ${{ github.ref_name }}"
+
   release-artifacts:
     needs:
       - golang-build
@@ -76,23 +96,33 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: thetillhoff/action-release-artifacts@3f6c6d7d194966344351e8efac5d14f12a283100 # v0.3.0
+      - name: Download artifacts
+        uses: actions/download-artifact@v5
         with:
-          RELEASE_BODY: "${{needs.release-prerequisites.outputs.RELEASE_BODY}}"
-      - uses: thetillhoff/action-goreportcard-refresh@65a4101f740741a11fe0d1e254f7fc84b491879a # v1.0.2
+          merge-multiple: true
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: "${{ needs.release-prerequisites.outputs.RELEASE_BODY }}"
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+            ./*
 
   build-docker-image:
-    needs: golang-build
+    needs:
+      - golang-build
+      - verify-version
+      - release-prerequisites
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
-      - name: Download Linux binaries
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: artifact_temingo_linux_*
           path: ./artifacts
@@ -103,18 +133,15 @@ jobs:
         run: |
           chmod +x ./artifacts/temingo_linux_*
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ghcr.io/${{ github.repository }}
@@ -136,13 +163,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  trigger-homebrew-update:
+  trigger-external-updates:
     needs: release-artifacts
     runs-on: ubuntu-latest
     steps:
+      - run: |
+          curl "https://goreportcard.com/checks" \
+            -X POST \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "repo=${{ github.repository }}"
+
       - name: Trigger homebrew tap update workflow
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_ACCESS_TOKEN }}
         run: |
+          echo "$GITHUB_TOKEN" | gh auth login --with-token
           gh workflow run update-temingo.yml \
             --repo thetillhoff/homebrew-tap
