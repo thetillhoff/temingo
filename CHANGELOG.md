@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.1.5
+
+Updated dependencies.
+
 ## v2.1.4
 
 - Update GitHub Actions to use the latest action-golang-build action.
