@@ -64,3 +64,9 @@ jobs:
       - run: |
           git tag "${{ needs.determine-version.outputs.NEW_VERSION }}"
           git push origin "${{ needs.determine-version.outputs.NEW_VERSION }}"
+
+  trigger-release:
+    needs: git-tag
+    uses: thetillhoff/temingo/.github/workflows/release-golang-executable-on-tag.yaml@main
+    with:
+      tag: ${{ needs.determine-version.outputs.NEW_VERSION }}

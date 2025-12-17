@@ -4,17 +4,25 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
 
 jobs:
   release-prerequisites:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     outputs:
       RELEASE_BODY: ${{ steps.release-prerequisites.outputs.RELEASE_BODY }}
     steps:
       - id: release-prerequisites
         uses: thetillhoff/action-release-prerequisites@2798dc58246a51ae1e38f8ecc114d4048e37b0fb # v0.2.0
+        with:
+          RELEASE_TAG: ${{ env.TAG }}
 
   golang-build:
     needs: release-prerequisites
@@ -36,7 +44,7 @@ jobs:
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
-          BUILDARGS: -ldflags="-X github.com/thetillhoff/temingo/cmd.version=${{ github.ref_name }}"
+          BUILDARGS: -ldflags="-X github.com/thetillhoff/temingo/cmd.version=${{ env.TAG }}"
 
   verify-version:
     needs: golang-build
@@ -60,7 +68,7 @@ jobs:
           echo "Version output: '$VERSION_OUTPUT'"
 
           # Verify version matches the tag (this also catches "dev" since it won't match)
-          EXPECTED_VERSION="${{ github.ref_name }}"
+          EXPECTED_VERSION="${{ env.TAG }}"
           if [[ "$VERSION_OUTPUT" != "$EXPECTED_VERSION" ]]; then
             echo "ERROR: Version mismatch! Expected: '$EXPECTED_VERSION', Got: '$VERSION_OUTPUT'"
             exit 1
@@ -84,8 +92,8 @@ jobs:
         run: |
           git config --global user.name 'GithubActions'
           git config --global user.email 'githubactions@users.noreply.github.com'
-          git push --delete origin "${{ github.ref_name }}"
-          echo "Deleted tag: ${{ github.ref_name }}"
+          git push --delete origin "${{ env.TAG }}"
+          echo "Deleted tag: ${{ env.TAG }}"
 
   release-artifacts:
     needs:
