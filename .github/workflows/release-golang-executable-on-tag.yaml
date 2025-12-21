@@ -40,7 +40,7 @@ jobs:
           - arm64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - uses: thetillhoff/action-golang-build@v1.0.0
+      - uses: thetillhoff/action-golang-build@d6bf6d38e3ea7850f7e0e4dfcef72ae4d68f8a49 # v1.0.0
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
@@ -110,7 +110,7 @@ jobs:
           merge-multiple: true
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           body: "${{ needs.release-prerequisites.outputs.RELEASE_BODY }}"
           prerelease: false
