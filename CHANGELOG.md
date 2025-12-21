@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.1.8
+
+Updated dependencies.
+
 ## v2.1.7
 
 Updated dependencies.
