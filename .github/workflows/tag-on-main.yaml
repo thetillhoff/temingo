@@ -67,6 +67,6 @@ jobs:
 
   trigger-release:
     needs: git-tag
-    uses: thetillhoff/temingo/.github/workflows/release-golang-executable-on-tag.yaml@main
+    uses: thetillhoff/temingo/.github/workflows/release-golang-executable-on-tag.yaml@6b2a36cf7c6ec7c227ce9f9dc7b8b90e0841981b # main
     with:
       tag: ${{ needs.determine-version.outputs.NEW_VERSION }}
