@@ -2,6 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "schedule": ["every weekend"],
   "extends": ["config:best-practices", ":disableDependencyDashboard"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "packageRules": [
     {
