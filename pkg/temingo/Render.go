@@ -32,6 +32,10 @@ func (engine *Engine) Render() error {
 		renderedTemplates = map[string][]byte{}
 	)
 
+	if err = engine.validateEngine(); err != nil {
+		return err
+	}
+
 	// Parse temingoignore if exists
 	if _, err = os.Stat(engine.TemingoignorePath); os.IsNotExist(err) {
 		// No ignore file
@@ -43,7 +47,7 @@ func (engine *Engine) Render() error {
 
 		ignoreLines, err = fileIO.ReadFileLineByLine(engine.TemingoignorePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("reading temingoignore: %w", err)
 		}
 	}
 
@@ -68,10 +72,14 @@ func (engine *Engine) Render() error {
 	// Read filetree with ignoreLines
 	fileList, err = fileIO.GenerateFileListWithIgnoreLines(engine.InputDir, ignoreLines, engine.Verbose)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading input directory %s: %w", engine.InputDir, err)
 	}
 	if len(fileList.Files) == 0 {
 		logger.Warn("No files found in input directory", "path", fileList.Path)
+	}
+
+	if err = validateFolderNames(fileList); err != nil {
+		return err
 	}
 
 	// Sort retrieved filepaths
@@ -81,7 +89,7 @@ func (engine *Engine) Render() error {
 	for _, partialPath := range partialPaths {
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, partialPath))
 		if err != nil {
-			return err
+			return fmt.Errorf("reading partial %s: %w", partialPath, err)
 		}
 		partialFiles[partialPath] = "{{ define \"" + partialPath + "\" -}}\n" + string(content) + "\n{{- end -}}"
 	}
@@ -96,7 +104,7 @@ func (engine *Engine) Render() error {
 	for _, templatePath := range templatePaths {
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, templatePath))
 		if err != nil {
-			return err
+			return fmt.Errorf("reading template %s: %w", templatePath, err)
 		}
 
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
@@ -109,7 +117,7 @@ func (engine *Engine) Render() error {
 
 		renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(meta, templatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 		if err != nil {
-			return err
+			return fmt.Errorf("rendering template %s: %w", templatePath, err)
 		}
 	}
 
@@ -117,7 +125,7 @@ func (engine *Engine) Render() error {
 	for _, metaTemplatePath := range metaTemplatePaths { // Read metaTemplate contents and execute them for each childfolder that contains a meta yaml
 		content, err = fileIO.ReadFile(path.Join(engine.InputDir, metaTemplatePath))
 		if err != nil {
-			return err
+			return fmt.Errorf("reading metatemplate %s: %w", metaTemplatePath, err)
 		}
 
 		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 1).FilterByFilename(engine.MetaFilename).Files { // For each meta yaml in a direct subfolder
@@ -134,7 +142,7 @@ func (engine *Engine) Render() error {
 
 			renderedTemplates[renderedTemplatePath], err = engine.renderTemplate(meta, renderedTemplatePath, string(content), partialFiles) // By rendering as early as possible, related errors are also thrown very early. In this case, even before any filesystem changes are made.
 			if err != nil {
-				return err
+				return fmt.Errorf("rendering metatemplate %s for %s: %w", metaTemplatePath, renderedTemplatePath, err)
 			}
 		}
 	}
@@ -151,16 +159,23 @@ func (engine *Engine) Render() error {
 		}
 	}
 
+	// Warn on insecure http:// links in rendered output
+	for renderedTemplatePath, content := range renderedTemplates {
+		if path.Ext(renderedTemplatePath) == ".html" {
+			engine.warnHTTPLinks(renderedTemplatePath, content)
+		}
+	}
+
 	// Update output
 	if !engine.DryRun { // Only if dry-run is disabled
 		if !engine.NoDeleteOutputDir {
 			err = os.RemoveAll(engine.OutputDir) // Ensure the outputDir is empty
 			if err != nil {
-				return err
+				return fmt.Errorf("clearing output directory %s: %w", engine.OutputDir, err)
 			}
 			err = fileIO.CopyFile(engine.InputDir, engine.OutputDir) // Recreate the outputDir with the same permissions as the inputDir
 			if err != nil {
-				return err
+				return fmt.Errorf("recreating output directory %s: %w", engine.OutputDir, err)
 			}
 
 			// Ensure output directory permissions match input directory (fileIO.CopyFile may not preserve them)
@@ -180,7 +195,7 @@ func (engine *Engine) Render() error {
 			for _, staticPath := range staticPaths {
 				err = fileIO.CopyFile(path.Join(engine.InputDir, staticPath), path.Join(engine.OutputDir, staticPath))
 				if err != nil {
-					return err
+					return fmt.Errorf("copying static file %s: %w", staticPath, err)
 				}
 				logger.Debug("Writing static file", "path", path.Join(engine.OutputDir, staticPath))
 			}
@@ -192,7 +207,7 @@ func (engine *Engine) Render() error {
 				if _, err = os.Stat(path.Join(engine.OutputDir, templatePath)); err == nil {
 					err = os.Remove(path.Join(engine.OutputDir, templatePath))
 					if err != nil {
-						return err
+						return fmt.Errorf("removing existing output file %s: %w", path.Join(engine.OutputDir, templatePath), err)
 					}
 					logger.Debug("Deleting existing rendered template", "path", path.Join(engine.OutputDir, templatePath))
 				}
@@ -220,7 +235,7 @@ func (engine *Engine) Render() error {
 
 			err = fileIO.WriteFile(outputFilePath, renderedTemplate)
 			if err != nil {
-				return err
+				return fmt.Errorf("writing output file %s: %w", outputFilePath, err)
 			}
 
 			// Set file permissions to match input directory permissions

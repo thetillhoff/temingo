@@ -6,8 +6,6 @@ Reliability and code quality — fix before adding features.
 
 - Move FuncMap registration into a shared helper (currently duplicated between `templateEngine` and `temporaryTemplateEngine`)
 - Move `getMetaForDir` call into the main `Render()` pipeline (currently buried inside `renderTemplate()`)
-- Add `validateEngine()` at `Render()` entry — catch conflicting flags early
-- Improve error wrapping: use `fmt.Errorf("...: %w", err)` consistently (#27)
 - Increase unit test coverage — rendering is currently only tested manually (#27)
 
 ## Soon
@@ -28,10 +26,8 @@ High-value improvements to the daily dev loop.
 
 **Output quality**
 
-- Fail on invalid folder names (special characters etc.)
 - Save source-file + line-number mapping during rendering so validation errors point back to the original template, not the generated output
 - Validate internal links (warn on broken file references)
-- Warn on `http://` links (should be `https://`)
 - Auto-generate `sitemap.xml` (#26)
 - Auto-generate `feed.xml` / RSS feed
 

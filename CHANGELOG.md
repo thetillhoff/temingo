@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v2.3.0
+
+- Add `validateEngine()` — fail early on conflicting config (e.g. `Beautify` + `Minify`, duplicate extensions)
+- Warn on insecure `http://` links in rendered HTML output (localhost/loopback excluded)
+- Fail on invalid folder names containing URL-breaking characters
+- Improve error messages with `%w` wrapping throughout the render pipeline
+
 ## v2.2.1
 
 - Update dependencies
