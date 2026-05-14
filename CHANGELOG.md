@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v2.4.0
+
+- Extract shared `templateFuncMap()` helper — partial verification now uses the same functions as rendering
+- Warn on unused partials at build time (does not fail the build)
+
 ## v2.3.0
 
 - Add `validateEngine()` — fail early on conflicting config (e.g. `Beautify` + `Minify`, duplicate extensions)

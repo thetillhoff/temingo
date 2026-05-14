@@ -21,12 +21,7 @@ func (engine *Engine) renderTemplate(meta map[string]interface{}, templatePath s
 	templateEngine := template.New(templatePath) // Create a new template with the path to it as its name
 
 	// Defining additional template functions
-	templateEngine = templateEngine.Funcs(template.FuncMap{
-		"concat":                 tmpl_concat,
-		"includeWithIndentation": tmpl_indent,
-		"capitalize":             tmpl_capitalize,
-		"reverse":                tmpl_reverse,
-	})
+	templateEngine = templateEngine.Funcs(templateFuncMap())
 
 	for _, partialFileContent := range partialFiles { // For each partialFile
 		if _, err = templateEngine.Parse(partialFileContent); err != nil { // Parse the partials contained in it

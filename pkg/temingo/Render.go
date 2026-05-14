@@ -30,6 +30,7 @@ func (engine *Engine) Render() error {
 
 		partialFiles      = map[string]string{}
 		renderedTemplates = map[string][]byte{}
+		templateContents  []string
 	)
 
 	if err = engine.validateEngine(); err != nil {
@@ -107,6 +108,7 @@ func (engine *Engine) Render() error {
 			return fmt.Errorf("reading template %s: %w", templatePath, err)
 		}
 
+		templateContents = append(templateContents, string(content))
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
 
 		// Create meta values object
@@ -127,6 +129,7 @@ func (engine *Engine) Render() error {
 		if err != nil {
 			return fmt.Errorf("reading metatemplate %s: %w", metaTemplatePath, err)
 		}
+		templateContents = append(templateContents, string(content))
 
 		for _, metaFilePath := range fileList.FilterByLevelAtFolderPath(path.Dir(metaTemplatePath), 1).FilterByFilename(engine.MetaFilename).Files { // For each meta yaml in a direct subfolder
 			logger.Debug("Found metatemplate child", "path", metaFilePath)
@@ -146,6 +149,8 @@ func (engine *Engine) Render() error {
 			}
 		}
 	}
+
+	engine.warnUnusedPartials(partialFiles, templateContents)
 
 	// Beautify/Minify
 

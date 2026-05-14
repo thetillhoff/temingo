@@ -21,10 +21,7 @@ func verifyPartials(partialFiles map[string]string) error {
 		// Checking for duplicate partials
 		temporaryTemplateEngine = template.New(temporaryTemplateEngineName) // Create a new temporary template
 
-		// Defining additional template functions
-		temporaryTemplateEngine = temporaryTemplateEngine.Funcs(template.FuncMap{
-			"concat": tmpl_concat,
-		})
+		temporaryTemplateEngine = temporaryTemplateEngine.Funcs(templateFuncMap())
 
 		_, err = temporaryTemplateEngine.Parse(content) // Parse the partial into the temporary template engine
 		if err != nil {

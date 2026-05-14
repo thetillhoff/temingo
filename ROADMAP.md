@@ -4,8 +4,6 @@
 
 Reliability and code quality — fix before adding features.
 
-- Move FuncMap registration into a shared helper (currently duplicated between `templateEngine` and `temporaryTemplateEngine`)
-- Move `getMetaForDir` call into the main `Render()` pipeline (currently buried inside `renderTemplate()`)
 - Increase unit test coverage — rendering is currently only tested manually (#27)
 
 ## Soon
@@ -22,7 +20,7 @@ High-value improvements to the daily dev loop.
 
 - Auto-indent multiline partials to match their `{{ template }}` call-site indentation (configurable, default on)
 - Hierarchical `values.yaml` auto-discovery: walk from root to template dir, merge in order, nesting/chaining supported (#24)
-- Detect unused partials and unused values, warn at build time (#12)
+- Detect unused values, warn at build time (#12)
 
 **Output quality**
 
