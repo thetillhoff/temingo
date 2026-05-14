@@ -4,9 +4,6 @@
 
 Reliability and code quality — fix before adding features.
 
-- Replace abandoned `watcher` dep (unmaintained since 2019) with `fsnotify`
-- Replace abandoned `serve` dep (unmaintained since 2023) with caddy lib (#88)
-- Replace abandoned `gohtml` beautifier (unmaintained since 2020) with an alternative
 - Move FuncMap registration into a shared helper (currently duplicated between `templateEngine` and `temporaryTemplateEngine`)
 - Move `getMetaForDir` call into the main `Render()` pipeline (currently buried inside `renderTemplate()`)
 - Add `validateEngine()` at `Render()` entry — catch conflicting flags early

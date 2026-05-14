@@ -17,8 +17,8 @@ jobs:
           - arm64
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - uses: thetillhoff/action-golang-build@d6bf6d38e3ea7850f7e0e4dfcef72ae4d68f8a49 # v1.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: thetillhoff/action-golang-build@63a1bfaa47f4f5c94c6b642b0723111128a9c118 # v1.0.1
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
@@ -28,7 +28,7 @@ jobs:
     needs: golang-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           merge-multiple: true
 

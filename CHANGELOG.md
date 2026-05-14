@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.2.1
+
+- Update dependencies
+
 ## v2.2.0
 
 - Replace abandoned `serve` dependency with inline `net/http` file server

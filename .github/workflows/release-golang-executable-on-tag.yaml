@@ -20,7 +20,7 @@ jobs:
       RELEASE_BODY: ${{ steps.release-prerequisites.outputs.RELEASE_BODY }}
     steps:
       - id: release-prerequisites
-        uses: thetillhoff/action-release-prerequisites@2798dc58246a51ae1e38f8ecc114d4048e37b0fb # v0.2.0
+        uses: thetillhoff/action-release-prerequisites@45161d06443c822f4acef4188c235a3d08b8cc5d # v0.3.1
         with:
           RELEASE_TAG: ${{ env.TAG }}
 
@@ -39,8 +39,8 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - uses: thetillhoff/action-golang-build@d6bf6d38e3ea7850f7e0e4dfcef72ae4d68f8a49 # v1.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: thetillhoff/action-golang-build@63a1bfaa47f4f5c94c6b642b0723111128a9c118 # v1.0.1
         with:
           OS: "${{ matrix.os }}"
           ARCH: "${{ matrix.arch }}"
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download linux/amd64 artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: artifact_temingo_linux_amd64
           path: .
@@ -86,7 +86,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Delete tag on failure
         shell: bash
         run: |
@@ -105,12 +105,12 @@ jobs:
       contents: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           merge-multiple: true
 
       - name: Release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           body: "${{ needs.release-prerequisites.outputs.RELEASE_BODY }}"
           prerelease: false
@@ -128,9 +128,9 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: artifact_temingo_linux_*
           path: ./artifacts
@@ -141,16 +141,16 @@ jobs:
         run: |
           chmod +x ./artifacts/temingo_linux_*
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -160,7 +160,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           context: .
           file: ./Dockerfile
