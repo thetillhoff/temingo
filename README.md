@@ -5,13 +5,12 @@
 This software aims to provide a simple but powerful templating mechanism.
 
 The original idea was to create a simple static site generator, which is not as overloaded with "unnecessary functionality" as f.e. hugo.
-The result, though, should not specifically be bound to website contents, as it can be used for any textfile-templating. -> At least when [#9](https://github.com/thetillhoff/temingo/issues/9) is resolved.
+The result, though, should not specifically be bound to website contents, as it can be used for any textfile-templating.
 
 Temingo supports
 
 - normal-type templates (== single-file-output templates) that will render to exactly one output file,
 - partial-type templates (== partial templates) that can be included in other templates, also in other partials,
-<!-- (- component-type templates (== component templates) that can be used for very often recurring elements like html buttons, where the css classes are set at one point, image embeddings, ...) -->
 - meta-type templates (== multi-file-output templates) that can be used to render multiple output files,
 - static files that will be copied to the output directory as is - respecting their location in the input directory filetree (except for `meta.yaml` files which are used for meta-type templates, and values files specified via `--valuesfile`),
 - an ignore file (`.temingoignore`) that works similar to `.gitignore`, but for the templating process,
@@ -571,12 +570,6 @@ The `--watch` / `-w` flag enables automatic rebuilding when files change:
 - Watches input directory, `.temingoignore` file, and values files
 - Can be combined with `--serve` for automatic rebuilds and local serving
 
-**Planned improvements:**
-
-- [ ] Partial/conditional rerender for only changed files
-- [ ] Skip unchanged static files
-- [ ] Skip unchanged rendered files
-
 ### Project Initialization
 
 The `temingo init` command generates sample projects:
@@ -633,8 +626,6 @@ temingo --dry-run --verbose
 
 ### Command Line Options
 
-<!-- Automate this snipped to be generated from the code at build time, or make otherwise sure this reflects the current state of the code -->
-
 ```text
 --config: Path to configuration file (default: ./.temingo.yaml in current directory).
 --inputDir, -i, default "./src": Sets the path to the template-file-directory.
@@ -654,104 +645,9 @@ temingo --dry-run --verbose
 --verbose, -v, default false: Enables the debug mode which prints more logs.
 ```
 
-## Future Optimizations
+## Roadmap
 
-The following optimizations are planned or under consideration:
-
-- File extension autodiscover
-  - Add table in readme on which extensions are covered
-  - Minimum are html, css and js. Nice would be svg and somehow image integration in webpages (webp conversion, auto replace in all src)
-
-Temingo _can_ do (this should probably be put into a dedicated application ("website optimizer"?) which could also include submodules like minifyCss, minifyHtml, minifyJs, prettifyCss, prettifyHtml, prettifyJs):
-
-- Content validation, for example check if the result is valid html according to the last file extension of the file. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- Content minification, for example for html files. Supported extensions:
-  - `.html`
-  - `.css`
-  - `.js`
-- Optimized media embedding, for example for images. Supported media:
-
-  - images
-  - svg (pregenerate different colors?)
-
-- [ ] SHA256, SHA384, and SHA512 generation for files, for example `*.js` files, so they can be added to your csp config file, and nonces are supported.
-- [ ] CSS beautification support
-- [ ] JS beautification support
-- [ ] Minify flag/setting
-- [ ] Minify html, warn user if there are undefined css classes used
-- [ ] Minify css, warn user if there are unused css classes
-- [ ] Minify js
-- [ ] Media & Media references optimization
-
-## Ideas & Future Enhancements
-
-This section contains ideas, TODOs, and potential future enhancements that are not yet implemented.
-
-### Dynamic Metadata
-
-- [ ] Pass global variables like datetime (globally equal renderTime only)
-
-### Content Markdown
-
-- [ ] Variables can be used in markdown, too. (Not sure if this makes sense yet)
-
-### Watch Mode Improvements
-
-- [ ] Partial/conditional rerender for only the changed files -> also only those changes will be printed in the logs
-  - fileWatcher/Render should check if the renderedTemplate is actually different from the existing file (in output/) -> hash if the files exist, check rendered stuff only writeFile when an actual change occured -> take double care of files that are created newly / deleted
-- [ ] Don't delete & copy when a static file hasn't changed. Maintain the necessary hashtable/s for static files in memory.
-- [ ] If output folder isn't empty, generate hashlist during first build
-- [ ] Don't delete & recreate rendered files when its contents haven't changed
-
-### HTML Parser & Validation
-
-- [ ] HTML parser notes:
-  - parent -> Node / node-ref
-  - siblings -> []Node
-  - attributes (contains, not equals) -> map[string]string
-  - content -> string/[]Node
-- [ ] PrettifyHtml, minifyHtml, and the Css and Js equivalents must be dedicated packages. If they need to be implemented manually, put them in dedicated repos.
-- [ ] Fail on invalid folder names (special chars etc) -> might be better in verifyHtml()
-- [ ] Templating engine should save a mapping of (inserted) line-numbers. That way, when the contents are verified (aka html/css/js is invalid for example), it can point to the correct file and line.
-
-### Component Libraries
-
-- [ ] Components can be packed into "component libraries", similar to a package.json. maybe `component.yaml`, `import.yaml` or `dependency.yaml`.
-  - References are to git repos and tags therein.
-  - Alternatively introduce a global registry for components, like godocs
-  - Either helm-repo approach, or apt/godocs-approach
-  - Local overrides should still be possible / components need to be able to be adjusted per project still
-  - Maybe a `values.yaml` (optional) that can add additional properties/variables or overriding default ones for the whole lib
-- [ ] Make it possible to print all css dependencies & overriding tree -> per component
-
-### Minification & Optimization
-
-- [ ] (div-merge on minifyHtml) // might clash with css rules...
-- [ ] Automatically prettify generated files by default - or minify, depending on configuration
-
-### Development Server
-
-- [ ] Inform dev-server (serve? import as package?) via websocket, that there was a change. auto-include library for cache-reset and refresh websocket connection
-
-### Other Ideas
-
-- [ ] Use html meta tag for listview attributes
-
-## TODO
-
-- Test the rendering via golang tests, not manually.
-
-- go through comments in README and todos in code
-
-- move funcmap add to template engine into extra function, so it happens always exactly the same for the temporaryTemplateEngine and the templateEngine
-
-- automatically check all "internal" links of website for validity aka file exists
-- automatically check all links that have a protocol specified to use https and warn in case of http
-
-- add setting to enable/disable auto-intendation of multiline partials with same whitespace as reference. Default is enabled.
+See [ROADMAP.md](ROADMAP.md) for planned features and improvements.
 
 ## Development
 

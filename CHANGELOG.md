@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v2.2.0
+
+- Replace abandoned `serve` dependency with inline `net/http` file server
+- Replace abandoned `gohtml` HTML beautifier with a new implementation using `golang.org/x/net/html`
+- Replace abandoned `radovskyb/watcher` with `fsnotify` (via fileIO v1.1.0)
+- Add ROADMAP.md and DEVELOPMENT.md
+- Clean up README: replace scattered TODO sections with a pointer to ROADMAP.md
+
 ## v2.1.8
 
 Updated dependencies.

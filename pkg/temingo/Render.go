@@ -101,10 +101,6 @@ func (engine *Engine) Render() error {
 
 		renderedTemplatePath = strings.ReplaceAll(templatePath, engine.TemplateExtension, "")
 
-		// TODO move getMetaForDir here (currently in renderTemplate())
-		// it should return two maps; meta and childMeta
-		// OR it should return one map, where map["meta"] and map["childMeta"] are already set
-
 		// Create meta values object
 		meta, err := engine.generateMetaObjectForTemplatePath(renderedTemplatePath, fileList, metaPaths)
 		if err != nil {
@@ -145,13 +141,11 @@ func (engine *Engine) Render() error {
 
 	// Beautify/Minify
 
-	// TODO Validate cmd flags, fail if both are set -> Should be done in cmd package, but also when Render is initially called ("validateEngine()"?)
-
-	if engine.Beautify { // TODO
+	if engine.Beautify {
 		for renderedTemplatePath, content := range renderedTemplates {
 			renderedTemplates[renderedTemplatePath] = engine.beautify(content, path.Ext(renderedTemplatePath))
 		}
-	} else if engine.Minify { // TODO
+	} else if engine.Minify {
 		for renderedTemplatePath, content := range renderedTemplates {
 			renderedTemplates[renderedTemplatePath] = engine.minify(content, path.Ext(renderedTemplatePath))
 		}
