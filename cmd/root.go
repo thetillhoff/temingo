@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/radovskyb/watcher"
 	"github.com/thetillhoff/fileIO"
-	"github.com/thetillhoff/serve/pkg/serve"
 	"github.com/thetillhoff/temingo/pkg/temingo"
 	"github.com/urfave/cli/v3"
 )
@@ -243,13 +242,12 @@ func Execute() {
 			slog.Info("Build complete")
 
 			if serveFlag { // Start webserver if desired
-				serveEngine := serve.DefaultEngine()
-				serveEngine.Ipaddress = "127.0.0.1" // Only listen to local connections
-				serveEngine.Directory = outputDirFlag
-				serveEngine.Verbose = verboseFlag
-				go func() { // Start the webserver in the background
-					err = serveEngine.Serve()
-					if err != nil {
+				addr := "127.0.0.1:3000"
+				mux := http.NewServeMux()
+				mux.Handle("/", http.FileServer(http.Dir(outputDirFlag)))
+				go func() {
+					slog.Info("Listening", "addr", "http://"+addr)
+					if err := http.ListenAndServe(addr, mux); err != nil {
 						slog.Error("Failed to start webserver", "error", err)
 						os.Exit(1)
 					}
@@ -270,9 +268,8 @@ func Execute() {
 					},
 					temingoEngine.Verbose,
 					100*time.Millisecond,
-					func(event watcher.Event) error {
-						slog.Info("Rebuild triggered by file change", "path", event.Path)
-						// TODO inform frontend via websocket connection
+					func(path string) error {
+						slog.Info("Rebuild triggered by file change", "path", path)
 						err = temingoEngine.Render()
 						if err != nil {
 							slog.Error("Rebuild failed", "error", err) // Print errors when in watch mode
