@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.5.0
+
+- Add `sortBy` template function — sorts `childMeta` by any field, returning a slice of `{"key", "value"}` entries composable with `reverse`
+
 ## v2.4.0
 
 - Extract shared `templateFuncMap()` helper — partial verification now uses the same functions as rendering
