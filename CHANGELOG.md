@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.6.0
+
+- Add `filterBy` template function — filters `.childMeta` by a field value; entries missing the field are kept by default (composable with `sortBy` and `reverse`)
+
 ## v2.5.0
 
 - Add `sortBy` template function — sorts `childMeta` by any field, returning a slice of `{"key", "value"}` entries composable with `reverse`
@@ -147,11 +151,11 @@ Reworked whole application for this release. Battle-tested it in the last month,
 
 - Fixed a bug, where temingo would fail if no `.temingoignore` file exists.
   From now on, it will assume nothing should be ignored in such a case.
-- Restructed codebase (split from one file into multiple).
+- Restructured codebase (split from one file into multiple).
 
 ## v0.0.2 on 2021-05-17
 
-- reworked exlusions from ground up and added support for a `.temingoignore` file
+- reworked exclusions from ground up and added support for a `.temingoignore` file
 - improved debugging
 
 ## v0.0.1 on 2021-04-30

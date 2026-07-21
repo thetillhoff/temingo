@@ -9,5 +9,6 @@ func templateFuncMap() template.FuncMap {
 		"capitalize":             tmpl_capitalize,
 		"reverse":                tmpl_reverse,
 		"sortBy":                 tmpl_sortBy,
+		"filterBy":               tmpl_filterBy,
 	}
 }

@@ -463,6 +463,24 @@ Or with a breadcrumb navigation in reverse order:
 
 The function returns a new slice with elements in reverse order. If the input is `nil`, it returns `nil`. If the input is an empty slice, it returns an empty slice.
 
+### `filterBy`
+
+Filters `.childMeta` by a field value. Entries where the field is absent are kept by default; only entries with a non-matching value are dropped.
+
+**Syntax:** `{{ filterBy <field> <value> .childMeta }}`
+
+**Example — hide WIP items with `publish: false` in their `meta.yaml`:**
+
+```html
+{{ range $index, $element := filterBy "publish" true .childMeta }}
+```
+
+Composable with `sortBy` and `reverse`:
+
+```html
+{{ range reverse (sortBy "date" (filterBy "publish" true .childMeta)) }}
+```
+
 <!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
   - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
