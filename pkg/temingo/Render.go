@@ -96,7 +96,7 @@ func (engine *Engine) Render() error {
 	}
 
 	// Verify partials
-	err = verifyPartials(partialFiles) // Check if the partials are unique
+	err = engine.verifyPartials(partialFiles) // Check if the partials are unique
 	if err != nil {
 		return err
 	}
@@ -164,11 +164,10 @@ func (engine *Engine) Render() error {
 		}
 	}
 
-	// Warn on insecure http:// links in rendered output
-	for renderedTemplatePath, content := range renderedTemplates {
-		if path.Ext(renderedTemplatePath) == ".html" {
-			engine.warnHTTPLinks(renderedTemplatePath, content)
-		}
+	// Check every reference in the rendered output. Findings never block the
+	// write below; under Strict this returns an error after reporting them.
+	if err = engine.checkReferences(renderedTemplates, staticPaths); err != nil {
+		return err
 	}
 
 	// Update output

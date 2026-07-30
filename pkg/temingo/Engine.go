@@ -3,6 +3,8 @@ package temingo
 import (
 	"log/slog"
 	"os"
+
+	"github.com/thetillhoff/temingo/pkg/refcheck"
 )
 
 type Engine struct {
@@ -22,6 +24,17 @@ type Engine struct {
 	Beautify                bool
 	Minify                  bool
 	Logger                  *slog.Logger
+
+	// Strict makes any reference finding exit non-zero. It draws no distinction
+	// between a definite failure and an indeterminate one: a timeout is as fatal
+	// as a 404, and the remedy is to run again.
+	Strict bool
+	// Allow accepts reference findings for matching URLs.
+	Allow refcheck.Allowlist
+
+	// linkCache keeps request outcomes for the life of the engine, so watch-mode
+	// rebuilds do not re-request unchanged references.
+	linkCache *refcheck.Cache
 }
 
 // DefaultEngine returns an engine with default values
@@ -49,5 +62,7 @@ func DefaultEngine() Engine {
 		Beautify:                false,
 		Minify:                  false,
 		Logger:                  logger,
+		Strict:                  false,
+		Allow:                   nil,
 	}
 }

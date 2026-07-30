@@ -24,7 +24,9 @@ func TestVerifyPartialsAllUnique(t *testing.T) {
 	{{ end }}
 	`
 
-	err := verifyPartials(partialFiles) // Check if the partials are unique
+	engine := DefaultEngine()
+
+	err := engine.verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err != nil {
 		t.Fatal("expected partial verification to succeed, got error:", err)
@@ -52,7 +54,9 @@ func TestVerifyPartialsNonUniqueOneFile(t *testing.T) {
 	{{ end }}
 	`
 
-	err := verifyPartials(partialFiles) // Check if the partials are unique
+	engine := DefaultEngine()
+
+	err := engine.verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err == nil {
 		t.Fatal("expected partial verification to fail, got success")
@@ -80,7 +84,9 @@ func TestVerifyPartialsNonUniqueMultipleFiles(t *testing.T) {
 	{{ end }}
 	`
 
-	err := verifyPartials(partialFiles) // Check if the partials are unique
+	engine := DefaultEngine()
+
+	err := engine.verifyPartials(partialFiles) // Check if the partials are unique
 
 	if err == nil {
 		t.Fatal("expected partial verification to fail, got success")
