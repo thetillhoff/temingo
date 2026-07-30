@@ -1,13 +1,13 @@
 # CHANGELOG
 
-## Unreleased
+## v3.0.0
 
-- Fix HTML beautifier corrupting output: text nodes are re-escaped (`&lt;div&gt;` no longer becomes a real element), `<script>`/`<style>`/`<pre>`/`<textarea>` content is no longer escaped (`.a > .b` and `a && b` stay valid), and `<pre>`/`<textarea>` content keeps its exact whitespace
-- Check every reference in rendered output at build time: external URLs over the network, internal paths against the build's own output. Reports broken, redirecting and gated targets, missing `integrity` hashes, missing `crossorigin` opt-ins, unverifiable CORS, and cross-origin `@import`. URLs in visible text or HTML comments are never reported
+- **Breaking:** a build now makes outbound HTTP requests by default, to check external references. A build that was previously hermetic no longer is, which matters most in a Docker build stage, in CI behind a proxy, and offline. Pass `--no-remote-checks` (or set `noRemoteChecks: true`) to restore the old behaviour; the checks that need no network keep running either way
+- **Breaking:** the HTML beautifier no longer corrupts output, which changes the bytes it produces. Text nodes are re-escaped, so `&lt;div&gt;` written in prose stays visible text instead of becoming a real element. `<script>`, `<style>`, `<pre>` and `<textarea>` content is no longer escaped, so `.a > .b` and `a && b` stay valid instead of turning into an invalid selector and a syntax error. `<pre>` and `<textarea>` keep their exact whitespace. Output that depended on the old behaviour will differ
+- **Breaking:** the `http://` warning is replaced by an `insecure-scheme` finding. The old one scanned raw text and so reported URLs inside `<code>` and comments; the new one only reports real references. Disable with `--allow-insecure-scheme` / `allowInsecureScheme:`
+- Check every reference in rendered output at build time: external URLs over the network, internal paths against the build's own output. Reports broken, redirecting and gated targets, missing `integrity` hashes, missing `crossorigin` opt-ins, unverifiable CORS, and cross-origin `@import`. URLs in visible text or HTML comments are never reported, and neither is a `form` action
 - Add `sri` template function, emitting the integrity hash of a remote subresource. `sha384` by default, `sha256` and `sha512` on request
 - Add `--strict` / `strict:` to exit non-zero on any reference finding, and `allow:` to accept expected ones per URL pattern and category
-- Report references fetched over plain `http` as an `insecure-scheme` finding, with a distinct reason for subresources, which a browser blocks as mixed content on an `https` page. Loopback targets are exempt. Disable with `--allow-insecure-scheme` / `allowInsecureScheme:`. This replaces the previous `http://` warning, which scanned raw text and so reported URLs inside `<code>` and comments
-- Add `--no-remote-checks` / `noRemoteChecks:` to skip every check needing a request, keeping the static and internal ones. Makes a build hermetic; does not disable `sri`, which cannot hash without fetching
 
 ## v2.6.0
 
