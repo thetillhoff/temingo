@@ -2,12 +2,12 @@
 
 ## v3.0.0
 
-- **Breaking:** a build now makes outbound HTTP requests by default, to check external references. A build that was previously hermetic no longer is, which matters most in a Docker build stage, in CI behind a proxy, and offline. Pass `--no-remote-checks` (or set `noRemoteChecks: true`) to restore the old behaviour; the checks that need no network keep running either way
-- **Breaking:** the HTML beautifier no longer corrupts output, which changes the bytes it produces. Text nodes are re-escaped, so `&lt;div&gt;` written in prose stays visible text instead of becoming a real element. `<script>`, `<style>`, `<pre>` and `<textarea>` content is no longer escaped, so `.a > .b` and `a && b` stay valid instead of turning into an invalid selector and a syntax error. `<pre>` and `<textarea>` keep their exact whitespace. Output that depended on the old behaviour will differ
-- **Breaking:** the `http://` warning is replaced by an `insecure-scheme` finding. The old one scanned raw text and so reported URLs inside `<code>` and comments; the new one only reports real references. Disable with `--allow-insecure-scheme` / `allowInsecureScheme:`
-- Check every reference in rendered output at build time: external URLs over the network, internal paths against the build's own output. Reports broken, redirecting and gated targets, missing `integrity` hashes, missing `crossorigin` opt-ins, unverifiable CORS, and cross-origin `@import`. URLs in visible text or HTML comments are never reported, and neither is a `form` action
-- Add `sri` template function, emitting the integrity hash of a remote subresource. `sha384` by default, `sha256` and `sha512` on request
-- Add `--strict` / `strict:` to exit non-zero on any reference finding, and `allow:` to accept expected ones per URL pattern and category
+- **Breaking:** a build now makes outbound HTTP requests by default, to check external references. A build that was previously hermetic no longer is, which matters most in a Docker build stage, in CI behind a proxy, and offline. Pass `--no-remote-checks`, or set `noRemoteChecks: true`, to restore the old behaviour; the checks that need no network keep running either way
+- **Breaking:** the HTML beautifier no longer corrupts output, which changes the bytes it produces. Text is re-escaped, so an escaped HTML entity written in prose stays visible text instead of becoming a real element. Script, style, pre and textarea content is no longer escaped, so a CSS child selector and a JavaScript and-operator survive instead of turning into an invalid selector and a syntax error. Pre and textarea content keeps its exact whitespace. Output that depended on the old behaviour will differ
+- **Breaking:** the plain-http link warning is replaced by an `insecure-scheme` finding. The old one scanned raw text and so reported URLs inside code samples and comments; the new one only reports real references. Disable with `--allow-insecure-scheme`, or `allowInsecureScheme: true`
+- Check every reference in rendered output at build time: external URLs over the network, internal paths against the build's own output. Reports broken, redirecting and gated targets, missing `integrity` hashes, missing `crossorigin` opt-ins, unverifiable CORS, and cross-origin stylesheet imports. URLs in visible text or HTML comments are never reported, and neither is a form action
+- Add an `sri` template function, emitting the integrity hash of a remote subresource. `sha384` by default, `sha256` and `sha512` on request
+- Add `--strict`, to exit non-zero on any reference finding, and an `allow` list to accept expected findings per URL pattern and category
 
 ## v2.6.0
 
