@@ -51,6 +51,7 @@ var initCommand = &cli.Command{
 		verboseFlag := cmd.Bool("verbose")
 		dryRunFlag := cmd.Bool("dry-run")
 		noDeleteOutputDirFlag := cmd.Bool("noDeleteOutputDir")
+		strictFlag := cmd.Bool("strict")
 
 		// Load config file if specified
 		config, err := loadConfig(cfgFile)
@@ -63,7 +64,7 @@ var initCommand = &cli.Command{
 		applyConfigToFlags(cmd, config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
 			&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
 			&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
-			&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag)
+			&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag)
 
 		var (
 			values = map[string]string{}

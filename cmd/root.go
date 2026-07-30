@@ -118,6 +118,11 @@ func Execute() {
 				Sources: cli.EnvVars("TEMINGO_DRY_RUN"),
 			},
 			&cli.BoolFlag{
+				Name:    "strict",
+				Usage:   "exit non-zero if any reference finding is reported",
+				Sources: cli.EnvVars("TEMINGO_STRICT"),
+			},
+			&cli.BoolFlag{
 				Name:    "watch",
 				Aliases: []string{"w"},
 				Usage:   "watch makes temingo continiously watch for filesystem changes",
@@ -148,6 +153,7 @@ func Execute() {
 			verboseFlag := cmd.Bool("verbose")
 			dryRunFlag := cmd.Bool("dry-run")
 			noDeleteOutputDirFlag := cmd.Bool("noDeleteOutputDir")
+			strictFlag := cmd.Bool("strict")
 			watchFlag := cmd.Bool("watch")
 			serveFlag := cmd.Bool("serve")
 
@@ -162,7 +168,7 @@ func Execute() {
 			applyConfigToFlags(cmd, config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
 				&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
 				&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
-				&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag)
+				&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag)
 
 			var (
 				values = map[string]string{}
@@ -230,6 +236,8 @@ func Execute() {
 				DryRun:                  dryRunFlag,
 				Beautify:                true,
 				Minify:                  false,
+				Strict:                  strictFlag,
+				Allow:                   allowlistFromConfig(config),
 				Logger:                  temingoLogger,
 			}
 
