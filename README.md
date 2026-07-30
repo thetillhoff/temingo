@@ -481,6 +481,28 @@ Composable with `sortBy` and `reverse`:
 {{ range reverse (sortBy "date" (filterBy "publish" true .childMeta)) }}
 ```
 
+### `sri`
+
+Emits the integrity hash of a remote subresource, so the attribute does not have to be maintained by hand.
+
+**Syntax:** `{{ sri <url> [<algorithm>] }}`
+
+```html
+<script src="https://cdn.example/lib/5.2.1/x.js"
+        integrity="{{ sri "https://cdn.example/lib/5.2.1/x.js" }}"
+        crossorigin="anonymous"></script>
+```
+
+The default algorithm is `sha384`. Pass another as a second argument - `sha256`, `sha384` and `sha512` are supported:
+
+```html
+{{ sri "https://cdn.example/x.js" "sha512" }}
+```
+
+`sri` accepts remote URLs only. A hash of a file temingo produced would protect nothing, because whoever can alter a same-origin file can alter the document carrying its hash.
+
+The hash is fetched at build time, so a build using `sri` fails when the target is unreachable - there is no correct output without the hash. Note that this also means the hash is whatever the host served during that build, which protects your visitors against later tampering but not against a host already compromised at build time. A hash committed to the template is stronger; the missing-integrity check will tell you when one is absent.
+
 <!-- ### Component template
 - [ ] partials are included 1:1, components are automatically parsed as functions and args can be passed (see description below)
   - take all files in the `./src/components/*`, and create a map[string]interface{} aka map[filename-without-extension]interface{} // TODO is it the right type?
@@ -611,6 +633,51 @@ The `--verbose` / `-v` flag enables detailed logging:
 
 - Provides additional information about the rendering process
 - Useful for debugging and understanding what temingo is doing
+
+### Reference Checking
+
+Every build reports references in the rendered output that are broken, unverifiable, or point at nothing the build produced:
+
+- external URLs that respond with an error, redirect, or require authorisation
+- external URLs that respond but send no `Access-Control-Allow-Origin`, which makes an `integrity` hash unverifiable and causes the browser to block the subresource
+- cross-origin scripts and stylesheets with no `integrity` hash
+- an `integrity` hash with no `crossorigin` attribute, which the browser blocks outright
+- a cross-origin `@import`, which cannot be integrity-protected at all
+- references fetched over plain `http`, which can be read and altered in transit - and which a browser blocks outright when the reference is a subresource on an `https` page
+- internal paths that no output file answers
+
+An internal path resolves if the build writes that file, a directory holding an `index.html`, or the path with `.html` appended - temingo cannot know which form your server prefers, so any of them counts. Paths that only a server rewrite could satisfy are never reported: the check proves absence or stays silent.
+
+URLs written as visible text - in a code sample, or inside an HTML comment - are never reported. Neither is a `form` action, which addresses a server route rather than a file.
+
+Findings do not fail the build. Pass `--strict` (or set `strict: true`) to exit non-zero when any finding is reported, which is the intended CI configuration. Strict mode is fatal on unreachable and unresolvable hosts too, so a transient network fault fails the build and the remedy is to run it again.
+
+Two checks can be turned off:
+
+| Flag | Config key | Effect |
+| ---- | ---------- | ------ |
+| `--no-remote-checks` | `noRemoteChecks: true` | Skips every check that needs a request. The static and internal checks still run, so a build stays useful with no network at all. |
+| `--allow-insecure-scheme` | `allowInsecureScheme: true` | Stops reporting references fetched over plain `http`. Loopback targets are exempt either way, since a local dev server legitimately serves plain `http`. |
+
+`--no-remote-checks` is what makes a build hermetic - worth setting in a Docker build stage or an offline environment, where otherwise every external reference becomes an `unreachable` finding. It does **not** disable `sri`, which cannot produce a hash without fetching; a template using `sri` still needs network access.
+
+Accept expected findings with an allow list:
+
+```yaml
+strict: true
+allow:
+  - url: https://paywalled.example/*      # accept every finding for these
+  - url: https://redirecting.example/*
+    checks: [redirect]                    # accept only the named categories
+```
+
+A trailing `*` covers everything under it, so `https://example.com/*` matches the whole host. A `*` in the middle of a pattern matches within one path segment, so `https://cdn.example/lib/*/x.js` pins the filename while accepting any version.
+
+Categories are `status`, `gated`, `redirect`, `unreachable`, `missing-target`, `missing-integrity`, `missing-crossorigin`, `no-cors-header`, `unverified-import` and `insecure-scheme`. A URL whose entry names no categories is never requested at all.
+
+A redirect is best fixed by replacing the reference with its target rather than allowlisting it.
+
+External URLs are requested once each per process, so a watch session pays only on its first build.
 
 ## Usage Examples
 

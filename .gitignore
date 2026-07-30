@@ -4,3 +4,6 @@
 /src
 /output
 /.temingoignore
+
+/coverage.out
+/coverage.html

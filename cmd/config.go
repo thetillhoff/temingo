@@ -5,9 +5,43 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/thetillhoff/temingo/internal/refcheck"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )
+
+// allowlistFromConfig reads the allow list. Entries without a url are skipped;
+// an entry with no checks accepts every category for its url.
+func allowlistFromConfig(config map[string]interface{}) refcheck.Allowlist {
+	raw, ok := config["allow"].([]interface{})
+	if !ok {
+		return nil
+	}
+
+	var list refcheck.Allowlist
+	for _, item := range raw {
+		entryMap, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		url, ok := entryMap["url"].(string)
+		if !ok || url == "" {
+			continue
+		}
+
+		entry := refcheck.AllowEntry{URL: url}
+		if checks, ok := entryMap["checks"].([]interface{}); ok {
+			for _, c := range checks {
+				if s, ok := c.(string); ok {
+					entry.Checks = append(entry.Checks, refcheck.Category(s))
+				}
+			}
+		}
+		list = append(list, entry)
+	}
+
+	return list
+}
 
 // loadConfig reads configuration from a YAML file in the current working directory
 // It supports reading from a specific file path or defaults to .temingo.yaml in the current directory
@@ -53,7 +87,8 @@ func applyConfigToFlags(cmd *cli.Command, config map[string]interface{},
 	templateExtensionFlag, metaTemplateExtensionFlag, partialExtensionFlag *string,
 	metaFilenameFlag, markdownFilenameFlag *string,
 	valueFlags, valuesFileFlags *[]string,
-	verboseFlag, dryRunFlag, noDeleteOutputDirFlag *bool) {
+	verboseFlag, dryRunFlag, noDeleteOutputDirFlag, strictFlag *bool,
+	noRemoteChecksFlag, allowInsecureSchemeFlag *bool) {
 	// Helper function to get string value from config
 	getString := func(key string) string {
 		if val, ok := config[key]; ok {
@@ -142,6 +177,9 @@ func applyConfigToFlags(cmd *cli.Command, config map[string]interface{},
 	applyBoolFlag("verbose", "verbose", verboseFlag)
 	applyBoolFlag("dry-run", "dryRun", dryRunFlag)
 	applyBoolFlag("noDeleteOutputDir", "noDeleteOutputDir", noDeleteOutputDirFlag)
+	applyBoolFlag("strict", "strict", strictFlag)
+	applyBoolFlag("no-remote-checks", "noRemoteChecks", noRemoteChecksFlag)
+	applyBoolFlag("allow-insecure-scheme", "allowInsecureScheme", allowInsecureSchemeFlag)
 	applyStringSliceFlag("value", "value", valueFlags)
 	applyStringSliceFlag("valuesfile", "valuesfile", valuesFileFlags)
 }

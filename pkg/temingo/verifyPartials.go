@@ -7,7 +7,11 @@ import (
 )
 
 // Verify that each partial has a unique name
-func verifyPartials(partialFiles map[string]string) error {
+//
+// It is a method so that partials parse against the same FuncMap templates
+// render with - a second, parse-only FuncMap would silently drift out of sync
+// and break partial parsing whenever a function is added.
+func (engine *Engine) verifyPartials(partialFiles map[string]string) error {
 	var (
 		err error
 
@@ -21,7 +25,7 @@ func verifyPartials(partialFiles map[string]string) error {
 		// Checking for duplicate partials
 		temporaryTemplateEngine = template.New(temporaryTemplateEngineName) // Create a new temporary template
 
-		temporaryTemplateEngine = temporaryTemplateEngine.Funcs(templateFuncMap())
+		temporaryTemplateEngine = temporaryTemplateEngine.Funcs(templateFuncMap(engine))
 
 		_, err = temporaryTemplateEngine.Parse(content) // Parse the partial into the temporary template engine
 		if err != nil {

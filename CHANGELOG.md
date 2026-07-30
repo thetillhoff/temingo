@@ -3,6 +3,11 @@
 ## Unreleased
 
 - Fix HTML beautifier corrupting output: text nodes are re-escaped (`&lt;div&gt;` no longer becomes a real element), `<script>`/`<style>`/`<pre>`/`<textarea>` content is no longer escaped (`.a > .b` and `a && b` stay valid), and `<pre>`/`<textarea>` content keeps its exact whitespace
+- Check every reference in rendered output at build time: external URLs over the network, internal paths against the build's own output. Reports broken, redirecting and gated targets, missing `integrity` hashes, missing `crossorigin` opt-ins, unverifiable CORS, and cross-origin `@import`. URLs in visible text or HTML comments are never reported
+- Add `sri` template function, emitting the integrity hash of a remote subresource. `sha384` by default, `sha256` and `sha512` on request
+- Add `--strict` / `strict:` to exit non-zero on any reference finding, and `allow:` to accept expected ones per URL pattern and category
+- Report references fetched over plain `http` as an `insecure-scheme` finding, with a distinct reason for subresources, which a browser blocks as mixed content on an `https` page. Loopback targets are exempt. Disable with `--allow-insecure-scheme` / `allowInsecureScheme:`. This replaces the previous `http://` warning, which scanned raw text and so reported URLs inside `<code>` and comments
+- Add `--no-remote-checks` / `noRemoteChecks:` to skip every check needing a request, keeping the static and internal ones. Makes a build hermetic; does not disable `sri`, which cannot hash without fetching
 
 ## v2.6.0
 
