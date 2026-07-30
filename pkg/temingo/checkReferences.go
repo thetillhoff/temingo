@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 // collectFrom returns the references in one output file, dispatching on its

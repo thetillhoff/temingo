@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 func TestAllowlistFromConfig(t *testing.T) {

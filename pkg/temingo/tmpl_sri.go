@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 // defaultSRIAlgorithm favours the algorithm in common recommendation over the

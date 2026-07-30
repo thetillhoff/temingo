@@ -4,7 +4,7 @@
 
 **Goal:** Check every reference in rendered output at build time - external URLs over the network, internal paths against the build's own output - and expose a template function that pins remote subresources to a content hash.
 
-**Architecture:** A new `pkg/refcheck` package owns reference collection, classification, static checking, internal resolution, and the URL request cache. It has no dependency on `pkg/temingo`. `Render()` calls into it after beautify/minify and before writing, where both the rendered content and the full set of planned output paths are in memory - so checks work under `--dry-run` and need no filesystem reads. The `sri` template function reaches the same request cache through the Engine.
+**Architecture:** A new `internal/refcheck` package owns reference collection, classification, static checking, internal resolution, and the URL request cache. It has no dependency on `pkg/temingo`. `Render()` calls into it after beautify/minify and before writing, where both the rendered content and the full set of planned output paths are in memory - so checks work under `--dry-run` and need no filesystem reads. The `sri` template function reaches the same request cache through the Engine.
 
 **Tech Stack:** Go 1.25.5, `golang.org/x/net/html` (already a direct dependency), stdlib `net/http`, `crypto/sha256|sha512`, `testing` + `net/http/httptest`.
 
@@ -31,9 +31,9 @@
 
 **Files:**
 
-- Create: `pkg/refcheck/reference.go`
-- Create: `pkg/refcheck/collectHTML.go`
-- Test: `pkg/refcheck/collectHTML_test.go`
+- Create: `internal/refcheck/reference.go`
+- Create: `internal/refcheck/collectHTML.go`
+- Test: `internal/refcheck/collectHTML_test.go`
 
 **Interfaces:**
 
@@ -147,10 +147,10 @@ func TestCollectHTML(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCollectHTML -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCollectHTML -v`
 Expected: FAIL to build - `undefined: CollectHTML`, `undefined: Reference`.
 
-- [ ] **Step 3: Write `pkg/refcheck/reference.go`**
+- [ ] **Step 3: Write `internal/refcheck/reference.go`**
 
 ```go
 // Package refcheck collects references from rendered output and reports the
@@ -215,7 +215,7 @@ func Classify(rawURL string) Origin {
 }
 ```
 
-- [ ] **Step 4: Write `pkg/refcheck/collectHTML.go`**
+- [ ] **Step 4: Write `internal/refcheck/collectHTML.go`**
 
 ```go
 package refcheck
@@ -379,13 +379,13 @@ This calls `CollectCSS`, written in Task 2, so the package does not compile betw
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCollectHTML -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCollectHTML -v`
 Expected: PASS, all eleven subtests, once `CollectCSS` exists or is stubbed.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/reference.go pkg/refcheck/collectHTML.go pkg/refcheck/collectHTML_test.go && git commit -m "feat(refcheck): collect references from rendered markup"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/reference.go internal/refcheck/collectHTML.go internal/refcheck/collectHTML_test.go && git commit -m "feat(refcheck): collect references from rendered markup"
 ```
 
 ---
@@ -394,8 +394,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/reference.go pkg/refcheck/
 
 **Files:**
 
-- Create: `pkg/refcheck/collectCSS.go`
-- Test: `pkg/refcheck/collectCSS_test.go`
+- Create: `internal/refcheck/collectCSS.go`
+- Test: `internal/refcheck/collectCSS_test.go`
 
 **Interfaces:**
 
@@ -508,10 +508,10 @@ func TestCollectHTMLIncludesStyles(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run 'TestCollectCSS|TestCollectHTMLIncludesStyles' -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run 'TestCollectCSS|TestCollectHTMLIncludesStyles' -v`
 Expected: FAIL to build - `undefined: CollectCSS`, or FAIL on every subtest if you stubbed it in Task 1.
 
-- [ ] **Step 3: Write `pkg/refcheck/collectCSS.go`**
+- [ ] **Step 3: Write `internal/refcheck/collectCSS.go`**
 
 ```go
 package refcheck
@@ -582,13 +582,13 @@ func firstNonEmpty(vals ...string) string {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -v`
 Expected: PASS. Task 1's tests must pass unchanged.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/ && git commit -m "feat(refcheck): collect references from stylesheet content"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/ && git commit -m "feat(refcheck): collect references from stylesheet content"
 ```
 
 ---
@@ -597,8 +597,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/ && git commit -m "feat(re
 
 **Files:**
 
-- Create: `pkg/refcheck/finding.go`
-- Test: `pkg/refcheck/finding_test.go`
+- Create: `internal/refcheck/finding.go`
+- Test: `internal/refcheck/finding_test.go`
 
 **Interfaces:**
 
@@ -663,10 +663,10 @@ func TestSortFindings(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run 'TestFinding|TestSortFindings' -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run 'TestFinding|TestSortFindings' -v`
 Expected: FAIL to build - `undefined: Finding`.
 
-- [ ] **Step 3: Write `pkg/refcheck/finding.go`**
+- [ ] **Step 3: Write `internal/refcheck/finding.go`**
 
 ```go
 package refcheck
@@ -732,13 +732,13 @@ func SortFindings(fs []Finding) {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run 'TestFinding|TestSortFindings' -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run 'TestFinding|TestSortFindings' -v`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/finding.go pkg/refcheck/finding_test.go && git commit -m "feat(refcheck): add finding categories"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/finding.go internal/refcheck/finding_test.go && git commit -m "feat(refcheck): add finding categories"
 ```
 
 ---
@@ -747,8 +747,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/finding.go pkg/refcheck/fi
 
 **Files:**
 
-- Create: `pkg/refcheck/checkStatic.go`
-- Test: `pkg/refcheck/checkStatic_test.go`
+- Create: `internal/refcheck/checkStatic.go`
+- Test: `internal/refcheck/checkStatic_test.go`
 
 **Interfaces:**
 
@@ -846,10 +846,10 @@ func TestCheckStatic(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCheckStatic -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCheckStatic -v`
 Expected: FAIL to build - `undefined: CheckStatic`.
 
-- [ ] **Step 3: Write `pkg/refcheck/checkStatic.go`**
+- [ ] **Step 3: Write `internal/refcheck/checkStatic.go`**
 
 ```go
 package refcheck
@@ -905,13 +905,13 @@ Note: `verifiedSheets` is keyed by the file a reference was *found in*, which co
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCheckStatic -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCheckStatic -v`
 Expected: PASS, all seven subtests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/checkStatic.go pkg/refcheck/checkStatic_test.go && git commit -m "feat(refcheck): add static integrity and CORS opt-in checks"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/checkStatic.go internal/refcheck/checkStatic_test.go && git commit -m "feat(refcheck): add static integrity and CORS opt-in checks"
 ```
 
 ---
@@ -920,8 +920,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/checkStatic.go pkg/refchec
 
 **Files:**
 
-- Create: `pkg/refcheck/resolveInternal.go`
-- Test: `pkg/refcheck/resolveInternal_test.go`
+- Create: `internal/refcheck/resolveInternal.go`
+- Test: `internal/refcheck/resolveInternal_test.go`
 
 **Interfaces:**
 
@@ -1024,10 +1024,10 @@ func TestResolveInternal(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestResolveInternal -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestResolveInternal -v`
 Expected: FAIL to build - `undefined: ResolveInternal`.
 
-- [ ] **Step 3: Write `pkg/refcheck/resolveInternal.go`**
+- [ ] **Step 3: Write `internal/refcheck/resolveInternal.go`**
 
 ```go
 package refcheck
@@ -1123,13 +1123,13 @@ func resolveTarget(r Reference) (string, bool) {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestResolveInternal -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestResolveInternal -v`
 Expected: PASS, all ten subtests. `/slides/` passes via the `index.html` candidate and `/about` via the `.html` candidate.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/resolveInternal.go pkg/refcheck/resolveInternal_test.go && git commit -m "feat(refcheck): resolve internal references against build output"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/resolveInternal.go internal/refcheck/resolveInternal_test.go && git commit -m "feat(refcheck): resolve internal references against build output"
 ```
 
 ---
@@ -1138,8 +1138,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/resolveInternal.go pkg/ref
 
 **Files:**
 
-- Create: `pkg/refcheck/allowlist.go`
-- Test: `pkg/refcheck/allowlist_test.go`
+- Create: `internal/refcheck/allowlist.go`
+- Test: `internal/refcheck/allowlist_test.go`
 
 **Interfaces:**
 
@@ -1230,10 +1230,10 @@ func TestAllowlistFilter(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestAllowlist -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestAllowlist -v`
 Expected: FAIL to build - `undefined: Allowlist`.
 
-- [ ] **Step 3: Write `pkg/refcheck/allowlist.go`**
+- [ ] **Step 3: Write `internal/refcheck/allowlist.go`**
 
 ```go
 package refcheck
@@ -1320,13 +1320,13 @@ Note: `path.Match` alone treats `*` as never crossing `/`, so `https://paywalled
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestAllowlist -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestAllowlist -v`
 Expected: PASS, all eight subtests plus the filter test.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/allowlist.go pkg/refcheck/allowlist_test.go && git commit -m "feat(refcheck): add allowlist with per-category narrowing"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/allowlist.go internal/refcheck/allowlist_test.go && git commit -m "feat(refcheck): add allowlist with per-category narrowing"
 ```
 
 ---
@@ -1335,8 +1335,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/allowlist.go pkg/refcheck/
 
 **Files:**
 
-- Create: `pkg/refcheck/cache.go`
-- Test: `pkg/refcheck/cache_test.go`
+- Create: `internal/refcheck/cache.go`
+- Test: `internal/refcheck/cache_test.go`
 
 **Interfaces:**
 
@@ -1475,10 +1475,10 @@ Expected: `WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP`. If
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCacheFetch -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCacheFetch -v`
 Expected: FAIL to build - `undefined: NewCache`.
 
-- [ ] **Step 4: Write `pkg/refcheck/cache.go`**
+- [ ] **Step 4: Write `internal/refcheck/cache.go`**
 
 ```go
 package refcheck
@@ -1625,13 +1625,13 @@ func hasherFor(algorithm string) (hash.Hash, error) {
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCacheFetch -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCacheFetch -v`
 Expected: PASS. The two dedupe subtests are the ones that matter: if either fails, the cache is re-requesting.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/cache.go pkg/refcheck/cache_test.go && git commit -m "feat(refcheck): add deduplicating URL request cache"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/cache.go internal/refcheck/cache_test.go && git commit -m "feat(refcheck): add deduplicating URL request cache"
 ```
 
 ---
@@ -1640,8 +1640,8 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/cache.go pkg/refcheck/cach
 
 **Files:**
 
-- Create: `pkg/refcheck/checkRemote.go`
-- Test: `pkg/refcheck/checkRemote_test.go`
+- Create: `internal/refcheck/checkRemote.go`
+- Test: `internal/refcheck/checkRemote_test.go`
 
 **Interfaces:**
 
@@ -1741,10 +1741,10 @@ func TestCheckRemoteUnreachable(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCheckRemote -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -run TestCheckRemote -v`
 Expected: FAIL to build - `undefined: CheckRemote`.
 
-- [ ] **Step 3: Write `pkg/refcheck/checkRemote.go`**
+- [ ] **Step 3: Write `internal/refcheck/checkRemote.go`**
 
 ```go
 package refcheck
@@ -1812,13 +1812,13 @@ func CheckRemote(refs []Reference, c *Cache) []Finding {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -v`
+Run: `cd ~/code/thetillhoff/temingo && go test ./internal/refcheck/ -v`
 Expected: PASS, whole package.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/checkRemote.go pkg/refcheck/checkRemote_test.go && git commit -m "feat(refcheck): add network checks for status, redirects and CORS"
+cd ~/code/thetillhoff/temingo && git add internal/refcheck/checkRemote.go internal/refcheck/checkRemote_test.go && git commit -m "feat(refcheck): add network checks for status, redirects and CORS"
 ```
 
 ---
@@ -1835,7 +1835,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/checkRemote.go pkg/refchec
 
 **Interfaces:**
 
-- Consumes: everything from `pkg/refcheck`.
+- Consumes: everything from `internal/refcheck`.
 - Produces: `func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []string) error`, returning a non-nil error only under `Strict` with at least one finding.
 
 - [ ] **Step 1: Write the failing test**
@@ -1956,7 +1956,7 @@ Expected: FAIL to build - `engine.Strict undefined`, `engine.checkReferences und
 
 - [ ] **Step 3: Add fields to `pkg/temingo/Engine.go`**
 
-Add `"github.com/thetillhoff/temingo/pkg/refcheck"` to the imports, then add to the `Engine` struct after `Minify`:
+Add `"github.com/thetillhoff/temingo/internal/refcheck"` to the imports, then add to the `Engine` struct after `Minify`:
 
 ```go
  // Strict makes any reference finding exit non-zero. It draws no distinction
@@ -1987,7 +1987,7 @@ import (
  "fmt"
  "path"
 
- "github.com/thetillhoff/temingo/pkg/refcheck"
+ "github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 // checkReferences collects every reference in the rendered output and reports
@@ -2198,7 +2198,7 @@ import (
  "fmt"
  "net/http"
 
- "github.com/thetillhoff/temingo/pkg/refcheck"
+ "github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 // defaultSRIAlgorithm favours the algorithm in common recommendation over the
@@ -2309,7 +2309,7 @@ import (
  "reflect"
  "testing"
 
- "github.com/thetillhoff/temingo/pkg/refcheck"
+ "github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 func TestAllowlistFromConfig(t *testing.T) {
@@ -2374,7 +2374,7 @@ Expected: FAIL to build - `undefined: allowlistFromConfig`.
 
 - [ ] **Step 3: Add `allowlistFromConfig` to `cmd/config.go`**
 
-Append to the file, adding `"github.com/thetillhoff/temingo/pkg/refcheck"` to its imports:
+Append to the file, adding `"github.com/thetillhoff/temingo/internal/refcheck"` to its imports:
 
 ```go
 // allowlistFromConfig reads the allow list. Entries without a url are skipped;
@@ -2673,7 +2673,7 @@ Add to **Later**, since #92's CSP use case is not delivered:
 Two edits to `docs/specs/2026-07-30-link-and-sri-validation-design.md`:
 
 1. Delete the contract "**Findings carry a severity for presentation only.**" It is not implemented, deliberately: with strict fatal on every category, a severity orders output without informing anything, and `Category` already says what kind of problem a finding is. Replace it with a sentence stating that findings are ordered by file then URL for stable output.
-2. Replace `To be filled in during implementation.` in the post-implementation section with the concrete mechanisms: the `pkg/refcheck` package boundary, the in-memory output-path set rather than filesystem stats, `path.Match` plus the trailing-`*` prefix rule, the process-lifetime cache with no expiry and sequential requests, the regex-based CSS extraction and its known ceiling, and whether strict returns before or after the write phase (Task 9 Step 5).
+2. Replace `To be filled in during implementation.` in the post-implementation section with the concrete mechanisms: the `internal/refcheck` package boundary, the in-memory output-path set rather than filesystem stats, `path.Match` plus the trailing-`*` prefix rule, the process-lifetime cache with no expiry and sequential requests, the regex-based CSS extraction and its known ceiling, and whether strict returns before or after the write phase (Task 9 Step 5).
 
 - [ ] **Step 8: Lint the markdown**
 

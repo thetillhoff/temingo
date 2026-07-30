@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 func TestCheckReferencesNoRemoteChecks(t *testing.T) {

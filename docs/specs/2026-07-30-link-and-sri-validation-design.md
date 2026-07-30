@@ -106,7 +106,7 @@ None outstanding.
 
 *How the current build satisfies the above. Not required by the contracts.*
 
-The four responsibilities live in `pkg/refcheck`, which imports nothing from `pkg/temingo`. The engine calls into it from `Render`, after beautify/minify and before the write phase.
+The four responsibilities live in `internal/refcheck`, which imports nothing from `pkg/temingo`. The engine calls into it from `Render`, after beautify/minify and before the write phase.
 
 **Output-path set, not the filesystem.** Internal resolution is handed the keys of the rendered-template map plus the static-file paths, so it works before anything is written and under a dry run. Resolution tries the path itself, the path joined with `index.html`, and the path with `.html` appended.
 

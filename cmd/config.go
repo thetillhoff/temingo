@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 )

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/thetillhoff/temingo/pkg/refcheck"
+	"github.com/thetillhoff/temingo/internal/refcheck"
 )
 
 type Engine struct {
@@ -75,3 +75,18 @@ func DefaultEngine() Engine {
 		AllowInsecureScheme:     false,
 	}
 }
+
+// The reference checker is internal, but Engine.Allow is an exported field, so
+// the three types needed to populate it are aliased here. Without them the field
+// would be unsettable from outside this module - an exported field nobody can
+// use.
+
+// Allowlist is the configured set of accepted reference findings.
+type Allowlist = refcheck.Allowlist
+
+// AllowEntry accepts findings for URLs matching a pattern. An entry naming no
+// checks accepts every category for its URL.
+type AllowEntry = refcheck.AllowEntry
+
+// Category identifies a kind of reference finding, as named by an AllowEntry.
+type Category = refcheck.Category
