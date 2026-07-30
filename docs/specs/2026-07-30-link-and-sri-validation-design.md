@@ -2,13 +2,14 @@
 
 ## Purpose
 
-Rendered output accumulates references to things temingo does not control: CDN scripts, stylesheets, fonts, background images, third-party links. When one of them breaks - a 404, a moved page, a missing CORS header - nothing surfaces at build time and the failure is discovered by a visitor, or never.
+Rendered output accumulates references that can break without anyone noticing. Some point at things temingo does not control - CDN scripts, stylesheets, fonts, background images, third-party links - and break when the far end returns a 404, moves, or stops permitting cross-origin reads. Others point at the build's own output and break on a typo or a rename. In both cases nothing surfaces at build time, and the failure is found by a visitor, or never.
 
 This subsystem checks every reference in the rendered output as part of the normal build, and provides a template function that pins remote subresources to a content hash so a compromised CDN cannot silently substitute different bytes.
 
 ## Featureset
 
-- `temingo` reports broken, redirecting and access-denied references after rendering, with the file and URL that produced each one.
+- `temingo` reports broken, redirecting and access-denied external references after rendering, with the file and URL that produced each one.
+- It reports references to the build's own output that address nothing the build produced - a mistyped asset path, a link to a page that was renamed or removed.
 - It reports subresources that carry no integrity hash, and integrity hashes that will fail in the browser because of a missing CORS opt-in.
 - References written as visible text - a URL inside a code sample, a comment - are never reported.
 - A config allowlist accepts references that are expected to fail, per URL pattern, optionally narrowed to specific checks.
@@ -17,7 +18,13 @@ This subsystem checks every reference in the rendered output as part of the norm
 
 ## Contracts
 
-**Reference discovery.** A reference is an attribute value in the rendered markup, or a `url()` / `@import` target in rendered stylesheet content. Text content is never a reference - a URL appearing as visible text produces no finding, regardless of which element contains it. Stylesheet content is examined wherever it occurs: standalone stylesheets, embedded style blocks, and per-element style attributes.
+**Reference discovery.** A reference is an attribute value on an element in the rendered markup, or a `url()` / `@import` target in rendered stylesheet content. Text content is never a reference - a URL appearing as visible text produces no finding, regardless of which element contains it. Neither is anything inside a comment: commented-out markup does not address anything, and reporting it is noise the author cannot act on without un-commenting code they deliberately disabled. Stylesheet content is examined wherever it occurs: standalone stylesheets, embedded style blocks, and per-element style attributes.
+
+**Reference classification.** Every reference is classified as addressing either a remote origin or the build's own output. The distinction is required regardless of what is checked, because only remote references can be requested and only cross-origin references can be subject to the integrity and CORS contracts below. References that address neither - fragment-only, and non-fetchable schemes such as mail and telephone - are not references and produce no findings.
+
+**Internal reference resolution.** A reference addressing the build's own output resolves against the output tree, and a reference that resolves to nothing the build produced is a finding. Resolution accepts a reference that names an output file directly, and a reference that names a location served by an index document, and a reference that names a document by omitting its extension - because all three are addressable in a static tree and a generator cannot know which form a given server prefers. A reference that cannot be resolved by any of those forms is reported. Resolution is by construction hermetic: it requires no network and holds in an offline build.
+
+Server-side rewriting is not modelled. Where a reference would only resolve through a rule the server applies and the build cannot see, resolution is inconclusive and no finding is raised - the check reports what it can prove absent, never what it merely failed to confirm.
 
 **Integrity applicability.** Each reference carries whether it *can* carry an integrity hash, which is a property of the reference, not of its element type. Only references the browser will actually verify - scripts, and stylesheet-or-preload links - can. References reached from inside a stylesheet never can, because stylesheets have no integrity syntax; neither can images or embedded documents. Findings about missing or misplaced integrity are only ever raised against references that can carry it. This is a hard requirement: raising them elsewhere produces advice the author cannot act on.
 
@@ -41,7 +48,7 @@ This subsystem checks every reference in the rendered output as part of the norm
 
 ## Data shapes
 
-**Reference.** The source file it was found in; the URL as written; whether the URL is same-origin relative to the document; the syntactic role it was found in, sufficient to describe it back to the author; whether it can carry an integrity hash; whether an integrity hash is present; whether a CORS opt-in is present.
+**Reference.** The source file it was found in; the URL as written; whether it addresses a remote origin or the build's own output; the syntactic role it was found in, sufficient to describe it back to the author; whether it can carry an integrity hash; whether an integrity hash is present; whether a CORS opt-in is present.
 
 **Finding.** The reference it concerns; a category; a severity; and a human-readable reason. Categories are stable identifiers, because allowlist entries name them.
 
@@ -64,12 +71,12 @@ allow:
 
 Four responsibilities, separable and independently testable:
 
-- **Reference collection** turns rendered output into references. Owns the contract that text content is never a reference, and the table of which syntactic positions carry URLs and which of those can carry integrity.
-- **Static checking** produces findings from references alone, without network access. Owns integrity applicability and CORS opt-in equivalence.
-- **Request and cache** turns URLs into request results. Owns one-request-per-URL, the freshness window, concurrency limits, and allowlist elision.
+- **Reference collection** turns rendered output into classified references. Owns the contracts that text content and comments are never references, the table of which syntactic positions carry URLs and which of those can carry integrity, and the remote-versus-own-output classification.
+- **Static checking** produces findings from references alone, without network access. Owns integrity applicability, CORS opt-in equivalence, and internal reference resolution against the output tree.
+- **Request and cache** turns remote URLs into request results. Owns one-request-per-URL, the freshness window, concurrency limits, and allowlist elision.
 - **Hash function** exposes remote hashing to templates. Consumes request-and-cache; owns the hard-error-on-failure contract.
 
-Static checking must not depend on request-and-cache; a build with no network reachability still produces the full static finding set.
+Static checking must not depend on request-and-cache; a build with no network reachability still produces the full static finding set, which includes every internal reference finding.
 
 ## Non-goals
 
@@ -78,16 +85,12 @@ Static checking must not depend on request-and-cache; a build with no network re
 - **Per-category strictness.** One gate, deliberately.
 - **Cross-run hash persistence.** Nothing is written to disk to survive a cold process; a fresh build re-requests.
 - **Exhaustive stylesheet parsing.** Reference extraction from stylesheet content is approximate at the edges. False positives are silenced by the allowlist.
+- **Modelling the server.** Rewrites, redirects and try-file rules the deployment applies are invisible to the build, and no attempt is made to infer them. Internal resolution proves absence or stays silent.
 - **Repairing anything.** No reference is rewritten, no attribute is inserted. Findings are reported; the author fixes them.
 
 ## Open questions
 
-**Should relative references be checked against the output tree?** A reference to a path temingo itself produced can be verified without network access, by asking whether the build wrote that file.
-
-- **A:** In scope. The reference set already exists, and checking it is hermetic and cheap. Catches a mistyped path, which is otherwise invisible until someone loads the page.
-- **B:** Out of scope. It is a separate roadmap item with its own edge cases - directory indexes, extensionless routes, server-side rewrites - and folding it in widens this subsystem before the external case is proven.
-
-Recommendation: **A**, restricted to references that resolve to a literal output path, with no attempt to model server-side rewriting. Anything ambiguous is not a finding.
+None outstanding.
 
 ## Post-implementation notes
 
