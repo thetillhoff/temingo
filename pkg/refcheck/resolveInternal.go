@@ -17,7 +17,7 @@ func ResolveInternal(refs []Reference, outputPaths map[string]bool) []Finding {
 	var findings []Finding
 
 	for _, r := range refs {
-		if r.Origin != OriginInternal {
+		if r.Origin != OriginInternal || r.ResolutionUnknown {
 			continue
 		}
 
@@ -63,8 +63,11 @@ func resolveTarget(r Reference) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	p, err := url.PathUnescape(u.Path)
-	if err != nil || p == "" {
+	// u.Path is already percent-decoded. Decoding it again would turn a literal
+	// %20 in a filename into a space, and could fail outright on a literal %,
+	// silently skipping a reference that should have been checked.
+	p := u.Path
+	if p == "" {
 		return "", false
 	}
 

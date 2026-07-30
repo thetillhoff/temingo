@@ -12,8 +12,12 @@ import (
 // form[action] is deliberately absent: a form posts to a server route, which
 // need not exist as an output file, so treating it as a reference would report
 // a broken target on any site with a form.
+//
+// base[href] is absent for a different reason: it is a resolution rule rather
+// than a target, and it names a directory, which no output path can match. It is
+// read separately, to suppress resolution in documents that declare one.
 var urlAttrs = map[string][]string{
-	"a": {"href"}, "area": {"href"}, "link": {"href"}, "base": {"href"},
+	"a": {"href"}, "area": {"href"}, "link": {"href"},
 	"script": {"src"}, "iframe": {"src"}, "embed": {"src"}, "track": {"src"},
 	"audio": {"src"}, "input": {"src"},
 	"img":    {"src", "srcset"},
@@ -36,10 +40,24 @@ func CollectHTML(file string, content []byte) []Reference {
 		return refs
 	}
 
+	// A base element changes what every relative reference in the document points
+	// at, and it can appear after the references it governs, so it is found first.
+	hasBase := false
+	var findBase func(n *html.Node)
+	findBase = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "base" && strings.TrimSpace(attrValue(n, "href")) != "" {
+			hasBase = true
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			findBase(c)
+		}
+	}
+	findBase(doc)
+
 	var walk func(n *html.Node)
 	walk = func(n *html.Node) {
-		// Only elements are inspected. That is what guarantees text and comment
-		// nodes never yield references.
+		// Only elements are inspected. Comment nodes carry no attributes, so a
+		// commented-out link yields nothing.
 		if n.Type == html.ElementNode {
 			refs = append(refs, refsFromElement(file, n)...)
 		}
@@ -48,6 +66,16 @@ func CollectHTML(file string, content []byte) []Reference {
 		}
 	}
 	walk(doc)
+
+	if hasBase {
+		for i := range refs {
+			// Only relative references are affected: a root-relative or absolute
+			// URL ignores the base entirely.
+			if refs[i].Origin == OriginInternal && !strings.HasPrefix(refs[i].URL, "/") {
+				refs[i].ResolutionUnknown = true
+			}
+		}
+	}
 
 	return refs
 }
@@ -121,19 +149,53 @@ func refsFromElement(file string, n *html.Node) []Reference {
 	return refs
 }
 
-// splitURLs yields each URL in an attribute value. srcset holds a
-// comma-separated candidate list where each entry may carry a descriptor.
+// splitURLs yields each URL in an attribute value.
+//
+// srcset holds a candidate list where each entry is a URL optionally followed by
+// a descriptor, and entries are comma-separated. Splitting on commas first is
+// wrong: a URL may contain them - image-transform paths like
+// /img/w_100,h_100/a.jpg do, and every data URI does - so the URL is taken as
+// the run up to the next whitespace, and only the descriptor that follows it is
+// scanned for the separating comma.
 func splitURLs(attr, raw string) []string {
 	if attr != "srcset" {
 		return []string{strings.TrimSpace(raw)}
 	}
+
 	var out []string
-	for _, candidate := range strings.Split(raw, ",") {
-		if f := strings.Fields(candidate); len(f) > 0 {
-			out = append(out, f[0])
+	rest := raw
+	for {
+		rest = strings.TrimLeft(rest, " \t\r\n\f")
+		if rest == "" {
+			return out
+		}
+
+		// The URL ends at whitespace, or at a comma that terminates the whole
+		// candidate when no descriptor follows.
+		end := strings.IndexAny(rest, " \t\r\n\f")
+		if end == -1 {
+			out = append(out, strings.TrimSuffix(rest, ","))
+			return out
+		}
+
+		url := rest[:end]
+		rest = rest[end:]
+
+		// A trailing comma on the URL itself means this candidate carried no
+		// descriptor.
+		if trimmed, cut := strings.CutSuffix(url, ","); cut {
+			out = append(out, trimmed)
+			continue
+		}
+		out = append(out, url)
+
+		// Skip the descriptor, which runs to the next comma.
+		if next := strings.Index(rest, ","); next == -1 {
+			return out
+		} else {
+			rest = rest[next+1:]
 		}
 	}
-	return out
 }
 
 func attrValue(n *html.Node, key string) string {

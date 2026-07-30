@@ -164,8 +164,9 @@ func (engine *Engine) Render() error {
 		}
 	}
 
-	// Check every reference in the rendered output. Findings never block the
-	// write below; under Strict this returns an error after reporting them.
+	// Check every reference in the rendered output. Findings are reported and the
+	// write below proceeds; under Strict this returns after reporting them, so no
+	// output is written and the output directory keeps the previous build.
 	if err = engine.checkReferences(renderedTemplates, staticPaths); err != nil {
 		return err
 	}

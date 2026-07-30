@@ -34,6 +34,11 @@ type Reference struct {
 	CanCarryIntegrity bool
 	HasIntegrity      bool
 	HasCrossOrigin    bool
+
+	// ResolutionUnknown marks a reference whose target the build cannot
+	// determine - a relative URL in a document declaring a base element. Such a
+	// reference is never reported as missing, because absence cannot be proven.
+	ResolutionUnknown bool
 }
 
 // Classify determines what a reference addresses from the URL alone.

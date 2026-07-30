@@ -2,10 +2,24 @@ package temingo
 
 import (
 	"fmt"
+	"os"
 	"path"
 
 	"github.com/thetillhoff/temingo/pkg/refcheck"
 )
+
+// collectFrom returns the references in one output file, dispatching on its
+// extension.
+func (engine *Engine) collectFrom(outputPath string, content []byte) []refcheck.Reference {
+	switch path.Ext(outputPath) {
+	case ".html":
+		return refcheck.CollectHTML(outputPath, content)
+	case ".css":
+		return refcheck.CollectCSS(outputPath, content)
+	default:
+		return nil
+	}
+}
 
 // checkReferences collects every reference in the rendered output and reports
 // the ones that are broken, unverifiable, or address nothing the build
@@ -26,16 +40,35 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
 	}
 
 	for p, content := range rendered {
-		switch path.Ext(p) {
-		case ".html":
-			refs = append(refs, refcheck.CollectHTML(p, content)...)
-		case ".css":
-			refs = append(refs, refcheck.CollectCSS(p, content)...)
+		refs = append(refs, engine.collectFrom(p, content)...)
+	}
+
+	// Static files are copied verbatim rather than rendered, so their references
+	// are only visible by reading the source. Skipping them would leave every
+	// hand-written page and stylesheet unchecked - which is most stylesheets.
+	for _, p := range staticPaths {
+		if ext := path.Ext(p); ext != ".html" && ext != ".css" {
+			continue
 		}
+		content, err := os.ReadFile(path.Join(engine.InputDir, p))
+		if err != nil {
+			engine.Logger.Debug("Skipping unreadable static file during reference check", "path", p, "error", err)
+			continue
+		}
+		refs = append(refs, engine.collectFrom(p, content)...)
 	}
 
 	findings := refcheck.CheckStatic(refs)
-	findings = append(findings, refcheck.ResolveInternal(refs, outputPaths)...)
+
+	// With NoDeleteOutputDir the output tree also holds whatever earlier builds
+	// or other tooling left there, and none of that is in outputPaths. Absence
+	// from the set would prove nothing, so resolution is skipped entirely rather
+	// than reporting files that are present on disk.
+	if engine.NoDeleteOutputDir {
+		engine.Logger.Debug("Skipping internal reference resolution because noDeleteOutputDir is set")
+	} else {
+		findings = append(findings, refcheck.ResolveInternal(refs, outputPaths)...)
+	}
 
 	if engine.linkCache == nil {
 		engine.linkCache = refcheck.NewCache(engine.Allow)

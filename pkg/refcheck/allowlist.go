@@ -64,14 +64,31 @@ func (a Allowlist) Filter(fs []Finding) []Finding {
 // interior * matches within one path segment, which is what makes a pattern
 // like https://cdn.example/lib/*/x.js pin the filename while accepting any
 // version.
+//
+// The trailing form only applies where the prefix ends at a path boundary.
+// Without that restriction "https://cdn.example.com*" would also accept
+// "https://cdn.example.com.attacker.test/x", silently suppressing findings for -
+// and eliding requests to - an entirely different host.
 func matchURL(pattern, rawURL string) bool {
+	if pattern == "" {
+		return false
+	}
 	if pattern == rawURL {
 		return true
 	}
+
 	if prefix, ok := strings.CutSuffix(pattern, "*"); ok {
-		if strings.HasPrefix(rawURL, prefix) {
+		if strings.HasSuffix(prefix, "/") && strings.HasPrefix(rawURL, prefix) {
 			return true
 		}
+	}
+
+	// Only consult the glob matcher when the pattern actually carries a wildcard.
+	// A URL pasted verbatim commonly contains ? and [, which path.Match would
+	// otherwise read as metacharacters - ? as any-single-character, and [ as an
+	// unterminated class that makes every comparison fail.
+	if !strings.ContainsAny(pattern, "*") {
+		return false
 	}
 	matched, err := path.Match(pattern, rawURL)
 	return err == nil && matched
