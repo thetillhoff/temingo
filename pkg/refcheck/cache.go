@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+// userAgent identifies temingo to the hosts it checks, so operators can see who
+// is asking and so hosts that reject Go's default agent do not turn into
+// findings.
+const userAgent = "temingo (+https://github.com/thetillhoff/temingo)"
+
 // Result is the outcome of one URL request. A non-nil Err means the outcome is
 // indeterminate - unreachable or unresolvable - rather than known-bad.
 type Result struct {
@@ -92,6 +97,11 @@ func (c *Cache) request(rawURL, algorithm string) Result {
 	// An Origin header makes the response's CORS posture observable, which is
 	// what an integrity hash on a cross-origin subresource depends on.
 	req.Header.Set("Origin", "https://temingo.invalid")
+	// Go's default User-Agent is blocked outright by some hosts - Wikipedia
+	// answers it with 403 - which would be reported as a gated link even though
+	// the reference is fine in a browser. A descriptive agent avoids inventing
+	// findings out of our own request.
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := c.client.Do(req)
 	if err != nil {

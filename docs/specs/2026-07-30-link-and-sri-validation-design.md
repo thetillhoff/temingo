@@ -28,7 +28,7 @@ Server-side rewriting is not modelled. Where a reference would only resolve thro
 
 **Integrity applicability.** Each reference carries whether it *can* carry an integrity hash, which is a property of the reference, not of its element type. Only references the browser will actually verify - scripts, and stylesheet-or-preload links - can. References reached from inside a stylesheet never can, because stylesheets have no integrity syntax; neither can images or embedded documents. Findings about missing or misplaced integrity are only ever raised against references that can carry it. This is a hard requirement: raising them elsewhere produces advice the author cannot act on.
 
-**Integrity does not transit.** A stylesheet verified by hash may itself pull in unverified content. An `@import` of a cross-origin stylesheet from a stylesheet that carries an integrity hash is therefore reported: the hash implies a protection the imported sheet does not receive.
+**Integrity does not transit.** A stylesheet verified by hash may itself pull in unverified content, and stylesheets have no integrity syntax of their own. A cross-origin `@import` is therefore reported: it cannot be protected by a hash of its own, and the importing stylesheet's hash does not extend to it. Constraining it is a matter for the serving policy, or for self-hosting the sheet.
 
 **CORS opt-in equivalence.** A cross-origin subresource carrying an integrity hash is fetched in a mode the browser can read only if the reference also opts into CORS. Absence of that opt-in means the browser blocks the subresource outright, so it is reported as breakage rather than as advice. An opt-in that is present but carries no value, or an unrecognised value, is equivalent to the anonymous form and is accepted - a minifier may legitimately strip the value, and must not be flagged for it. Only a fully absent opt-in is a finding.
 
@@ -36,7 +36,7 @@ Server-side rewriting is not modelled. Where a reference would only resolve thro
 
 **Findings are advisory by default.** A finding is reported and the build succeeds. Under strict mode, any finding causes a non-zero exit. Strict mode makes no distinction between categories: a definite failure and an indeterminate one - a timeout, an unresolvable host - are equally fatal. The consequence is accepted: a transient network fault fails a strict build, and the remedy is to run it again.
 
-**Findings carry a severity for presentation only.** Severity orders and groups output. It does not gate strictness.
+**Findings carry no severity.** A category already states what kind of problem a finding is, and strict mode is fatal on every category equally, so a severity would order output without informing any decision. Findings are ordered by file then URL, so output is stable across builds and can be diffed.
 
 **Redirects are reported for repair, not suppression.** A reference that redirects reports its final target, so the author can replace the reference with that target. Allowlisting a redirect is possible but is not the intended remedy.
 
@@ -50,7 +50,7 @@ Server-side rewriting is not modelled. Where a reference would only resolve thro
 
 **Reference.** The source file it was found in; the URL as written; whether it addresses a remote origin or the build's own output; the syntactic role it was found in, sufficient to describe it back to the author; whether it can carry an integrity hash; whether an integrity hash is present; whether a CORS opt-in is present.
 
-**Finding.** The reference it concerns; a category; a severity; and a human-readable reason. Categories are stable identifiers, because allowlist entries name them.
+**Finding.** The reference it concerns; a category; and a human-readable reason. Categories are stable identifiers, because allowlist entries name them.
 
 **Request result.** Final status after redirects; the final URL, when it differs from the requested one; whether the response permits cross-origin reads; the content hash, when one was requested; or an indeterminate outcome distinguishing unreachable from unresolvable.
 
@@ -96,4 +96,18 @@ None outstanding.
 
 *How the current build satisfies the above. Not required by the contracts.*
 
-To be filled in during implementation.
+The four responsibilities live in `pkg/refcheck`, which imports nothing from `pkg/temingo`. The engine calls into it from `Render`, after beautify/minify and before the write phase.
+
+**Output-path set, not the filesystem.** Internal resolution is handed the keys of the rendered-template map plus the static-file paths, so it works before anything is written and under a dry run. Resolution tries the path itself, the path joined with `index.html`, and the path with `.html` appended.
+
+**Allowlist matching** uses `path.Match`, plus a prefix comparison when the pattern ends in `*`. The prefix case is not optional: `path.Match` never lets `*` cross a `/`, so a host-wide pattern would otherwise miss every nested path.
+
+**Cache** holds results in a map for the life of the engine, with no expiry, and requests sequentially. An entry records which algorithm its body was hashed with, so a hash request is not answered by an unhashed result while an unhashed request is answered by a hashed one - which is the common ordering, since `sri` runs during render and the reference check runs after.
+
+**Requests** send an `Origin` header, which is what makes CORS posture observable, and a descriptive `User-Agent`. The latter is load-bearing rather than cosmetic: Go's default agent is answered with 403 by some hosts, which would surface as a gated-link finding manufactured by the check itself.
+
+**Redirects are not followed** - the client returns the first response so its `Location` can be reported as the target to move to.
+
+**Stylesheet extraction** is by regular expression rather than a tokenizer, and can match inside a comment or string literal. The allowlist is the escape hatch. A tokenizer is expected to arrive with CSS minification and beautification.
+
+**Strict returns before the write phase.** `Render` propagates the error from the check, so under strict no output is written. The contract that findings do not block writing still holds, because strict is an explicit opt-in to failing; if writing-then-failing is preferred, moving the call to the end of `Render` satisfies the same contracts.

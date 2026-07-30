@@ -25,7 +25,6 @@ High-value improvements to the daily dev loop.
 **Output quality**
 
 - Save source-file + line-number mapping during rendering so validation errors point back to the original template, not the generated output
-- Validate internal links (warn on broken file references)
 - Auto-generate `sitemap.xml` (#26)
 - Auto-generate `feed.xml` / RSS feed
 
@@ -33,7 +32,7 @@ High-value improvements to the daily dev loop.
 
 Useful but not urgent.
 
-- Subresource integrity hashes (SHA256/384/512) for JS/CSS files, for use in CSP config (#92)
+- Content hashes for inline `<style>` / `<script>`, so `unsafe-inline` can be dropped from a CSP (#92) - needs a delivery mechanism, since temingo does not own response headers
 - Use template variables inside `content.md` (uncertain value, explore first)
 - Global template variables: `renderTime` etc.
 - File extension autodiscover: make explicit extension config optional; minimum coverage is `.html`, `.css`, `.js`; stretch goal `.svg` with auto-inline or color-variant pregeneration

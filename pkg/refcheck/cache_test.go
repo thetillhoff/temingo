@@ -95,6 +95,27 @@ func TestCacheFetch(t *testing.T) {
 		}
 	})
 
+	t.Run("requests identify themselves and declare an origin", func(t *testing.T) {
+		// Go's default User-Agent is answered with 403 by some hosts, which would
+		// be reported as a gated link produced by our own request rather than by
+		// the reference. The Origin header is what makes CORS posture observable.
+		var gotUA, gotOrigin string
+		probe := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotUA = r.Header.Get("User-Agent")
+			gotOrigin = r.Header.Get("Origin")
+		}))
+		defer probe.Close()
+
+		NewCache(nil).Fetch(probe.URL, "")
+
+		if gotUA != userAgent {
+			t.Errorf("User-Agent = %q, want %q", gotUA, userAgent)
+		}
+		if gotOrigin == "" {
+			t.Errorf("Origin header was not sent")
+		}
+	})
+
 	t.Run("unreachable host is indeterminate", func(t *testing.T) {
 		got := c.Fetch("https://this-host-does-not-exist.invalid/x", "")
 		if got.Err == nil {
