@@ -34,7 +34,9 @@ func renderNode(buf *bytes.Buffer, n *html.Node, depth int) {
 	case html.CommentNode:
 		buf.WriteString(pad(depth) + "<!--" + n.Data + "-->\n")
 	case html.TextNode:
-		if text := strings.TrimSpace(n.Data); text != "" {
+		// html.Parse already decoded entities, so re-escape to keep prose that
+		// documents markup out of the DOM.
+		if text := html.EscapeString(strings.TrimSpace(n.Data)); text != "" {
 			if n.Parent != nil && isBlock(n.Parent.DataAtom) {
 				buf.WriteString(pad(depth) + text + "\n")
 			} else {
@@ -65,6 +67,23 @@ func renderNode(buf *bytes.Buffer, n *html.Node, depth int) {
 			return
 		}
 		buf.WriteByte('>')
+		if isRaw(n.DataAtom) {
+			// Content is verbatim: no indentation, and text nodes are written
+			// unescaped so CSS/JS operators survive. Whitespace is significant
+			// in <pre>/<textarea>, so no padding before the closing tag either.
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				if c.Type == html.TextNode {
+					buf.WriteString(c.Data)
+				} else {
+					_ = html.Render(buf, c)
+				}
+			}
+			buf.WriteString("</" + n.Data + ">")
+			if block {
+				buf.WriteByte('\n')
+			}
+			return
+		}
 		if block && n.FirstChild != nil {
 			buf.WriteByte('\n')
 		}
@@ -72,16 +91,8 @@ func renderNode(buf *bytes.Buffer, n *html.Node, depth int) {
 		if block {
 			childDepth++
 		}
-		if isRaw(n.DataAtom) {
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				var raw bytes.Buffer
-				_ = html.Render(&raw, c)
-				buf.Write(raw.Bytes())
-			}
-		} else {
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				renderNode(buf, c, childDepth)
-			}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			renderNode(buf, c, childDepth)
 		}
 		if block {
 			buf.WriteString(pad(depth) + "</" + n.Data + ">\n")

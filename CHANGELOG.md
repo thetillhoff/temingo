@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Fix HTML beautifier corrupting output: text nodes are re-escaped (`&lt;div&gt;` no longer becomes a real element), `<script>`/`<style>`/`<pre>`/`<textarea>` content is no longer escaped (`.a > .b` and `a && b` stay valid), and `<pre>`/`<textarea>` content keeps its exact whitespace
+
 ## v2.6.0
 
 - Add `filterBy` template function — filters `.childMeta` by a field value; entries missing the field are kept by default (composable with `sortBy` and `reverse`)
