@@ -643,6 +643,7 @@ Every build reports references in the rendered output that are broken, unverifia
 - cross-origin scripts and stylesheets with no `integrity` hash
 - an `integrity` hash with no `crossorigin` attribute, which the browser blocks outright
 - a cross-origin `@import`, which cannot be integrity-protected at all
+- references fetched over plain `http`, which can be read and altered in transit - and which a browser blocks outright when the reference is a subresource on an `https` page
 - internal paths that no output file answers
 
 An internal path resolves if the build writes that file, a directory holding an `index.html`, or the path with `.html` appended - temingo cannot know which form your server prefers, so any of them counts. Paths that only a server rewrite could satisfy are never reported: the check proves absence or stays silent.
@@ -650,6 +651,15 @@ An internal path resolves if the build writes that file, a directory holding an 
 URLs written as visible text - in a code sample, or inside an HTML comment - are never reported. Neither is a `form` action, which addresses a server route rather than a file.
 
 Findings do not fail the build. Pass `--strict` (or set `strict: true`) to exit non-zero when any finding is reported, which is the intended CI configuration. Strict mode is fatal on unreachable and unresolvable hosts too, so a transient network fault fails the build and the remedy is to run it again.
+
+Two checks can be turned off:
+
+| Flag | Config key | Effect |
+| ---- | ---------- | ------ |
+| `--no-remote-checks` | `noRemoteChecks: true` | Skips every check that needs a request. The static and internal checks still run, so a build stays useful with no network at all. |
+| `--allow-insecure-scheme` | `allowInsecureScheme: true` | Stops reporting references fetched over plain `http`. Loopback targets are exempt either way, since a local dev server legitimately serves plain `http`. |
+
+`--no-remote-checks` is what makes a build hermetic - worth setting in a Docker build stage or an offline environment, where otherwise every external reference becomes an `unreachable` finding. It does **not** disable `sri`, which cannot produce a hash without fetching; a template using `sri` still needs network access.
 
 Accept expected findings with an allow list:
 
@@ -663,7 +673,7 @@ allow:
 
 A trailing `*` covers everything under it, so `https://example.com/*` matches the whole host. A `*` in the middle of a pattern matches within one path segment, so `https://cdn.example/lib/*/x.js` pins the filename while accepting any version.
 
-Categories are `status`, `gated`, `redirect`, `unreachable`, `missing-target`, `missing-integrity`, `missing-crossorigin`, `no-cors-header` and `unverified-import`. A URL whose entry names no categories is never requested at all.
+Categories are `status`, `gated`, `redirect`, `unreachable`, `missing-target`, `missing-integrity`, `missing-crossorigin`, `no-cors-header`, `unverified-import` and `insecure-scheme`. A URL whose entry names no categories is never requested at all.
 
 A redirect is best fixed by replacing the reference with its target rather than allowlisting it.
 

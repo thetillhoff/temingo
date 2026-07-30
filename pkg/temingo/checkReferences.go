@@ -60,6 +60,10 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
 
 	findings := refcheck.CheckStatic(refs)
 
+	if !engine.AllowInsecureScheme {
+		findings = append(findings, refcheck.CheckInsecureScheme(refs)...)
+	}
+
 	// With NoDeleteOutputDir the output tree also holds whatever earlier builds
 	// or other tooling left there, and none of that is in outputPaths. Absence
 	// from the set would prove nothing, so resolution is skipped entirely rather
@@ -70,10 +74,14 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
 		findings = append(findings, refcheck.ResolveInternal(refs, outputPaths)...)
 	}
 
-	if engine.linkCache == nil {
-		engine.linkCache = refcheck.NewCache(engine.Allow)
+	if engine.NoRemoteChecks {
+		engine.Logger.Debug("Skipping remote reference checks because noRemoteChecks is set")
+	} else {
+		if engine.linkCache == nil {
+			engine.linkCache = refcheck.NewCache(engine.Allow)
+		}
+		findings = append(findings, refcheck.CheckRemote(refs, engine.linkCache)...)
 	}
-	findings = append(findings, refcheck.CheckRemote(refs, engine.linkCache)...)
 
 	findings = engine.Allow.Filter(findings)
 	refcheck.SortFindings(findings)

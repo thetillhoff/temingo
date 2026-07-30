@@ -31,6 +31,13 @@ type Engine struct {
 	Strict bool
 	// Allow accepts reference findings for matching URLs.
 	Allow refcheck.Allowlist
+	// NoRemoteChecks skips every check that needs a request, leaving the static
+	// and internal ones - which need no network - in place. Rendering stays
+	// offline-capable unless a template calls sri, which cannot produce a hash
+	// without fetching.
+	NoRemoteChecks bool
+	// AllowInsecureScheme stops reporting references fetched over plain http.
+	AllowInsecureScheme bool
 
 	// linkCache keeps request outcomes for the life of the engine, so watch-mode
 	// rebuilds do not re-request unchanged references.
@@ -64,5 +71,7 @@ func DefaultEngine() Engine {
 		Logger:                  logger,
 		Strict:                  false,
 		Allow:                   nil,
+		NoRemoteChecks:          false,
+		AllowInsecureScheme:     false,
 	}
 }

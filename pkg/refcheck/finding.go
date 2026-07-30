@@ -33,6 +33,8 @@ const (
 	// CategoryUnverifiedImport is a cross-origin stylesheet imported by a
 	// stylesheet that carries an integrity hash.
 	CategoryUnverifiedImport Category = "unverified-import"
+	// CategoryInsecureScheme is a reference fetched over plain http.
+	CategoryInsecureScheme Category = "insecure-scheme"
 )
 
 // Finding is one problem with one reference.

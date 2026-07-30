@@ -87,7 +87,8 @@ func applyConfigToFlags(cmd *cli.Command, config map[string]interface{},
 	templateExtensionFlag, metaTemplateExtensionFlag, partialExtensionFlag *string,
 	metaFilenameFlag, markdownFilenameFlag *string,
 	valueFlags, valuesFileFlags *[]string,
-	verboseFlag, dryRunFlag, noDeleteOutputDirFlag, strictFlag *bool) {
+	verboseFlag, dryRunFlag, noDeleteOutputDirFlag, strictFlag *bool,
+	noRemoteChecksFlag, allowInsecureSchemeFlag *bool) {
 	// Helper function to get string value from config
 	getString := func(key string) string {
 		if val, ok := config[key]; ok {
@@ -177,6 +178,8 @@ func applyConfigToFlags(cmd *cli.Command, config map[string]interface{},
 	applyBoolFlag("dry-run", "dryRun", dryRunFlag)
 	applyBoolFlag("noDeleteOutputDir", "noDeleteOutputDir", noDeleteOutputDirFlag)
 	applyBoolFlag("strict", "strict", strictFlag)
+	applyBoolFlag("no-remote-checks", "noRemoteChecks", noRemoteChecksFlag)
+	applyBoolFlag("allow-insecure-scheme", "allowInsecureScheme", allowInsecureSchemeFlag)
 	applyStringSliceFlag("value", "value", valueFlags)
 	applyStringSliceFlag("valuesfile", "valuesfile", valuesFileFlags)
 }

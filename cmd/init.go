@@ -52,6 +52,8 @@ var initCommand = &cli.Command{
 		dryRunFlag := cmd.Bool("dry-run")
 		noDeleteOutputDirFlag := cmd.Bool("noDeleteOutputDir")
 		strictFlag := cmd.Bool("strict")
+		noRemoteChecksFlag := cmd.Bool("no-remote-checks")
+		allowInsecureSchemeFlag := cmd.Bool("allow-insecure-scheme")
 
 		// Load config file if specified
 		config, err := loadConfig(cfgFile)
@@ -64,7 +66,8 @@ var initCommand = &cli.Command{
 		applyConfigToFlags(cmd, config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
 			&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
 			&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
-			&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag)
+			&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag,
+			&noRemoteChecksFlag, &allowInsecureSchemeFlag)
 
 		var (
 			values = map[string]string{}

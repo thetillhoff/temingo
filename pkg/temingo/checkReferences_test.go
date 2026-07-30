@@ -3,9 +3,133 @@ package temingo
 import (
 	"bytes"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/thetillhoff/temingo/pkg/refcheck"
 )
+
+func TestCheckReferencesNoRemoteChecks(t *testing.T) {
+	var hits int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&hits, 1)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	rendered := map[string][]byte{
+		// One remote reference that would 404, and one internal one that is broken.
+		"index.html": []byte(`<a href="` + srv.URL + `/gone">x</a><img src="/nope.jpg">`),
+	}
+
+	t.Run("remote checks run by default", func(t *testing.T) {
+		var buf bytes.Buffer
+		engine := DefaultEngine()
+		engine.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+
+		if err := engine.checkReferences(rendered, nil); err != nil {
+			t.Fatalf("checkReferences() = %v", err)
+		}
+		if out := buf.String(); !strings.Contains(out, "status") {
+			t.Errorf("expected a status finding, got:\n%s", out)
+		}
+		if atomic.LoadInt64(&hits) == 0 {
+			t.Errorf("no request was made")
+		}
+	})
+
+	t.Run("noRemoteChecks skips requests but keeps offline checks", func(t *testing.T) {
+		var buf bytes.Buffer
+		engine := DefaultEngine()
+		engine.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+		engine.NoRemoteChecks = true
+
+		before := atomic.LoadInt64(&hits)
+		if err := engine.checkReferences(rendered, nil); err != nil {
+			t.Fatalf("checkReferences() = %v", err)
+		}
+		if after := atomic.LoadInt64(&hits); after != before {
+			t.Errorf("server saw %d new requests, want 0", after-before)
+		}
+
+		out := buf.String()
+		if strings.Contains(out, "category=status") {
+			t.Errorf("remote finding reported while remote checks are off:\n%s", out)
+		}
+		// The internal check needs no network and must still run.
+		if !strings.Contains(out, "missing-target") {
+			t.Errorf("expected the internal finding to survive, got:\n%s", out)
+		}
+	})
+}
+
+func TestCheckReferencesInsecureScheme(t *testing.T) {
+	rendered := map[string][]byte{
+		"index.html": []byte(`<a href="http://example.com/a">x</a>`),
+	}
+
+	t.Run("reported by default", func(t *testing.T) {
+		var buf bytes.Buffer
+		engine := DefaultEngine()
+		engine.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+		engine.NoRemoteChecks = true // isolate: no network needed for this check
+
+		if err := engine.checkReferences(rendered, nil); err != nil {
+			t.Fatalf("checkReferences() = %v", err)
+		}
+		if out := buf.String(); !strings.Contains(out, "insecure-scheme") {
+			t.Errorf("expected an insecure-scheme finding, got:\n%s", out)
+		}
+	})
+
+	t.Run("suppressed by allowInsecureScheme", func(t *testing.T) {
+		var buf bytes.Buffer
+		engine := DefaultEngine()
+		engine.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+		engine.NoRemoteChecks = true
+		engine.AllowInsecureScheme = true
+
+		if err := engine.checkReferences(rendered, nil); err != nil {
+			t.Fatalf("checkReferences() = %v", err)
+		}
+		if out := buf.String(); strings.Contains(out, "insecure-scheme") {
+			t.Errorf("finding reported while allowInsecureScheme is set:\n%s", out)
+		}
+	})
+}
+
+// TestCheckReferencesAppliesAllowlist pins the Engine.Allow wiring, which had no
+// end-to-end coverage - only the allowlist type itself was tested.
+func TestCheckReferencesAppliesAllowlist(t *testing.T) {
+	rendered := map[string][]byte{
+		"index.html": []byte(`<img src="/nope.jpg">`),
+	}
+
+	var buf bytes.Buffer
+	engine := DefaultEngine()
+	engine.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+	engine.NoRemoteChecks = true
+
+	if err := engine.checkReferences(rendered, nil); err != nil {
+		t.Fatalf("checkReferences() = %v", err)
+	}
+	if !strings.Contains(buf.String(), "missing-target") {
+		t.Fatalf("expected a finding without an allowlist, got:\n%s", buf.String())
+	}
+
+	buf.Reset()
+	engine.Allow = refcheck.Allowlist{{URL: "/nope.jpg"}}
+
+	if err := engine.checkReferences(rendered, nil); err != nil {
+		t.Fatalf("checkReferences() = %v", err)
+	}
+	if strings.Contains(buf.String(), "missing-target") {
+		t.Errorf("allowlisted finding was still reported:\n%s", buf.String())
+	}
+}
 
 func TestCheckReferences(t *testing.T) {
 	tests := []struct {

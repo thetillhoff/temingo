@@ -123,6 +123,14 @@ func Execute() {
 				Sources: cli.EnvVars("TEMINGO_STRICT"),
 			},
 			&cli.BoolFlag{
+				Name:  "no-remote-checks",
+				Usage: "skip reference checks that need a network request; static and internal checks still run",
+			},
+			&cli.BoolFlag{
+				Name:  "allow-insecure-scheme",
+				Usage: "don't report references fetched over plain http",
+			},
+			&cli.BoolFlag{
 				Name:    "watch",
 				Aliases: []string{"w"},
 				Usage:   "watch makes temingo continiously watch for filesystem changes",
@@ -154,6 +162,8 @@ func Execute() {
 			dryRunFlag := cmd.Bool("dry-run")
 			noDeleteOutputDirFlag := cmd.Bool("noDeleteOutputDir")
 			strictFlag := cmd.Bool("strict")
+			noRemoteChecksFlag := cmd.Bool("no-remote-checks")
+			allowInsecureSchemeFlag := cmd.Bool("allow-insecure-scheme")
 			watchFlag := cmd.Bool("watch")
 			serveFlag := cmd.Bool("serve")
 
@@ -168,7 +178,8 @@ func Execute() {
 			applyConfigToFlags(cmd, config, &inputDirFlag, &outputDirFlag, &temingoignoreFlag,
 				&templateExtensionFlag, &metaTemplateExtensionFlag, &partialExtensionFlag,
 				&metaFilenameFlag, &markdownFilenameFlag, &valueFlags, &valuesFileFlags,
-				&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag)
+				&verboseFlag, &dryRunFlag, &noDeleteOutputDirFlag, &strictFlag,
+				&noRemoteChecksFlag, &allowInsecureSchemeFlag)
 
 			var (
 				values = map[string]string{}
@@ -238,6 +249,8 @@ func Execute() {
 				Minify:                  false,
 				Strict:                  strictFlag,
 				Allow:                   allowlistFromConfig(config),
+				NoRemoteChecks:          noRemoteChecksFlag,
+				AllowInsecureScheme:     allowInsecureSchemeFlag,
 				Logger:                  temingoLogger,
 			}
 

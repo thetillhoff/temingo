@@ -166,7 +166,10 @@ func (c *Cache) request(rawURL, algorithm string) Result {
 	}
 
 	if algorithm == "" {
-		_, _ = io.Copy(io.Discard, resp.Body)
+		// The body is not wanted, so it is not read - the deferred Close discards
+		// whatever is left. Draining it would download the whole file, which wastes
+		// bandwidth and lets the client timeout expire mid-transfer, reporting a
+		// perfectly good link to a large file as unreachable.
 		return result
 	}
 
