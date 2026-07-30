@@ -6,7 +6,7 @@
 
 **Architecture:** A new `pkg/refcheck` package owns reference collection, classification, static checking, internal resolution, and the URL request cache. It has no dependency on `pkg/temingo`. `Render()` calls into it after beautify/minify and before writing, where both the rendered content and the full set of planned output paths are in memory - so checks work under `--dry-run` and need no filesystem reads. The `sri` template function reaches the same request cache through the Engine.
 
-**Tech Stack:** Go 1.25.5, `golang.org/x/net/html` (already a direct dependency), `gopkg.in/yaml.v3`, stdlib `net/http`, `crypto/sha256|sha512`, `testing` + `net/http/httptest`.
+**Tech Stack:** Go 1.25.5, `golang.org/x/net/html` (already a direct dependency), stdlib `net/http`, `crypto/sha256|sha512`, `testing` + `net/http/httptest`.
 
 **Spec:** `docs/specs/2026-07-30-link-and-sri-validation-design.md`. Every contract there is normative; this plan is one way to satisfy it.
 
@@ -21,6 +21,8 @@
 - Findings never prevent output from being written. Under `strict`, any finding makes the process exit non-zero - including unreachable and unresolvable hosts.
 - A failed remote hash is a hard render error, not a finding.
 - Default hash algorithm is `sha384`.
+- Findings carry no severity. `Category` already says what kind of problem it is, and `strict` is fatal on all of them equally, so a severity would order output without informing anything. Output is sorted by file then URL, because Go map iteration order is random and unsorted output cannot be diffed across builds.
+- Requests are sequential. The cache lives for the process, so only the first build in a session pays; watch-mode rebuilds are free. If that first build becomes too slow, a bounded fan-out inside `CheckRemote` is a contained change - do not add one preemptively.
 - Tests are table-driven with named struct fields, matching `pkg/temingo/tmpl_filterBy_test.go`.
 
 ---
@@ -125,6 +127,11 @@ func TestCollectHTML(t *testing.T) {
     Origin: OriginRemote, CanCarryIntegrity: true, HasIntegrity: true, HasCrossOrigin: true,
    }},
   },
+  {
+   name:     "form action is not a reference, because it addresses a server route not a file",
+   content:  `<form action="/subscribe"><input type="submit"></form>`,
+   expected: []Reference{},
+  },
  }
 
  for _, test := range tests {
@@ -221,6 +228,10 @@ import (
 )
 
 // urlAttrs maps an element name to the attributes on it that carry a URL.
+//
+// form[action] is deliberately absent: a form posts to a server route, which
+// need not exist as an output file, so treating it as a reference would report
+// a broken target on any site with a form.
 var urlAttrs = map[string][]string{
  "a": {"href"}, "area": {"href"}, "link": {"href"}, "base": {"href"},
  "script": {"src"}, "iframe": {"src"}, "embed": {"src"}, "track": {"src"},
@@ -229,7 +240,6 @@ var urlAttrs = map[string][]string{
  "source": {"src", "srcset"},
  "video":  {"src", "poster"},
  "object": {"data"},
- "form":   {"action"},
 }
 
 // integrityRels are the link relations a browser verifies an integrity hash for.
@@ -248,11 +258,11 @@ func CollectHTML(file string, content []byte) []Reference {
 
  var walk func(n *html.Node)
  walk = func(n *html.Node) {
+  // Only elements are inspected. That is what guarantees text and comment
+  // nodes never yield references.
   if n.Type == html.ElementNode {
    refs = append(refs, refsFromElement(file, n)...)
   }
-  // CommentNode and TextNode children are deliberately not descended into
-  // for references; walking only elements is what guarantees it.
   for c := n.FirstChild; c != nil; c = c.NextSibling {
    walk(c)
   }
@@ -263,13 +273,30 @@ func CollectHTML(file string, content []byte) []Reference {
 }
 
 func refsFromElement(file string, n *html.Node) []Reference {
+ var refs []Reference
+
+ // A style attribute holds stylesheet content on any element.
+ if styleAttr := attrValue(n, "style"); strings.TrimSpace(styleAttr) != "" {
+  refs = append(refs, CollectCSS(file, []byte(styleAttr))...)
+ }
+
+ // A style element's content is a stylesheet.
+ if n.Data == "style" {
+  var sb strings.Builder
+  for c := n.FirstChild; c != nil; c = c.NextSibling {
+   if c.Type == html.TextNode {
+    sb.WriteString(c.Data)
+   }
+  }
+  return append(refs, CollectCSS(file, []byte(sb.String()))...)
+ }
+
  attrs, ok := urlAttrs[n.Data]
  if !ok {
-  return nil
+  return refs
  }
 
  var (
-  refs           []Reference
   hasIntegrity   = attrValue(n, "integrity") != ""
   hasCrossOrigin = attrPresent(n, "crossorigin")
   rel            = strings.ToLower(strings.TrimSpace(attrValue(n, "rel")))
@@ -348,10 +375,12 @@ func attrPresent(n *html.Node, key string) bool {
 }
 ```
 
+This calls `CollectCSS`, written in Task 2, so the package does not compile between the two tasks. If you want Task 1 to build standalone, add `func CollectCSS(file string, css []byte) []Reference { return nil }` temporarily and replace it in Task 2.
+
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCollectHTML -v`
-Expected: PASS, all ten subtests.
+Expected: PASS, all eleven subtests, once `CollectCSS` exists or is stubbed.
 
 - [ ] **Step 6: Commit**
 
@@ -366,13 +395,12 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/reference.go pkg/refcheck/
 **Files:**
 
 - Create: `pkg/refcheck/collectCSS.go`
-- Modify: `pkg/refcheck/collectHTML.go` - call CSS collection for style blocks and style attributes
 - Test: `pkg/refcheck/collectCSS_test.go`
 
 **Interfaces:**
 
 - Consumes: `Reference`, `Classify` from Task 1.
-- Produces: `func CollectCSS(file, role string, css []byte) []Reference`, and `CollectHTML` additionally returning references found in `<style>` content and `style` attributes.
+- Produces: `func CollectCSS(file string, css []byte) []Reference`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -424,7 +452,7 @@ func TestCollectCSS(t *testing.T) {
    expected: []Reference{},
   },
   {
-   name:     "css references can never carry integrity",
+   name:     "css references never carry integrity",
    css:      `@import url("https://cdn.example/a.css");`,
    expected: []Reference{{File: "style.css", URL: "https://cdn.example/a.css", Role: "css @import", Origin: OriginRemote}},
   },
@@ -432,7 +460,7 @@ func TestCollectCSS(t *testing.T) {
 
  for _, test := range tests {
   t.Run(test.name, func(t *testing.T) {
-   got := CollectCSS("style.css", "css", []byte(test.css))
+   got := CollectCSS("style.css", []byte(test.css))
    if !reflect.DeepEqual(got, test.expected) {
     t.Errorf("CollectCSS() = %+v, want %+v", got, test.expected)
    }
@@ -481,7 +509,7 @@ func TestCollectHTMLIncludesStyles(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run 'TestCollectCSS|TestCollectHTMLIncludesStyles' -v`
-Expected: FAIL to build - `undefined: CollectCSS`.
+Expected: FAIL to build - `undefined: CollectCSS`, or FAIL on every subtest if you stubbed it in Task 1.
 
 - [ ] **Step 3: Write `pkg/refcheck/collectCSS.go`**
 
@@ -496,22 +524,21 @@ import (
 // ponytail: regexes, not a CSS tokenizer. These match every url() and @import
 // form seen in practice, but can also match inside a comment or a string
 // literal. False positives are silenced by the allowlist. Replace with a real
-// tokenizer when one arrives for CSS minification/beautification - the
-// roadmap already wants one.
+// tokenizer when one arrives for CSS minification/beautification - the roadmap
+// already wants one.
 var (
  cssURLRe    = regexp.MustCompile(`url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"\s]+))`)
  cssImportRe = regexp.MustCompile(`@import\s+(?:url\(\s*)?(?:"([^"]*)"|'([^']*)'|([^)'";\s]+))`)
 )
 
-// CollectCSS returns every reference in stylesheet content. Role identifies the
-// syntactic position; no CSS reference can ever carry an integrity hash,
-// because CSS has no syntax for one.
-func CollectCSS(file, role string, css []byte) []Reference {
+// CollectCSS returns every reference in stylesheet content. No CSS reference can
+// ever carry an integrity hash, because CSS has no syntax for one.
+func CollectCSS(file string, css []byte) []Reference {
  refs := []Reference{}
  s := string(css)
 
- // @import first, so an imported URL is reported as an import rather than
- // as the url() it may be wrapped in.
+ // @import first, so an imported URL is reported as an import rather than as
+ // the url() it may be wrapped in.
  imports := map[string]bool{}
  for _, m := range cssImportRe.FindAllStringSubmatch(s, -1) {
   u := firstNonEmpty(m[1], m[2], m[3])
@@ -553,41 +580,12 @@ func firstNonEmpty(vals ...string) string {
 }
 ```
 
-- [ ] **Step 4: Extend `refsFromElement` in `pkg/refcheck/collectHTML.go`**
-
-Add `"style"` handling. Insert this at the top of `refsFromElement`, before the `urlAttrs` lookup:
-
-```go
- // A style attribute holds stylesheet content on any element.
- if styleAttr := attrValue(n, "style"); strings.TrimSpace(styleAttr) != "" {
-  if cssRefs := CollectCSS(file, "css", []byte(styleAttr)); len(cssRefs) > 0 {
-   defer func() {}() // no-op; refs appended below
-   return append(cssRefs, refsFromURLAttrs(file, n)...)
-  }
- }
- if n.Data == "style" {
-  var sb strings.Builder
-  for c := n.FirstChild; c != nil; c = c.NextSibling {
-   if c.Type == html.TextNode {
-    sb.WriteString(c.Data)
-   }
-  }
-  return CollectCSS(file, "css", []byte(sb.String()))
- }
- return refsFromURLAttrs(file, n)
-}
-
-func refsFromURLAttrs(file string, n *html.Node) []Reference {
-```
-
-Then the remainder of the original `refsFromElement` body becomes the body of `refsFromURLAttrs`. Remove the stray `defer func() {}()` line - it is shown only to mark where the original body was split; the final code must not contain it.
-
-- [ ] **Step 5: Run tests to verify they pass**
+- [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -v`
-Expected: PASS. Task 1's tests must still pass unchanged.
+Expected: PASS. Task 1's tests must pass unchanged.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cd ~/code/thetillhoff/temingo && git add pkg/refcheck/ && git commit -m "feat(refcheck): collect references from stylesheet content"
@@ -595,7 +593,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/ && git commit -m "feat(re
 
 ---
 
-### Task 3: Findings, categories, severities
+### Task 3: Findings and categories
 
 **Files:**
 
@@ -605,7 +603,9 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/ && git commit -m "feat(re
 **Interfaces:**
 
 - Consumes: `Reference` from Task 1.
-- Produces: `type Category string` with the eight constants below, `type Severity int` with `SevInfo`/`SevNote`/`SevWarn`, `type Finding struct { Ref Reference; Category Category; Severity Severity; Reason string }`, `func (f Finding) String() string`, `func SortFindings(fs []Finding)`.
+- Produces: `type Category string` with the nine constants below, `type Finding struct { Ref Reference; Category Category; Reason string }`, `func (f Finding) String() string`, `func SortFindings(fs []Finding)`.
+
+There is deliberately no severity type. `Category` already says what kind of problem a finding is, and `strict` is fatal on all of them equally.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -621,11 +621,10 @@ func TestFindingString(t *testing.T) {
   expected string
  }{
   {
-   name: "includes file, url, category and reason",
+   name: "includes file, role, url, category and reason",
    finding: Finding{
     Ref:      Reference{File: "index.html", URL: "https://x.dev/a", Role: "a href"},
     Category: CategoryStatus,
-    Severity: SevWarn,
     Reason:   "responded 404",
    },
    expected: "index.html: a href https://x.dev/a: status: responded 404",
@@ -643,18 +642,20 @@ func TestFindingString(t *testing.T) {
 
 func TestSortFindings(t *testing.T) {
  findings := []Finding{
-  {Ref: Reference{File: "b.html"}, Severity: SevInfo, Category: CategoryRedirect},
-  {Ref: Reference{File: "a.html"}, Severity: SevWarn, Category: CategoryStatus},
-  {Ref: Reference{File: "c.html"}, Severity: SevNote, Category: CategoryGated},
+  {Ref: Reference{File: "c.html", URL: "https://x.dev/b"}},
+  {Ref: Reference{File: "a.html", URL: "https://x.dev/z"}},
+  {Ref: Reference{File: "a.html", URL: "https://x.dev/a"}},
  }
 
  SortFindings(findings)
 
- // Most severe first, then by file for stable output.
- want := []Severity{SevWarn, SevNote, SevInfo}
+ // Sorted by file then URL, so output is diffable across builds despite the
+ // random map iteration order upstream.
+ want := []string{"a.html|https://x.dev/a", "a.html|https://x.dev/z", "c.html|https://x.dev/b"}
  for i, w := range want {
-  if findings[i].Severity != w {
-   t.Errorf("findings[%d].Severity = %v, want %v", i, findings[i].Severity, w)
+  got := findings[i].Ref.File + "|" + findings[i].Ref.URL
+  if got != w {
+   t.Errorf("findings[%d] = %q, want %q", i, got, w)
   }
  }
 }
@@ -691,45 +692,24 @@ const (
  // CategoryMissingTarget is a reference to the build's own output that
  // resolves to nothing the build produced.
  CategoryMissingTarget Category = "missing-target"
- // CategoryIntegrity is a verifiable subresource carrying no integrity hash.
- CategoryIntegrity Category = "integrity"
- // CategoryCrossOrigin is an integrity hash the browser cannot verify for
- // lack of a CORS opt-in.
- CategoryCrossOrigin Category = "crossorigin"
+ // CategoryMissingIntegrity is a verifiable subresource carrying no
+ // integrity hash.
+ CategoryMissingIntegrity Category = "missing-integrity"
+ // CategoryMissingCrossOrigin is an integrity hash the browser cannot verify
+ // because the reference does not opt into CORS.
+ CategoryMissingCrossOrigin Category = "missing-crossorigin"
+ // CategoryNoCORSHeader is an integrity hash the browser cannot verify
+ // because the target does not permit cross-origin reads.
+ CategoryNoCORSHeader Category = "no-cors-header"
  // CategoryUnverifiedImport is a cross-origin stylesheet imported by a
  // stylesheet that carries an integrity hash.
  CategoryUnverifiedImport Category = "unverified-import"
- // CategoryCORS is a subresource with an integrity hash whose target does
- // not permit cross-origin reads.
- CategoryCORS Category = "cors"
 )
-
-// Severity orders findings for presentation. It does not gate strictness:
-// under strict mode every finding is fatal regardless of severity.
-type Severity int
-
-const (
- SevInfo Severity = iota
- SevNote
- SevWarn
-)
-
-func (s Severity) String() string {
- switch s {
- case SevWarn:
-  return "WARN"
- case SevNote:
-  return "NOTE"
- default:
-  return "INFO"
- }
-}
 
 // Finding is one problem with one reference.
 type Finding struct {
  Ref      Reference
  Category Category
- Severity Severity
  Reason   string
 }
 
@@ -738,13 +718,10 @@ func (f Finding) String() string {
   f.Ref.File, f.Ref.Role, f.Ref.URL, f.Category, f.Reason)
 }
 
-// SortFindings orders findings most severe first, then by file and URL so
-// output is stable across runs.
+// SortFindings orders findings by file then URL, so output is stable across
+// builds even though the rendered-file map is iterated in random order.
 func SortFindings(fs []Finding) {
  sort.SliceStable(fs, func(i, j int) bool {
-  if fs[i].Severity != fs[j].Severity {
-   return fs[i].Severity > fs[j].Severity
-  }
   if fs[i].Ref.File != fs[j].Ref.File {
    return fs[i].Ref.File < fs[j].Ref.File
   }
@@ -761,7 +738,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/code/thetillhoff/temingo && git add pkg/refcheck/finding.go pkg/refcheck/finding_test.go && git commit -m "feat(refcheck): add finding categories and severities"
+cd ~/code/thetillhoff/temingo && git add pkg/refcheck/finding.go pkg/refcheck/finding_test.go && git commit -m "feat(refcheck): add finding categories"
 ```
 
 ---
@@ -775,7 +752,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/finding.go pkg/refcheck/fi
 
 **Interfaces:**
 
-- Consumes: `Reference`, `Finding`, `Category`, `Severity` from Tasks 1 and 3.
+- Consumes: `Reference`, `Finding`, `Category` from Tasks 1 and 3.
 - Produces: `func CheckStatic(refs []Reference) []Finding`.
 
 - [ ] **Step 1: Write the failing test**
@@ -787,9 +764,9 @@ import "testing"
 
 func TestCheckStatic(t *testing.T) {
  tests := []struct {
-  name       string
-  refs       []Reference
-  wantCats   []Category
+  name     string
+  refs     []Reference
+  wantCats []Category
  }{
   {
    name: "cross-origin script without integrity",
@@ -797,7 +774,7 @@ func TestCheckStatic(t *testing.T) {
     File: "i.html", URL: "https://cdn.example/x.js", Role: "script src",
     Origin: OriginRemote, CanCarryIntegrity: true,
    }},
-   wantCats: []Category{CategoryIntegrity},
+   wantCats: []Category{CategoryMissingIntegrity},
   },
   {
    name: "integrity without crossorigin is breakage",
@@ -805,7 +782,7 @@ func TestCheckStatic(t *testing.T) {
     File: "i.html", URL: "https://cdn.example/x.js", Role: "script src",
     Origin: OriginRemote, CanCarryIntegrity: true, HasIntegrity: true,
    }},
-   wantCats: []Category{CategoryCrossOrigin},
+   wantCats: []Category{CategoryMissingCrossOrigin},
   },
   {
    name: "integrity with crossorigin is clean",
@@ -895,13 +872,13 @@ func CheckStatic(refs []Reference) []Finding {
  for _, r := range refs {
   if r.Role == "css @import" && r.Origin == OriginRemote && verifiedSheets[r.File] {
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryUnverifiedImport, Severity: SevNote,
+    Ref: r, Category: CategoryUnverifiedImport,
     Reason: "imported by a stylesheet that carries an integrity hash; imported sheets are not covered by it",
    })
   }
 
-  // Integrity and CORS findings apply only where a browser would verify
-  // a hash. Raising them elsewhere is advice the author cannot act on.
+  // Integrity and CORS findings apply only where a browser would verify a
+  // hash. Raising them elsewhere is advice the author cannot act on.
   if !r.CanCarryIntegrity || r.Origin != OriginRemote {
    continue
   }
@@ -909,12 +886,12 @@ func CheckStatic(refs []Reference) []Finding {
   switch {
   case r.HasIntegrity && !r.HasCrossOrigin:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryCrossOrigin, Severity: SevWarn,
+    Ref: r, Category: CategoryMissingCrossOrigin,
     Reason: "integrity hash on a cross-origin subresource with no CORS opt-in; the browser blocks it outright",
    })
   case !r.HasIntegrity:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryIntegrity, Severity: SevWarn,
+    Ref: r, Category: CategoryMissingIntegrity,
     Reason: "cross-origin subresource with no integrity hash",
    })
   }
@@ -924,7 +901,7 @@ func CheckStatic(refs []Reference) []Finding {
 }
 ```
 
-Note: `verifiedSheets` is keyed by the file the reference was *found in*, which covers a stylesheet that both carries a hash and imports. A hash on a `<link>` in one document and an `@import` inside the fetched stylesheet is not connected, because the fetched stylesheet is not part of the build. That is correct: the spec only requires reporting imports in stylesheets the build produced.
+Note: `verifiedSheets` is keyed by the file a reference was *found in*, which covers a stylesheet that both carries a hash and imports. A hash on a `<link>` in one document and an `@import` inside the fetched stylesheet is not connected, because the fetched stylesheet is not part of the build. That is correct: the spec only requires reporting imports in stylesheets the build produced.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -960,13 +937,13 @@ import "testing"
 
 func TestResolveInternal(t *testing.T) {
  outputs := map[string]bool{
-  "index.html":            true,
-  "style.css":             true,
-  "slides/slides.css":     true,
-  "slides/index.html":     true,
+  "index.html":             true,
+  "style.css":              true,
+  "slides/slides.css":      true,
+  "slides/index.html":      true,
   "blog/a-post/index.html": true,
-  "about.html":            true,
-  "images/a.jpg":          true,
+  "about.html":             true,
+  "images/a.jpg":           true,
  }
 
  tests := []struct {
@@ -1102,7 +1079,7 @@ func ResolveInternal(refs []Reference, outputPaths map[string]bool) []Finding {
   }
 
   findings = append(findings, Finding{
-   Ref: r, Category: CategoryMissingTarget, Severity: SevWarn,
+   Ref: r, Category: CategoryMissingTarget,
    Reason: "no file in the build output answers this path",
   })
  }
@@ -1119,10 +1096,7 @@ func resolveTarget(r Reference) (string, bool) {
   return "", false
  }
  p, err := url.PathUnescape(u.Path)
- if err != nil {
-  return "", false
- }
- if p == "" {
+ if err != nil || p == "" {
   return "", false
  }
 
@@ -1150,7 +1124,7 @@ func resolveTarget(r Reference) (string, bool) {
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestResolveInternal -v`
-Expected: PASS, all ten subtests. Note the `/slides/` case passes via the `index.html` candidate and `/about` via the `.html` candidate.
+Expected: PASS, all ten subtests. `/slides/` passes via the `index.html` candidate and `/about` via the `.html` candidate.
 
 - [ ] **Step 5: Commit**
 
@@ -1169,7 +1143,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/resolveInternal.go pkg/ref
 
 **Interfaces:**
 
-- Consumes: `Category` from Task 3.
+- Consumes: `Category`, `Finding` from Task 3.
 - Produces: `type AllowEntry struct { URL string; Checks []Category }`, `type Allowlist []AllowEntry`, `func (a Allowlist) Allows(rawURL string, c Category) bool`, `func (a Allowlist) AllowsEverything(rawURL string) bool`, `func (a Allowlist) Filter(fs []Finding) []Finding`.
 
 - [ ] **Step 1: Write the failing test**
@@ -1183,14 +1157,14 @@ func TestAllowlist(t *testing.T) {
  list := Allowlist{
   {URL: "https://paywalled.example/*"},
   {URL: "https://redirecting.example/*", Checks: []Category{CategoryRedirect}},
-  {URL: "https://cdn.example/lib/*/x.js", Checks: []Category{CategoryIntegrity}},
+  {URL: "https://cdn.example/lib/*/x.js", Checks: []Category{CategoryMissingIntegrity}},
  }
 
  tests := []struct {
-  name          string
-  url           string
-  category      Category
-  wantAllowed   bool
+  name           string
+  url            string
+  category       Category
+  wantAllowed    bool
   wantEverything bool
  }{
   {name: "no entry matches", url: "https://other.example/a", category: CategoryStatus},
@@ -1203,7 +1177,7 @@ func TestAllowlist(t *testing.T) {
    category: CategoryGated, wantAllowed: true, wantEverything: true,
   },
   {
-   name: "entry without checks covers nested paths too", url: "https://paywalled.example/a/b/c",
+   name: "trailing star covers nested paths", url: "https://paywalled.example/a/b/c",
    category: CategoryStatus, wantAllowed: true, wantEverything: true,
   },
   {
@@ -1215,12 +1189,12 @@ func TestAllowlist(t *testing.T) {
    category: CategoryStatus,
   },
   {
-   name: "glob matches a version segment", url: "https://cdn.example/lib/5.2.1/x.js",
-   category: CategoryIntegrity, wantAllowed: true,
+   name: "interior star matches one path segment", url: "https://cdn.example/lib/5.2.1/x.js",
+   category: CategoryMissingIntegrity, wantAllowed: true,
   },
   {
-   name: "glob does not match a different file", url: "https://cdn.example/lib/5.2.1/y.js",
-   category: CategoryIntegrity,
+   name: "interior star does not match a different file", url: "https://cdn.example/lib/5.2.1/y.js",
+   category: CategoryMissingIntegrity,
   },
  }
 
@@ -1264,7 +1238,10 @@ Expected: FAIL to build - `undefined: Allowlist`.
 ```go
 package refcheck
 
-import "path"
+import (
+ "path"
+ "strings"
+)
 
 // AllowEntry accepts findings for URLs matching a pattern. Checks names the
 // categories accepted; empty accepts all of them.
@@ -1339,14 +1316,12 @@ func matchURL(pattern, rawURL string) bool {
 }
 ```
 
-Add `"strings"` to the file's imports alongside `"path"`.
-
-Note: `path.Match` alone treats `*` as never crossing `/`, so `https://paywalled.example/*` would match `/a` but not `/a/b` - an entry meant to cover a host would silently miss every nested path. The trailing-`*` prefix case above exists to fix that; the `path.Match` fallback is kept only for interior wildcards. Verified: `path.Match("https://paywalled.example/*", "https://paywalled.example/a/b")` returns false, which is why the special case is needed rather than optional.
+Note: `path.Match` alone treats `*` as never crossing `/`, so `https://paywalled.example/*` would match `/a` but not `/a/b` - an entry meant to cover a host would silently miss every nested path. The trailing-`*` prefix case exists to fix that, and is required rather than optional.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestAllowlist -v`
-Expected: PASS.
+Expected: PASS, all eight subtests plus the filter test.
 
 - [ ] **Step 5: Commit**
 
@@ -1366,9 +1341,9 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/allowlist.go pkg/refcheck/
 **Interfaces:**
 
 - Consumes: `Allowlist` from Task 6.
-- Produces: `type Result struct { Status int; FinalURL string; AllowsCORS bool; Hash string; Err error }`, `type Cache struct{...}`, `func NewCache(allow Allowlist, ttl time.Duration, concurrency int) *Cache`, `func (c *Cache) Fetch(rawURL, algorithm string) Result`.
+- Produces: `type Result struct { Status int; FinalURL string; AllowsCORS bool; Hash string; Err error }`, `type Cache struct{...}`, `func NewCache(allow Allowlist) *Cache`, `func (c *Cache) Fetch(rawURL, algorithm string) Result`.
 
-`algorithm` is empty when no hash is wanted. A `Result` with `Err` set is indeterminate: unreachable or unresolvable.
+`algorithm` is empty when no hash is wanted. A `Result` with `Err` set is indeterminate: unreachable or unresolvable. Requests are sequential and the cache lives as long as the process, so only the first build in a watch session pays.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1380,7 +1355,6 @@ import (
  "net/http/httptest"
  "sync/atomic"
  "testing"
- "time"
 )
 
 func TestCacheFetch(t *testing.T) {
@@ -1404,7 +1378,7 @@ func TestCacheFetch(t *testing.T) {
  srv := httptest.NewServer(mux)
  defer srv.Close()
 
- c := NewCache(nil, time.Minute, 4)
+ c := NewCache(nil)
 
  t.Run("200 with CORS", func(t *testing.T) {
   got := c.Fetch(srv.URL+"/ok", "")
@@ -1458,6 +1432,19 @@ func TestCacheFetch(t *testing.T) {
   }
  })
 
+ t.Run("a cached hashed result answers an unhashed request", func(t *testing.T) {
+  // This is the common case, not an edge one: sri hashes a URL during
+  // render, and the same URL is then checked as a reference. It must not
+  // be requested twice.
+  fresh := NewCache(nil)
+  before := atomic.LoadInt64(&hits)
+  fresh.Fetch(srv.URL+"/ok", "sha384")
+  fresh.Fetch(srv.URL+"/ok", "")
+  if after := atomic.LoadInt64(&hits); after-before != 1 {
+   t.Errorf("server saw %d requests, want 1", after-before)
+  }
+ })
+
  t.Run("unreachable host is indeterminate", func(t *testing.T) {
   got := c.Fetch("https://this-host-does-not-exist.invalid/x", "")
   if got.Err == nil {
@@ -1466,7 +1453,7 @@ func TestCacheFetch(t *testing.T) {
  })
 
  t.Run("allowlisted url is never requested", func(t *testing.T) {
-  allowed := NewCache(Allowlist{{URL: srv.URL + "/*"}}, time.Minute, 4)
+  allowed := NewCache(Allowlist{{URL: srv.URL + "/*"}})
   before := atomic.LoadInt64(&hits)
   got := allowed.Fetch(srv.URL+"/ok", "")
   if after := atomic.LoadInt64(&hits); after != before {
@@ -1479,12 +1466,12 @@ func TestCacheFetch(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Verify the expected hash before running the suite**
+- [ ] **Step 2: Confirm the expected hash**
 
-The `sha384` literal above must be correct or the test is meaningless. Confirm it:
+The `sha384` literal must be right or the test proves nothing.
 
 Run: `printf 'hello' | openssl dgst -sha384 -binary | openssl base64 -A`
-Expected: the base64 string in the test, matching `sha384-<that>`. If it differs, replace the literal in the test with the command's output.
+Expected: `WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP`. If it differs, replace the literal with the command's output.
 
 - [ ] **Step 3: Run test to verify it fails**
 
@@ -1519,39 +1506,31 @@ type Result struct {
 }
 
 type cacheEntry struct {
- result    Result
- fetchedAt time.Time
- hashed    bool
+ result Result
+ // algorithm the body was hashed with, empty if it was not hashed.
+ algorithm string
 }
 
-// Cache requests each distinct URL at most once and retains the outcome for a
-// bounded freshness window, so that repeated builds in one process - watch mode
-// - do not re-request unchanged references.
+// Cache requests each distinct URL at most once and keeps the outcome for the
+// life of the process, so repeated builds - watch mode - do not re-request
+// unchanged references.
+//
+// ponytail: sequential, no concurrency limiting, no expiry. Only the first
+// build in a session pays. If that becomes too slow, fan out in CheckRemote
+// rather than adding a limiter here.
 type Cache struct {
- allow       Allowlist
- ttl         time.Duration
- client      *http.Client
- sem         chan struct{}
- mu          sync.Mutex
- entries     map[string]cacheEntry
- inflight    map[string]*sync.WaitGroup
- now         func() time.Time
+ allow   Allowlist
+ client  *http.Client
+ mu      sync.Mutex
+ entries map[string]cacheEntry
 }
 
-// NewCache returns a cache that elides requests the allowlist fully covers and
-// runs at most concurrency requests at once.
-func NewCache(allow Allowlist, ttl time.Duration, concurrency int) *Cache {
- if concurrency < 1 {
-  concurrency = 1
- }
+// NewCache returns a cache that elides requests the allowlist fully covers.
+func NewCache(allow Allowlist) *Cache {
  return &Cache{
-  allow:    allow,
-  ttl:      ttl,
-  client:   &http.Client{Timeout: 15 * time.Second, CheckRedirect: stopAtFirstRedirect},
-  sem:      make(chan struct{}, concurrency),
-  entries:  map[string]cacheEntry{},
-  inflight: map[string]*sync.WaitGroup{},
-  now:      time.Now,
+  allow:   allow,
+  client:  &http.Client{Timeout: 15 * time.Second, CheckRedirect: stopAtFirstRedirect},
+  entries: map[string]cacheEntry{},
  }
 }
 
@@ -1561,7 +1540,7 @@ func stopAtFirstRedirect(req *http.Request, via []*http.Request) error {
  return http.ErrUseLastResponse
 }
 
-// Fetch returns the outcome for rawURL, requesting it only if no fresh result
+// Fetch returns the outcome for rawURL, requesting it only if no usable result
 // is held. algorithm is empty when no content hash is wanted.
 func (c *Cache) Fetch(rawURL, algorithm string) Result {
  // A URL the allowlist fully covers is never requested at all.
@@ -1569,42 +1548,26 @@ func (c *Cache) Fetch(rawURL, algorithm string) Result {
   return Result{}
  }
 
- for {
-  c.mu.Lock()
-  entry, ok := c.entries[rawURL]
-  fresh := ok && c.now().Sub(entry.fetchedAt) < c.ttl
-  // A cached result without a hash cannot answer a request that wants one.
-  usable := fresh && (algorithm == "" || entry.hashed)
-  if usable {
-   c.mu.Unlock()
-   return entry.result
-  }
-  if wg, running := c.inflight[rawURL]; running {
-   c.mu.Unlock()
-   wg.Wait()
-   continue
-  }
-  wg := &sync.WaitGroup{}
-  wg.Add(1)
-  c.inflight[rawURL] = wg
+ c.mu.Lock()
+ entry, ok := c.entries[rawURL]
+ // A held result answers the request unless a hash is wanted that it does
+ // not carry.
+ if ok && (algorithm == "" || entry.algorithm == algorithm) {
   c.mu.Unlock()
-
-  result := c.request(rawURL, algorithm)
-
-  c.mu.Lock()
-  c.entries[rawURL] = cacheEntry{result: result, fetchedAt: c.now(), hashed: algorithm != ""}
-  delete(c.inflight, rawURL)
-  c.mu.Unlock()
-  wg.Done()
-
-  return result
+  return entry.result
  }
+ c.mu.Unlock()
+
+ result := c.request(rawURL, algorithm)
+
+ c.mu.Lock()
+ c.entries[rawURL] = cacheEntry{result: result, algorithm: algorithm}
+ c.mu.Unlock()
+
+ return result
 }
 
 func (c *Cache) request(rawURL, algorithm string) Result {
- c.sem <- struct{}{}
- defer func() { <-c.sem }()
-
  req, err := http.NewRequest(http.MethodGet, rawURL, nil)
  if err != nil {
   return Result{Err: err}
@@ -1663,7 +1626,7 @@ func hasherFor(algorithm string) (hash.Hash, error) {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `cd ~/code/thetillhoff/temingo && go test ./pkg/refcheck/ -run TestCacheFetch -v`
-Expected: PASS. The "one request per url" subtest is the one that proves dedupe; if it fails, the cache is re-requesting.
+Expected: PASS. The two dedupe subtests are the ones that matter: if either fails, the cache is re-requesting.
 
 - [ ] **Step 6: Commit**
 
@@ -1694,7 +1657,6 @@ import (
  "net/http"
  "net/http/httptest"
  "testing"
- "time"
 )
 
 func TestCheckRemote(t *testing.T) {
@@ -1729,7 +1691,7 @@ func TestCheckRemote(t *testing.T) {
   {
    name: "200 without CORS breaks an integrity hash", path: "/nocors",
    ref:     Reference{Role: "script src", CanCarryIntegrity: true, HasIntegrity: true, HasCrossOrigin: true},
-   wantCat: CategoryCORS,
+   wantCat: CategoryNoCORSHeader,
   },
   {
    name: "200 without CORS is fine with no integrity hash", path: "/nocors",
@@ -1748,7 +1710,7 @@ func TestCheckRemote(t *testing.T) {
     ref.Role = "a href"
    }
 
-   got := CheckRemote([]Reference{ref}, NewCache(nil, time.Minute, 2))
+   got := CheckRemote([]Reference{ref}, NewCache(nil))
 
    if test.wantNone {
     if len(got) != 0 {
@@ -1769,13 +1731,10 @@ func TestCheckRemote(t *testing.T) {
 func TestCheckRemoteUnreachable(t *testing.T) {
  ref := Reference{File: "index.html", URL: "https://does-not-exist.invalid/x", Role: "a href", Origin: OriginRemote}
 
- got := CheckRemote([]Reference{ref}, NewCache(nil, time.Minute, 2))
+ got := CheckRemote([]Reference{ref}, NewCache(nil))
 
  if len(got) != 1 || got[0].Category != CategoryUnreachable {
   t.Fatalf("CheckRemote() = %+v, want one unreachable finding", got)
- }
- if got[0].Severity != SevInfo {
-  t.Errorf("Severity = %v, want SevInfo - indeterminate outcomes are informational, though strict still fails on them", got[0].Severity)
  }
 }
 ```
@@ -1797,6 +1756,9 @@ import (
 
 // CheckRemote requests every remote reference and reports what it finds. Each
 // distinct URL is requested at most once, however many references share it.
+//
+// ponytail: sequential. The cache lives for the process, so only the first
+// build in a watch session pays. Fan out here if that becomes too slow.
 func CheckRemote(refs []Reference, c *Cache) []Finding {
  var findings []Finding
 
@@ -1810,7 +1772,7 @@ func CheckRemote(refs []Reference, c *Cache) []Finding {
   switch {
   case result.Err != nil:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryUnreachable, Severity: SevInfo,
+    Ref: r, Category: CategoryUnreachable,
     Reason: fmt.Sprintf("could not be determined: %v", result.Err),
    })
    continue
@@ -1819,17 +1781,17 @@ func CheckRemote(refs []Reference, c *Cache) []Finding {
    continue
   case result.Status == http.StatusUnauthorized || result.Status == http.StatusForbidden:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryGated, Severity: SevNote,
+    Ref: r, Category: CategoryGated,
     Reason: fmt.Sprintf("responded %d; expected for paywalled or login-gated targets", result.Status),
    })
   case result.Status >= 400:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryStatus, Severity: SevWarn,
+    Ref: r, Category: CategoryStatus,
     Reason: fmt.Sprintf("responded %d", result.Status),
    })
   case result.Status >= 300:
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryRedirect, Severity: SevInfo,
+    Ref: r, Category: CategoryRedirect,
     Reason: fmt.Sprintf("responded %d, redirecting to %s; replace the reference with that target", result.Status, result.FinalURL),
    })
   }
@@ -1838,7 +1800,7 @@ func CheckRemote(refs []Reference, c *Cache) []Finding {
   // bytes is breakage, not advice.
   if r.CanCarryIntegrity && r.HasIntegrity && result.Status < 300 && !result.AllowsCORS {
    findings = append(findings, Finding{
-    Ref: r, Category: CategoryCORS, Severity: SevWarn,
+    Ref: r, Category: CategoryNoCORSHeader,
     Reason: "carries an integrity hash but the target sends no Access-Control-Allow-Origin, so the browser cannot verify it and blocks the subresource",
    })
   }
@@ -1865,7 +1827,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/refcheck/checkRemote.go pkg/refchec
 
 **Files:**
 
-- Modify: `pkg/temingo/Engine.go` - add `Strict`, `Allow`, `LinkCheckTTL`, `LinkCheckConcurrency`, and an unexported cache field
+- Modify: `pkg/temingo/Engine.go` - add `Strict`, `Allow`, and an unexported cache field
 - Create: `pkg/temingo/checkReferences.go`
 - Modify: `pkg/temingo/Render.go:167-172` - replace the `warnHTTPLinks` loop
 - Delete: `pkg/temingo/warnHTTPLinks.go`, `pkg/temingo/warnHTTPLinks_test.go`
@@ -1994,33 +1956,26 @@ Expected: FAIL to build - `engine.Strict undefined`, `engine.checkReferences und
 
 - [ ] **Step 3: Add fields to `pkg/temingo/Engine.go`**
 
-Add to the `Engine` struct after `Minify`:
+Add `"github.com/thetillhoff/temingo/pkg/refcheck"` to the imports, then add to the `Engine` struct after `Minify`:
 
 ```go
- // Strict makes any reference finding exit non-zero. It draws no
- // distinction between a definite failure and an indeterminate one: a
- // timeout is as fatal as a 404, and the remedy is to run again.
+ // Strict makes any reference finding exit non-zero. It draws no distinction
+ // between a definite failure and an indeterminate one: a timeout is as fatal
+ // as a 404, and the remedy is to run again.
  Strict bool
  // Allow accepts findings for matching URLs.
  Allow refcheck.Allowlist
- // LinkCheckTTL bounds how long a request outcome is reused within one
- // process, so watch-mode rebuilds do not re-request every reference.
- LinkCheckTTL time.Duration
- // LinkCheckConcurrency caps simultaneous requests.
- LinkCheckConcurrency int
 
+ // linkCache keeps request outcomes for the life of the engine, so watch-mode
+ // rebuilds do not re-request unchanged references.
  linkCache *refcheck.Cache
 ```
-
-Add to imports: `"time"` and `"github.com/thetillhoff/temingo/pkg/refcheck"`.
 
 Add to the `DefaultEngine()` literal after `Minify: false,`:
 
 ```go
-  Strict:               false,
-  Allow:                nil,
-  LinkCheckTTL:         10 * time.Minute,
-  LinkCheckConcurrency: 8,
+  Strict: false,
+  Allow:  nil,
 ```
 
 - [ ] **Step 4: Write `pkg/temingo/checkReferences.go`**
@@ -2040,9 +1995,8 @@ import (
 // produced.
 //
 // It runs on the in-memory rendered content and the set of paths the build will
-// write, so it needs no filesystem reads and holds under a dry run. Findings
-// never prevent output from being written; under Strict, any finding is
-// returned as an error so the process exits non-zero.
+// write, so it needs no filesystem reads and holds under a dry run. Under
+// Strict, any finding is returned as an error so the process exits non-zero.
 func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []string) error {
  var refs []refcheck.Reference
 
@@ -2059,7 +2013,7 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
   case ".html":
    refs = append(refs, refcheck.CollectHTML(p, content)...)
   case ".css":
-   refs = append(refs, refcheck.CollectCSS(p, "css", content)...)
+   refs = append(refs, refcheck.CollectCSS(p, content)...)
   }
  }
 
@@ -2067,7 +2021,7 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
  findings = append(findings, refcheck.ResolveInternal(refs, outputPaths)...)
 
  if engine.linkCache == nil {
-  engine.linkCache = refcheck.NewCache(engine.Allow, engine.LinkCheckTTL, engine.LinkCheckConcurrency)
+  engine.linkCache = refcheck.NewCache(engine.Allow)
  }
  findings = append(findings, refcheck.CheckRemote(refs, engine.linkCache)...)
 
@@ -2076,7 +2030,6 @@ func (engine *Engine) checkReferences(rendered map[string][]byte, staticPaths []
 
  for _, f := range findings {
   engine.Logger.Warn("Reference finding",
-   "severity", f.Severity.String(),
    "file", f.Ref.File,
    "url", f.Ref.URL,
    "role", f.Ref.Role,
@@ -2116,7 +2069,7 @@ with:
  }
 ```
 
-Note this returns before writing output under strict. That is a deliberate deviation from "findings never prevent output from being written": the spec's contract is that *findings* do not block, and strict is an explicit opt-in to failing. If you prefer output to be written even under strict, move the `checkReferences` call to just before `return nil` at the end of `Render()` and keep `staticPaths` in scope. Pick one and note it in the spec's post-implementation section.
+Note this returns before writing output under strict. That is a deliberate deviation from "findings never prevent output from being written": the spec's contract is that *findings* do not block, and strict is an explicit opt-in to failing. If you prefer output written even under strict, move the call to just before `return nil` at the end of `Render()`, keeping `staticPaths` in scope. Pick one and record it in the spec's post-implementation section.
 
 - [ ] **Step 6: Delete the superseded warner**
 
@@ -2124,12 +2077,12 @@ Note this returns before writing output under strict. That is a deliberate devia
 cd ~/code/thetillhoff/temingo && git rm pkg/temingo/warnHTTPLinks.go pkg/temingo/warnHTTPLinks_test.go
 ```
 
-The `http://` warning it provided is not carried forward: an insecure scheme is now visible as a remote reference like any other, and its string scan false-positived on URLs inside `<code>` and comments, which the spec forbids. If you want the insecure-scheme warning preserved, add a category for it in `CheckStatic` - a reference whose URL begins with `http://` and is not a loopback host - and a test mirroring the deleted one.
+The `http://` warning is not carried forward: an insecure scheme is now visible as a remote reference like any other, and its string scan false-positived on URLs inside `<code>` and comments, which the spec forbids. To preserve it, add a category in `CheckStatic` for a reference whose URL begins with `http://` and whose host is not a loopback address, plus a test mirroring the deleted one.
 
 - [ ] **Step 7: Run the full suite**
 
-Run: `cd ~/code/thetillhoff/temingo && go build ./... && go test ./... -v 2>&1 | tail -30`
-Expected: PASS. `TestCheckReferences` passes and no test references the deleted warner.
+Run: `cd ~/code/thetillhoff/temingo && go build ./... && go test ./... 2>&1 | tail -30`
+Expected: PASS. No test references the deleted warner.
 
 - [ ] **Step 8: Commit**
 
@@ -2145,7 +2098,7 @@ cd ~/code/thetillhoff/temingo && git add -A pkg/temingo/ && git commit -m "feat:
 
 - Create: `pkg/temingo/tmpl_sri.go`
 - Modify: `pkg/temingo/tmpl_funcmap.go` - the FuncMap needs access to the Engine
-- Modify: `pkg/temingo/renderTemplate.go:24` and `pkg/temingo/verifyPartials.go:24` - pass the Engine to `templateFuncMap`
+- Modify: `pkg/temingo/renderTemplate.go:24` and `pkg/temingo/verifyPartials.go:24` - pass the Engine
 - Test: `pkg/temingo/tmpl_sri_test.go`
 
 **Interfaces:**
@@ -2272,7 +2225,7 @@ func (engine *Engine) tmplSRI(rawURL string, algorithm ...string) (string, error
  }
 
  if engine.linkCache == nil {
-  engine.linkCache = refcheck.NewCache(engine.Allow, engine.LinkCheckTTL, engine.LinkCheckConcurrency)
+  engine.linkCache = refcheck.NewCache(engine.Allow)
  }
 
  result := engine.linkCache.Fetch(rawURL, algo)
@@ -2319,7 +2272,7 @@ Then update both call sites to pass the engine:
 - `pkg/temingo/renderTemplate.go:24`: `templateEngine = templateEngine.Funcs(templateFuncMap(engine))`
 - `pkg/temingo/verifyPartials.go:24`: `temporaryTemplateEngine = temporaryTemplateEngine.Funcs(templateFuncMap(engine))`
 
-Check both are methods on `*Engine`; if either is a free function, pass the engine in as a parameter.
+Both are methods on `*Engine`; if either is a free function, pass the engine in as a parameter.
 
 - [ ] **Step 5: Run the full suite**
 
@@ -2338,7 +2291,7 @@ cd ~/code/thetillhoff/temingo && git add pkg/temingo/ && git commit -m "feat: ad
 
 **Files:**
 
-- Modify: `cmd/root.go` - add `--strict` flag and pass the new Engine fields
+- Modify: `cmd/root.go` - add `--strict` and pass the new Engine fields
 - Modify: `cmd/config.go` - read `strict` and `allow` from the config file
 - Test: `cmd/config_test.go`
 
@@ -2421,7 +2374,7 @@ Expected: FAIL to build - `undefined: allowlistFromConfig`.
 
 - [ ] **Step 3: Add `allowlistFromConfig` to `cmd/config.go`**
 
-Append to the file, and add `"github.com/thetillhoff/temingo/pkg/refcheck"` to its imports:
+Append to the file, adding `"github.com/thetillhoff/temingo/pkg/refcheck"` to its imports:
 
 ```go
 // allowlistFromConfig reads the allow list. Entries without a url are skipped;
@@ -2460,15 +2413,17 @@ func allowlistFromConfig(config map[string]interface{}) refcheck.Allowlist {
 
 - [ ] **Step 4: Wire `strict` into `applyConfigToFlags`**
 
-Add a `strictFlag *bool` parameter to `applyConfigToFlags` after `noDeleteOutputDirFlag`, and add this alongside the other `applyBoolFlag` calls:
+Add a `strictFlag *bool` parameter after `noDeleteOutputDirFlag`, and add alongside the other `applyBoolFlag` calls:
 
 ```go
  applyBoolFlag("strict", "strict", strictFlag)
 ```
 
+That function already takes fifteen parameters. A sixteenth follows the existing pattern; collapsing them into a struct is a worthwhile cleanup but is out of scope here.
+
 - [ ] **Step 5: Add the CLI flag and pass the fields in `cmd/root.go`**
 
-Add to the `Flags` slice, after the `dry-run` flag:
+Add to the `Flags` slice, after `dry-run`:
 
 ```go
    &cli.BoolFlag{
@@ -2487,13 +2442,9 @@ Read it alongside the other flags:
 Pass it to `applyConfigToFlags` as the new final argument, then add to the `temingo.Engine` literal after `Minify: false,`:
 
 ```go
-    Strict:               strictFlag,
-    Allow:                allowlistFromConfig(config),
-    LinkCheckTTL:         10 * time.Minute,
-    LinkCheckConcurrency: 8,
+    Strict: strictFlag,
+    Allow:  allowlistFromConfig(config),
 ```
-
-Add `"time"` to `cmd/root.go` imports.
 
 - [ ] **Step 6: Run the suite and check the CLI**
 
@@ -2516,16 +2467,9 @@ cd ~/code/thetillhoff/temingo && git add cmd/ && git commit -m "feat(cmd): add s
 **Files:**
 
 - Create: `pkg/temingo/Render_refcheck_test.go`
-- Modify: `README.md` - document `sri`, `strict`, `allow`
-- Modify: `CHANGELOG.md`
-- Modify: `ROADMAP.md` - remove the two delivered items
-- Modify: `docs/specs/2026-07-30-link-and-sri-validation-design.md` - fill in the post-implementation section
-- Modify: `TODO.md` - delete the delivered topic (only if it is tracked by git; otherwise leave it in the working tree)
-
-**Interfaces:**
-
-- Consumes: everything.
-- Produces: no new API.
+- Modify: `README.md`, `CHANGELOG.md`, `ROADMAP.md`
+- Modify: `docs/specs/2026-07-30-link-and-sri-validation-design.md` - fill in the post-implementation section, and correct the severity contract
+- Modify: `TODO.md` - delete the delivered topic, only if it is tracked by git
 
 - [ ] **Step 1: Write the end-to-end test**
 
@@ -2542,7 +2486,7 @@ import (
 )
 
 // TestRenderReportsMistypedAssetPath is the regression test for the failure this
-// feature exists to catch: a stylesheet reference that points at nothing, which
+// feature exists to catch: a stylesheet reference pointing at nothing, which
 // previously built cleanly and produced an unstyled page.
 func TestRenderReportsMistypedAssetPath(t *testing.T) {
  dir := t.TempDir()
@@ -2574,7 +2518,6 @@ func TestRenderReportsMistypedAssetPath(t *testing.T) {
   t.Errorf("expected a missing-target finding for /styl.css, got:\n%s", out)
  }
 
- // Output must still have been written.
  if _, err := os.Stat(filepath.Join(dir, "output", "index.html")); err != nil {
   t.Errorf("output was not written: %v", err)
  }
@@ -2612,14 +2555,12 @@ Expected: PASS. Neither test reaches the network - both references are internal.
 
 - [ ] **Step 3: Verify against a real site**
 
-Build and run against thetillhoff.de, which has both remote references with integrity hashes and a commented-out nav link:
-
 ```bash
 cd ~/code/thetillhoff/temingo && go build -o /tmp/temingo-refcheck .
 cd ~/code/thetillhoff/thetillhoff.de && /tmp/temingo-refcheck 2>&1 | grep -i 'finding' | head -20
 ```
 
-Expected: no `missing-target` finding, and specifically no finding mentioning `reading-notes` - that link is inside an HTML comment, and reporting it would mean the collector is not walking elements. Remote findings depend on network reachability.
+Expected: no `missing-target` finding, and specifically nothing mentioning `reading-notes` - that link is inside an HTML comment, and reporting it would mean the collector is not walking elements. Remote findings depend on network reachability.
 
 - [ ] **Step 4: Document in `README.md`**
 
@@ -2641,8 +2582,9 @@ unverifiable, or point at nothing the build produced:
   since imported sheets are not covered by it
 - internal paths that no output file answers
 
-URLs written as visible text - in a code sample, or inside an HTML comment -
-are never reported.
+URLs written as visible text - in a code sample, or inside an HTML comment - are
+never reported. Neither is a `form` action, which addresses a server route
+rather than a file.
 
 Findings do not fail the build. Pass `--strict` (or set `strict: true`) to exit
 non-zero when any finding is reported, which is the intended CI configuration.
@@ -2663,11 +2605,15 @@ A trailing `*` covers everything under it, so `https://example.com/*` matches
 the whole host. A `*` in the middle of a pattern matches within one path
 segment, so `https://cdn.example/lib/*/x.js` pins the filename while accepting
 any version. Categories are `status`, `gated`, `redirect`, `unreachable`,
-`missing-target`, `integrity`, `crossorigin`, `unverified-import` and `cors`.
-A URL whose entry names no categories is never requested at all.
+`missing-target`, `missing-integrity`, `missing-crossorigin`, `no-cors-header`
+and `unverified-import`. A URL whose entry names no categories is never
+requested at all.
 
 A redirect is best fixed by replacing the reference with its target rather than
 allowlisting it.
+
+External URLs are requested once each per process, so a watch session pays only
+on its first build.
 
 ### `sri`
 
@@ -2680,8 +2626,8 @@ Emits the integrity hash of a remote subresource:
 ```
 
 The default algorithm is `sha384`; pass another as a second argument:
-`{{ sri "https://cdn.example/x.js" "sha512" }}`. Supported values are
-`sha256`, `sha384` and `sha512`.
+`{{ sri "https://cdn.example/x.js" "sha512" }}`. Supported values are `sha256`,
+`sha384` and `sha512`.
 
 `sri` accepts remote URLs only. A hash of a file temingo produced would protect
 nothing, because whoever can alter a same-origin file can alter the document
@@ -2689,7 +2635,6 @@ carrying its hash.
 
 Because the hash is fetched at build time, a build using `sri` fails when the
 target is unreachable - there is no correct output without the hash.
-
 ````
 
 - [ ] **Step 5: Update `CHANGELOG.md`**
@@ -2715,7 +2660,7 @@ Add at the top, under a new unreleased heading:
 
 - [ ] **Step 6: Update `ROADMAP.md`**
 
-Delete `- Validate internal links (warn on broken file references)` from **Soon → Output quality**, and delete `- Subresource integrity hashes (SHA256/384/512) for JS/CSS files, for use in CSP config (#92)` from **Later**.
+Delete `- Validate internal links (warn on broken file references)` from **Soon → Output quality**, and `- Subresource integrity hashes (SHA256/384/512) for JS/CSS files, for use in CSP config (#92)` from **Later**.
 
 Add to **Later**, since #92's CSP use case is not delivered:
 
@@ -2723,13 +2668,14 @@ Add to **Later**, since #92's CSP use case is not delivered:
 - Content hashes for inline `<style>` / `<script>`, so `unsafe-inline` can be dropped from a CSP (#92) — needs a delivery mechanism, since temingo does not own response headers
 ```
 
-- [ ] **Step 7: Fill in the spec's post-implementation section**
+- [ ] **Step 7: Correct and complete the spec**
 
-Replace `To be filled in during implementation.` in `docs/specs/2026-07-30-link-and-sri-validation-design.md` with the concrete mechanisms: the `pkg/refcheck` package boundary, the in-memory output-path set rather than filesystem stats, the glob semantics of `path.Match`, the 10-minute cache window, the concurrency cap of 8, the regex-based CSS extraction and its known ceiling, and whether strict returns before or after the write phase (see Task 9 Step 5).
+Two edits to `docs/specs/2026-07-30-link-and-sri-validation-design.md`:
+
+1. Delete the contract "**Findings carry a severity for presentation only.**" It is not implemented, deliberately: with strict fatal on every category, a severity orders output without informing anything, and `Category` already says what kind of problem a finding is. Replace it with a sentence stating that findings are ordered by file then URL for stable output.
+2. Replace `To be filled in during implementation.` in the post-implementation section with the concrete mechanisms: the `pkg/refcheck` package boundary, the in-memory output-path set rather than filesystem stats, `path.Match` plus the trailing-`*` prefix rule, the process-lifetime cache with no expiry and sequential requests, the regex-based CSS extraction and its known ceiling, and whether strict returns before or after the write phase (Task 9 Step 5).
 
 - [ ] **Step 8: Lint the markdown**
-
-Run:
 
 ```bash
 cd ~/code/thetillhoff/temingo && npx markdownlint-cli --fix --disable MD013 --ignore node_modules -- README.md CHANGELOG.md ROADMAP.md TODO.md docs/**/*.md
@@ -2765,20 +2711,21 @@ cd ~/code/thetillhoff/temingo && git add -A && git commit -m "docs: document ref
 | CORS opt-in equivalence | 1 (presence, not value), 4 |
 | One request per URL, allowlist elision | 7 |
 | Findings advisory by default, strict fatal on everything | 9 |
-| Severity presentational only | 3 |
 | Redirects reported for repair | 8 |
 | Remote hashes load-bearing, hard error | 10 |
 | Hash algorithm default and override | 10 |
 | Rendering not otherwise network-dependent | 10 (remote-only guard), 9 (static checks need no network) |
 | Reference / Finding / Result / Configuration data shapes | 1, 3, 6, 7, 11 |
-| Boundaries | package layout across 1-8 vs 9-11 |
+| Boundaries | package layout, 1-8 vs 9-11 |
 | Non-goals | no task builds them; local `sri` is actively rejected in 10 |
 
-**Two deviations to decide during implementation**, both flagged inline rather than hidden:
+One spec contract is **deliberately not implemented**: "findings carry a severity for presentation only". Task 12 Step 7 corrects the spec rather than the code.
 
-1. Task 9 Step 5 - whether strict returns before or after output is written. The spec says findings never block writing; strict is an opt-in to failing, so either reading is defensible. Pick one, record it in the spec.
-2. Task 9 Step 6 - the `http://` warning is dropped rather than ported. If you want it kept, the step says exactly how to restore it as a category.
+**Two decisions left to implementation**, both flagged inline rather than hidden:
 
-**Type consistency.** `Reference`, `Finding`, `Category`, `Severity`, `Allowlist`, `AllowEntry`, `Result`, `Cache` are defined once and used with the same names and fields throughout. `CollectCSS` takes `(file, role string, css []byte)` in both Task 2's definition and Task 9's call. `Classify` returns `Origin` in Tasks 1 and 10. `NewCache(allow, ttl, concurrency)` is called identically in Tasks 7, 8, 9 and 10.
+1. Task 9 Step 5 - whether strict returns before or after output is written.
+2. Task 9 Step 6 - the `http://` warning is dropped rather than ported; the step says how to restore it.
 
-**One known rough edge.** Task 2 Step 4 splits an existing function in place, which is the most error-prone step in the plan - the instruction to drop the marker `defer func() {}()` line is easy to miss. Read that step twice.
+**Type consistency.** `Reference`, `Finding`, `Category`, `Allowlist`, `AllowEntry`, `Result`, `Cache` are defined once and used with the same names throughout. `CollectCSS(file string, css []byte)` matches in Tasks 1, 2 and 9. `NewCache(allow)` matches in Tasks 7, 8, 9 and 10. `Classify` returns `Origin` in Tasks 1 and 10.
+
+**One ordering note.** Task 1's `collectHTML.go` calls `CollectCSS`, written in Task 2, so the package does not compile between them. Task 1 Step 4 offers a one-line stub if you want each task to build standalone.
