@@ -10,6 +10,18 @@ on:
   pull_request:
 
 jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+      - name: Vet
+        run: go vet ./...
+      - name: Run tests
+        run: go test -race ./...
+
   golang-build:
     runs-on: ubuntu-latest
     strategy:

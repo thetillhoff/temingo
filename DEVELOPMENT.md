@@ -83,7 +83,7 @@ go test ./...     # equivalent
 
 Tests use `t.TempDir()` for isolation. The embedded `pkg/temingo/InitFiles/test/` project is used as a canonical rendering fixture. The main render tests are in `pkg/temingo/Render_test.go`.
 
-Pre-commit hooks enforce formatting, vet, tests, tidy, and golangci-lint — run `pre-commit install` once after cloning.
+Pre-commit hooks enforce formatting, vet, tests, tidy, and golangci-lint — run `pre-commit install` once after cloning. CI repeats `go vet ./...` and `go test -race ./...` in its `go-test` job, so a bypassed hook is caught anyway.
 
 ## Cross-Platform Builds
 
