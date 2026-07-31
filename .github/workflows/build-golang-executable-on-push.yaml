@@ -1,6 +1,12 @@
-name: Build golang executable on PR
+name: Build golang executable on push
 
 on:
+  # Renovate branch-automerges without opening a PR, so `pull_request` alone
+  # leaves those branches untested - and untested means renovate has nothing to
+  # wait for before it fast-forwards main.
+  push:
+    branches:
+      - renovate/**
   pull_request:
 
 jobs:
