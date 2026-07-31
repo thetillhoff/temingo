@@ -103,6 +103,6 @@ The corollary is that **no bot can commit to `main`** here, since `GITHUB_TOKEN`
    - Builds and pushes multi-arch Docker image to `ghcr.io/thetillhoff/temingo`
    - Creates GitHub Release with artifacts
    - Updates Homebrew tap and GoReport card
-3. Manual releases: create and push a `vX.Y.Z` tag.
+3. Manual releases: merge the CHANGELOG entry to `main` first (protection leaves no other route), then tag that merged commit and push the tag.
 
 The release body comes from the `CHANGELOG.md` section for the tag, and the release fails if there is none - so a manual release needs its entry written first. Automated dependency patches have no entry: `tag-on-main` passes `release_body: "Updated dependencies."` instead, and `CHANGELOG.md` skips those version numbers.
