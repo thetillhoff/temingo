@@ -106,3 +106,7 @@ The corollary is that **no bot can commit to `main`** here, since `GITHUB_TOKEN`
 3. Manual releases: merge the CHANGELOG entry to `main` first (protection leaves no other route), then tag that merged commit and push the tag.
 
 The release body comes from the `CHANGELOG.md` section for the tag, and the release fails if there is none - so a manual release needs its entry written first. Automated dependency patches have no entry: `tag-on-main` passes `release_body: "Updated dependencies."` instead, and `CHANGELOG.md` skips those version numbers.
+
+### A deleted tag's version number is spent
+
+`tag-on-main` builds and version-checks the commit *before* tagging it, and `release-golang-executable-on-tag`'s `cleanup-on-failure` deletes the tag if the release fails before anything is published. Both exist to keep a broken version out of the world - but **never re-push a deleted tag**. `proxy.golang.org` caches the first SHA it saw for `vX.Y.Z`, permanently, so pointing that version at a different commit gives every `go install` a checksum mismatch that no fix on our side clears. After a cleanup, fix the problem and release the next patch number.
