@@ -91,10 +91,12 @@ CI builds 6 targets: `linux`, `darwin`, `windows` × `amd64`, `arm64`. The versi
 
 ## Release Process
 
-1. Renovate bot merges a dependency PR → `tag-on-main.yaml` auto-bumps the patch version and creates a tag.
-2. The tag triggers `release-golang-executable-on-tag.yaml`:
+1. Renovate bot merges a dependency PR → `tag-on-main.yaml` auto-bumps the patch version, tags it, and calls `release-golang-executable-on-tag.yaml` directly (a tag pushed with `GITHUB_TOKEN` does not fire `on: push: tags:`).
+2. That workflow:
    - Builds 6 platform binaries
    - Builds and pushes multi-arch Docker image to `ghcr.io/thetillhoff/temingo`
    - Creates GitHub Release with artifacts
    - Updates Homebrew tap and GoReport card
 3. Manual releases: create and push a `vX.Y.Z` tag.
+
+The release body comes from the `CHANGELOG.md` section for the tag, and the release fails if there is none - so a manual release needs its entry written first. Automated dependency patches have no entry: `tag-on-main` passes `release_body: "Updated dependencies."` instead, and `CHANGELOG.md` skips those version numbers.
