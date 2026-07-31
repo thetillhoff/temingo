@@ -30,7 +30,7 @@ Temingo's core is the `Engine` struct (`pkg/temingo/Engine.go`) — all state, n
 ### Package Layout
 
 | Package | Purpose |
-|---------|---------|
+| --------- | --------- |
 | `cmd/` | CLI (urfave/cli v3), flags, config loading |
 | `pkg/temingo/` | Core engine: render pipeline, template functions, init |
 | `pkg/markdown2html/` | Goldmark-based Markdown → HTML |
@@ -40,7 +40,7 @@ Temingo's core is the `Engine` struct (`pkg/temingo/Engine.go`) — all state, n
 ### Template Variables
 
 | Variable | Type | Description |
-|----------|------|-------------|
+| ---------- | ------ | ------------- |
 | `.path` | string | Relative path from input dir |
 | `.meta` | map | Merged metadata (child overrides parent) |
 | `.childMeta` | map[string]map | Direct children's metadata, keyed by folder |
@@ -83,11 +83,17 @@ go test ./...     # equivalent
 
 Tests use `t.TempDir()` for isolation. The embedded `pkg/temingo/InitFiles/test/` project is used as a canonical rendering fixture. The main render tests are in `pkg/temingo/Render_test.go`.
 
-Pre-commit hooks enforce formatting, vet, tests, tidy, and golangci-lint — run `pre-commit install` once after cloning.
+Pre-commit hooks enforce formatting, vet, tests, tidy, and golangci-lint — run `pre-commit install` once after cloning. CI repeats `go vet ./...` and `go test -race ./...` in its `go-test` job, so a bypassed hook is caught anyway.
 
 ## Cross-Platform Builds
 
 CI builds 6 targets: `linux`, `darwin`, `windows` × `amd64`, `arm64`. The version string is injected via `-ldflags`; when built locally it defaults to `"dev"`.
+
+## Branch Protection
+
+`main` is protected: `go-test` and `verify-version` are required checks, `enforce_admins` is on, and force-pushes and deletions are refused. Direct `git push origin main` is rejected for everyone, admins included - every change lands via `gh pr merge <n> --merge --delete-branch`. Renovate is unaffected: `automergeType: branch` fast-forwards `main` to a SHA whose checks already passed.
+
+The corollary is that **no bot can commit to `main`** here, since `GITHUB_TOKEN` triggers no workflows and its commits can therefore never report the required checks. Any automation that needs a commit on `main` needs a PAT or GitHub App token - which is why the auto patch release carries its release notes as a `release_body` input instead of writing a CHANGELOG entry.
 
 ## Release Process
 
@@ -97,6 +103,6 @@ CI builds 6 targets: `linux`, `darwin`, `windows` × `amd64`, `arm64`. The versi
    - Builds and pushes multi-arch Docker image to `ghcr.io/thetillhoff/temingo`
    - Creates GitHub Release with artifacts
    - Updates Homebrew tap and GoReport card
-3. Manual releases: create and push a `vX.Y.Z` tag.
+3. Manual releases: merge the CHANGELOG entry to `main` first (protection leaves no other route), then tag that merged commit and push the tag.
 
 The release body comes from the `CHANGELOG.md` section for the tag, and the release fails if there is none - so a manual release needs its entry written first. Automated dependency patches have no entry: `tag-on-main` passes `release_body: "Updated dependencies."` instead, and `CHANGELOG.md` skips those version numbers.
