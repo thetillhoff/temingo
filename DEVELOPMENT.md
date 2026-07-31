@@ -91,7 +91,7 @@ CI builds 6 targets: `linux`, `darwin`, `windows` × `amd64`, `arm64`. The versi
 
 ## Release Process
 
-1. Renovate bot merges a dependency PR → `tag-on-main.yaml` auto-bumps the patch version, tags it, and calls `release-golang-executable-on-tag.yaml` directly (a tag pushed with `GITHUB_TOKEN` does not fire `on: push: tags:`).
+1. Renovate lands a dependency update on `main` → `tag-on-main.yaml` auto-bumps the patch version, tags it, and calls `release-golang-executable-on-tag.yaml` directly (a tag pushed with `GITHUB_TOKEN` does not fire `on: push: tags:`). Renovate opens no PR for these: `automergeType: branch` fast-forwards `main` once the `renovate/**` branch is green, which is why the build workflow also runs `on: push` for those branches. Major updates come as a PR and are merged by hand - and, being merged by a human, they auto-release nothing (`tag-on-main` only runs for `renovate[bot]`).
 2. That workflow:
    - Builds 6 platform binaries
    - Builds and pushes multi-arch Docker image to `ghcr.io/thetillhoff/temingo`
