@@ -9,6 +9,14 @@ on:
       tag:
         required: true
         type: string
+      release_body:
+        description: >-
+          Release notes. Left empty (the default), the CHANGELOG section for the
+          tag is used instead. Callers that cannot add a CHANGELOG entry - a bot
+          commit cannot land on protected main - pass their own text here.
+        required: false
+        type: string
+        default: ""
 
 env:
   TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
@@ -17,9 +25,12 @@ jobs:
   release-prerequisites:
     runs-on: ubuntu-latest
     outputs:
-      RELEASE_BODY: ${{ steps.release-prerequisites.outputs.RELEASE_BODY }}
+      RELEASE_BODY: ${{ inputs.release_body != '' && inputs.release_body || steps.release-prerequisites.outputs.RELEASE_BODY }}
     steps:
+      # The action's only job is to find the CHANGELOG section for the tag, so it
+      # is skipped when the caller already supplied the body.
       - id: release-prerequisites
+        if: ${{ inputs.release_body == '' }}
         uses: thetillhoff/action-release-prerequisites@2c4e295d06d4b8ce6fe2bdf6a1b7e806d7c1687c # v0.4.1
         with:
           RELEASE_TAG: ${{ env.TAG }}
