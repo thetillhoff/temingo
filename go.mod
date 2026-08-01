@@ -4,7 +4,7 @@ go 1.26.5
 
 require github.com/urfave/cli/v3 v3.10.1
 
-require golang.org/x/net v0.46.0
+require golang.org/x/net v0.57.0
 
 require (
 	github.com/thetillhoff/fileIO v1.1.0
@@ -14,10 +14,10 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 )
 
 require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
-	golang.org/x/text v0.32.0
+	golang.org/x/text v0.40.0
 )
