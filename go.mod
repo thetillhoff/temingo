@@ -2,7 +2,7 @@ module github.com/thetillhoff/temingo
 
 go 1.26.5
 
-require github.com/urfave/cli/v3 v3.6.1
+require github.com/urfave/cli/v3 v3.10.1
 
 require golang.org/x/net v0.46.0
 
