@@ -1,6 +1,6 @@
 module github.com/thetillhoff/temingo
 
-go 1.26.5
+go 1.26.6
 
 require github.com/urfave/cli/v3 v3.10.1
 
