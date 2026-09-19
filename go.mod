@@ -4,7 +4,7 @@ go 1.27.1
 
 require (
 	github.com/thetillhoff/fileIO v1.1.0
-	github.com/urfave/cli/v3 v3.11.0
+	github.com/urfave/cli/v3 v3.12.0
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/net v0.59.0
 	golang.org/x/text v0.42.0
