@@ -1,6 +1,6 @@
 module github.com/thetillhoff/temingo
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/thetillhoff/fileIO v1.1.0
